@@ -4,6 +4,7 @@
 import { Resource, TextContent } from "@modelcontextprotocol/sdk/types.js";
 import { ObsidianClient } from "../obsidian/client.js";
 import { JsonLogicQuery } from "../obsidian/types.js";
+import pLimit from 'p-limit'; // Import p-limit
 import { PropertyManager } from "../tools/properties/manager.js";
 import { join, sep } from "path";
 import { createLogger, ErrorCategoryType } from "../utils/logging.js";
@@ -78,13 +79,17 @@ export class TagResource {
       const results = await this.client.searchJson(query);
       this.tagCache.clear();
 
-      // Create promises for processing each file in parallel
+      // Create a limiter with a concurrency of 3 (reduced from 10)
+      const limit = pLimit(3); 
+
+      // Create promises for processing each file with concurrency limiting
       const processingPromises = results
         .filter(result => 'filename' in result) // Ensure filename exists
-        .map(async (result) => {
+        .map((result) => limit(async () => { // Wrap the async function with the limiter
           const filename = result.filename;
           try {
-            const content = await this.client.getFileContents(filename);
+            // This call is now rate-limited
+            const content = await this.client.getFileContents(filename); 
             // Only extract tags from frontmatter YAML
             const properties = this.propertyManager.parseProperties(content);
             return { filename, tags: properties.tags || [] };
@@ -92,7 +97,7 @@ export class TagResource {
             logger.error(`Failed to process file ${filename}:`, errorToObject(error));
             return { filename, error: true }; // Mark as failed
           }
-        });
+        })); // Close the limiter wrapper
 
       // Execute promises in parallel and wait for all to settle
       const processedResults = await Promise.allSettled(processingPromises);
