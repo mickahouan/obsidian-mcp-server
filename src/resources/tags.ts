@@ -40,6 +40,7 @@ export class TagResource {
   private tagCache: Map<string, Set<string>> = new Map();
   private propertyManager: PropertyManager;
   private isInitialized = false;
+  private isUpdating = false; // Flag to prevent concurrent updates
   private lastUpdate = 0;
   private updateInterval = 5000; // 5 seconds
 
@@ -77,24 +78,42 @@ export class TagResource {
       const results = await this.client.searchJson(query);
       this.tagCache.clear();
 
-      // Process each file
-      for (const result of results) {
-        if (!('filename' in result)) continue;
-        
-        try {
-          const content = await this.client.getFileContents(result.filename);
-          
-          // Only extract tags from frontmatter YAML
-          const properties = this.propertyManager.parseProperties(content);
-          if (properties.tags) {
-            properties.tags.forEach((tag: string) => {
-              this.addTag(tag, result.filename);
+      // Create promises for processing each file in parallel
+      const processingPromises = results
+        .filter(result => 'filename' in result) // Ensure filename exists
+        .map(async (result) => {
+          const filename = result.filename;
+          try {
+            const content = await this.client.getFileContents(filename);
+            // Only extract tags from frontmatter YAML
+            const properties = this.propertyManager.parseProperties(content);
+            return { filename, tags: properties.tags || [] };
+          } catch (error) {
+            logger.error(`Failed to process file ${filename}:`, errorToObject(error));
+            return { filename, error: true }; // Mark as failed
+          }
+        });
+
+      // Execute promises in parallel and wait for all to settle
+      const processedResults = await Promise.allSettled(processingPromises);
+
+      // Populate the cache from settled results
+      processedResults.forEach(settledResult => {
+        // Check if the promise was fulfilled and didn't encounter a processing error
+        if (settledResult.status === 'fulfilled' && !settledResult.value.error) {
+          const { filename, tags } = settledResult.value;
+          // Ensure tags is an array before iterating
+          if (tags && Array.isArray(tags)) {
+            tags.forEach((tag: string) => {
+              this.addTag(tag, filename);
             });
           }
-        } catch (error) {
-          logger.error(`Failed to process file ${result.filename}:`, errorToObject(error));
-        }
-      }
+        } else if (settledResult.status === 'rejected') {
+          // Log unexpected rejections from the async map function itself
+          logger.error(`Unexpected error during file processing setup:`, errorToObject(settledResult.reason));
+        } 
+        // Errors during getFileContents/parseProperties are already logged within the map function
+      });
 
       this.isInitialized = true;
       this.lastUpdate = Date.now();
@@ -125,13 +144,47 @@ export class TagResource {
   }
 
   /**
-   * Update the cache if needed
+   * Update the cache if needed, preventing race conditions.
    */
   private async updateCacheIfNeeded() {
     const now = Date.now();
-    if (now - this.lastUpdate > this.updateInterval) {
-      logger.debug('Tag cache needs update, refreshing...');
-      await this.initializeCache();
+    // Check if cache is fresh enough
+    if (now - this.lastUpdate <= this.updateInterval) {
+      return; // Cache is up-to-date
+    }
+
+    // Check if an update is already in progress
+    if (this.isUpdating) {
+      logger.debug('Cache update already in progress, skipping redundant update.');
+      // Optionally, wait for the ongoing update instead of returning immediately
+      // For now, we return to avoid complexity, potentially serving slightly stale data.
+      return; 
+    }
+
+    // Acquire the update lock
+    this.isUpdating = true;
+    logger.debug('Acquired cache update lock.');
+
+    try {
+      // Double-check the update condition after acquiring the lock
+      // to handle cases where another process finished updating
+      // while this one was waiting for the lock (though less likely with a simple flag).
+      const nowAfterLock = Date.now();
+      if (nowAfterLock - this.lastUpdate > this.updateInterval) {
+        logger.info('Tag cache needs update, refreshing...');
+        await this.initializeCache(); // This method updates this.lastUpdate internally
+      } else {
+        logger.debug('Cache was updated by another process while waiting for lock.');
+      }
+    } catch (error) {
+      // Log error during update, but don't necessarily block other operations
+      logger.error('Error during cache update:', errorToObject(error));
+      // Decide if the error should be re-thrown or handled gracefully
+      // For now, we log and continue, allowing the lock to be released.
+    } finally {
+      // Release the update lock
+      this.isUpdating = false;
+      logger.debug('Released cache update lock.');
     }
   }
 

@@ -4,6 +4,7 @@
 import { config } from "dotenv";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { ObsidianError } from "../utils/errors.js"; // Import ObsidianError
 import { createLogger, ErrorCategoryType } from "../utils/logging.js";
 import { rateLimiter } from "../utils/rate-limiting.js";
 import { createTagResource } from "../resources/index.js";
@@ -40,11 +41,15 @@ export async function initializeServer(): Promise<Server> {
     if (!API_KEY) {
       logger.error("Missing API key", {
         errorCategory: ErrorCategoryType.CATEGORY_AUTHENTICATION,
-        errorCode: McpErrorCode.UNAUTHORIZED
-      });
-      throw new Error("OBSIDIAN_API_KEY environment variable is required");
-    }
-
+         errorCode: McpErrorCode.UNAUTHORIZED
+       });
+       // Use ObsidianError for consistency
+       throw new ObsidianError(
+         "OBSIDIAN_API_KEY environment variable is required",
+         McpErrorCode.UNAUTHORIZED
+       );
+     }
+ 
     // Initialize Obsidian client with environment configuration
     logger.info('Initializing Obsidian client', {
       verifySSL: process.env.VERIFY_SSL === 'true',
@@ -174,19 +179,11 @@ export function setupShutdownHandling(
     logger.info('Shutting down server...', { signal });
     
     try {
-      // Run cleanup handlers
+      // Run cleanup handlers sequentially, stopping on error
       logger.debug('Running cleanup handlers', { handlersCount: cleanupHandlers.length });
       for (const handler of cleanupHandlers) {
-        try {
-          await handler();
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error('Error during cleanup handler execution', {
-            error: errorMessage,
-            stack: error instanceof Error ? error.stack : undefined,
-            errorCategory: ErrorCategoryType.CATEGORY_SYSTEM
-          });
-        }
+        // No try-catch here; let errors propagate to the main catch block
+        await handler(); 
       }
       
       // Dispose rate limiter

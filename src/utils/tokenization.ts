@@ -13,22 +13,29 @@ export const TRUNCATION_MESSAGE = "\n\n[Response truncated due to length]";
 export class TokenCounter {
   private tokenizer = encoding_for_model("gpt-4"); // This is strictly for token counting, not for LLM inference
   private isShuttingDown = false;
+  private cleanupListener: () => void;
 
   constructor() {
-    // Clean up tokenizer when process exits
-    const cleanup = () => {
+    // Define the cleanup logic
+    this.cleanupListener = () => {
       if (!this.isShuttingDown) {
         this.isShuttingDown = true;
         if (this.tokenizer) {
           this.tokenizer.free();
+          // No need to explicitly set this.tokenizer to null,
+          // but ensure it's not used after free()
         }
+        // Remove listeners after execution to prevent multiple calls
+        // and potential leaks if cleanup is called manually before exit
+        this.removeListeners();
       }
     };
 
-    process.on('exit', cleanup);
-    process.on('SIGINT', cleanup);
-    process.on('SIGTERM', cleanup);
-    process.on('uncaughtException', cleanup);
+    // Attach listeners
+    process.on('exit', this.cleanupListener);
+    process.on('SIGINT', this.cleanupListener);
+    process.on('SIGTERM', this.cleanupListener);
+    process.on('uncaughtException', this.cleanupListener);
   }
 
   /**
@@ -57,13 +64,20 @@ export class TokenCounter {
   }
 
   /**
-   * Clean up resources
+   * Clean up resources and remove listeners
    */
   cleanup(): void {
-    if (this.tokenizer && !this.isShuttingDown) {
-      this.isShuttingDown = true;
-      this.tokenizer.free();
-    }
+    this.cleanupListener(); // Call the main cleanup logic
+  }
+
+  /**
+   * Remove process event listeners
+   */
+  private removeListeners(): void {
+    process.off('exit', this.cleanupListener);
+    process.off('SIGINT', this.cleanupListener);
+    process.off('SIGTERM', this.cleanupListener);
+    process.off('uncaughtException', this.cleanupListener);
   }
 }
 

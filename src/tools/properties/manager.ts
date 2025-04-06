@@ -37,24 +37,33 @@ export class PropertyManager {
       }
 
       const frontmatter = match[1];
-      const properties = parse(frontmatter);
-      
-      // Handle tags - don't add # prefix in frontmatter
-      if (properties.tags && Array.isArray(properties.tags)) {
-        properties.tags = properties.tags.map((tag: string) =>
+      // Parse YAML first
+      const rawProperties = parse(frontmatter);
+
+      // Validate the raw parsed object against the schema
+      const validationResult = ObsidianPropertiesSchema.safeParse(rawProperties);
+
+      if (!validationResult.success) {
+        // Log validation errors and return empty if invalid
+        logger.warn('Frontmatter validation failed:', { 
+          validationError: validationResult.error.flatten() 
+        });
+        return {}; // Return empty object for invalid frontmatter
+      }
+
+      // Use the validated data from now on
+      const validatedProperties = validationResult.data;
+
+      // Handle tags transformation on validated data
+      if (validatedProperties.tags && Array.isArray(validatedProperties.tags)) {
+        // Create a new array to avoid modifying the validated data directly if needed elsewhere
+        validatedProperties.tags = validatedProperties.tags.map((tag: string) =>
           tag.startsWith('#') ? tag.substring(1) : tag
         );
       }
 
-      // Validate against schema
-      const result = ObsidianPropertiesSchema.safeParse(properties);
-      if (!result.success) {
-        logger.warn('Property validation warnings:', { validationError: result.error });
-        // Return the properties with fixed tags
-        return properties;
-      }
-
-      return result.data;
+      // Return the validated (and potentially transformed) properties
+      return validatedProperties;
     } catch (error) {
       logger.error('Error parsing properties:', error instanceof Error ? error : { error: String(error) });
       return {};

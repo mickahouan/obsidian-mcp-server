@@ -85,8 +85,18 @@ export function setupToolListingHandler(
       // Log failure with timing information
       const elapsedMs = logger.endTimer('list_tools', 'Failed to list tools');
       logger.logOperationResult(false, 'list_tools', elapsedMs);
-      logger.error('Failed to list available tools', error instanceof Error ? error : undefined);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to list available tools', { 
+        error: errorMessage, 
+        stack: error instanceof Error ? error.stack : undefined,
+        errorCategory: ErrorCategoryType.CATEGORY_SYSTEM 
+      });
+      // Wrap in ObsidianError
+      throw new ObsidianError(
+        `Failed to list tools: ${errorMessage}`,
+        McpErrorCode.INTERNAL_SERVER_ERROR,
+        { originalError: errorMessage }
+      );
     }
   });
 }
@@ -152,8 +162,10 @@ export function setupToolCallingHandler(
 
     // Add timeout handling
     const timeoutMs = DEFAULT_TIMEOUT_CONFIG.toolExecutionMs;
+    let timeoutId: NodeJS.Timeout | null = null; // Variable to hold the timeout ID
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
+        timeoutId = null; // Clear the ID reference once the timeout executes
         const errorInfo = {
           toolName: name,
           timeoutMs,
@@ -269,6 +281,12 @@ export function setupToolCallingHandler(
         McpErrorCode.INTERNAL_SERVER_ERROR,
         { originalError: errorMessage, stack: errorStack }
       );
+    } finally {
+      // Ensure the timeout is cleared regardless of the outcome
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        logger.debug(`Cleared timeout for tool: ${name}`, { operationId });
+      }
     }
   });
 }
@@ -302,8 +320,18 @@ export function setupResourceListingHandler(
       // Log failure with timing information
       const elapsedMs = logger.endTimer('list_resources', 'Failed to list resources');
       logger.logOperationResult(false, 'list_resources', elapsedMs);
-      logger.error('Failed to list available resources', error instanceof Error ? error : undefined);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to list available resources', { 
+        error: errorMessage, 
+        stack: error instanceof Error ? error.stack : undefined,
+        errorCategory: ErrorCategoryType.CATEGORY_SYSTEM 
+      });
+      // Wrap in ObsidianError
+      throw new ObsidianError(
+        `Failed to list resources: ${errorMessage}`,
+        McpErrorCode.INTERNAL_SERVER_ERROR,
+        { originalError: errorMessage }
+      );
     }
   });
 }

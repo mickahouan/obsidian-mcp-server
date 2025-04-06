@@ -1,6 +1,8 @@
 /**
  * Validation utilities for the Obsidian MCP Server
  */
+import { McpErrorCode } from "../mcp/types.js";
+import { ObsidianError } from "./errors.js";
 
 /**
  * Validates a file path to prevent path traversal attacks and other security issues
@@ -11,12 +13,20 @@ export function validateFilePath(filepath: string): void {
   // Prevent path traversal attacks
   const normalizedPath = filepath.replace(/\\/g, '/');
   if (normalizedPath.includes('../') || normalizedPath.includes('..\\')) {
-    throw new Error('Invalid file path: Path traversal not allowed');
+    // Use ObsidianError for consistency
+    throw new ObsidianError(
+      'Invalid file path: Path traversal not allowed',
+      McpErrorCode.BAD_REQUEST
+    );
   }
   
-  // Additional path validations
+  // Additional path validations (check for absolute paths Unix or Windows style)
   if (normalizedPath.startsWith('/') || /^[a-zA-Z]:/.test(normalizedPath)) {
-    throw new Error('Invalid file path: Absolute paths not allowed');
+     // Use ObsidianError for consistency
+     throw new ObsidianError(
+       'Invalid file path: Absolute paths not allowed',
+       McpErrorCode.BAD_REQUEST
+     );
   }
 }
 
