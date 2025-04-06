@@ -29,7 +29,6 @@ Thumbs.db
 *.d.ts.map
 *.d.ts
 !*.d.ts.template
-yarn.lock
 .pnp.js
 .pnp.cjs
 .pnp.mjs
@@ -40,6 +39,7 @@ yarn.lock
 demo/
 demos/
 example/
+examples/
 samples/
 .sample-env
 sample.*
@@ -143,14 +143,6 @@ dist/
 build/
 out/
 
-# Documentation
-docs/_build/
-doc/api/
-
-# Dependency Directories
-jspm_packages/
-bower_components/
-
 # Testing
 coverage/
 .nyc_output/
@@ -170,4 +162,6 @@ coverage/
 *.swo
 *~
 .history/
-*repomix*
+repomix-output*
+mcp-servers.json
+logs/
