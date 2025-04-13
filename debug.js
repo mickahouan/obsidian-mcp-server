@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
 // Debug script to run the server with verbose logging
-import fs from 'fs';
-import path from 'path';
 import { spawn } from 'child_process';
+import fs from 'fs';
+import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 // Get current directory from import.meta
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +29,7 @@ const env = {
   DEBUG_JSONRPC: 'true',
   NODE_ENV: 'development',
   // Required environment variables from MCP settings
-  OBSIDIAN_API_KEY: '9bde5e9fb07951daa75819a1704ce75fd597955205141d3b39e5e1423ddbc97c',
+  OBSIDIAN_API_KEY: 'your_actual_api_key_here', // Add your actual API key here for debugging
   VERIFY_SSL: 'false',
   OBSIDIAN_PROTOCOL: 'https',
   OBSIDIAN_HOST: '127.0.0.1',

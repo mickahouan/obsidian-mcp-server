@@ -48,7 +48,7 @@ export const ObsidianPropertiesSchema = z.object({
   papers: z.array(z.string()).optional(),
 
   // Custom Fields
-  custom: z.record(z.unknown()).optional()
+  custom: z.object({}).catchall(z.unknown()).optional() // Ensure 'custom' is an object if present
 });
 
 /**
@@ -78,7 +78,7 @@ export const PropertyUpdateSchema = z.object({
   papers: z.array(z.string()).optional(),
 
   // Custom Fields
-  custom: z.record(z.unknown()).optional()
+  custom: z.object({}).catchall(z.unknown()).optional() // Ensure 'custom' is an object if present
 });
 
 /**
