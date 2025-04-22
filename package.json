@@ -1,6 +1,6 @@
 {
   "name": "obsidian-mcp-server",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Model Context Protocol (MCP) server designed for LLMs to interact with Obsidian vaults. Provides secure, token-aware tools for seamless knowledge base management through a standardized interface.",
   "main": "build/index.js",
   "type": "module",
@@ -17,13 +17,13 @@
     "tree": "npx ts-node --esm scripts/tree.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.9.0",
+    "@modelcontextprotocol/sdk": "^1.10.1",
     "@types/node": "^22.14.1",
-    "@typescript-eslint/eslint-plugin": "^8.29.1",
-    "@typescript-eslint/parser": "^8.29.1",
+    "@typescript-eslint/eslint-plugin": "^8.31.0",
+    "@typescript-eslint/parser": "^8.31.0",
     "axios": "^1.8.4",
     "dotenv": "^16.5.0",
-    "eslint": "^9.24.0",
+    "eslint": "^9.25.1",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.2.6",
     "nanoid": "^5.1.5",
@@ -33,7 +33,7 @@
     "typescript": "^5.8.3",
     "winston": "^3.17.0",
     "yaml": "^2.7.1",
-    "zod": "^3.24.2"
+    "zod": "^3.24.3"
   },
   "keywords": [
     "mcp",
