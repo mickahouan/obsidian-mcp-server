@@ -1,6 +1,6 @@
 {
   "name": "obsidian-mcp-server",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "description": "Model Context Protocol (MCP) server designed for LLMs to interact with Obsidian vaults. Provides secure, token-aware tools for seamless knowledge base management through a standardized interface.",
   "main": "build/index.js",
   "type": "module",

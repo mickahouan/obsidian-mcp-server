@@ -24,7 +24,8 @@ RUN npm prune --production
 FROM node:22-slim
 
 ENV NODE_ENV=production \
-    PATH="/home/service-user/.local/bin:${PATH}"
+    PATH="/home/service-user/.local/bin:${PATH}" \
+    OBSIDIAN_API_KEY="abc"
 
 # Install mcp-proxy globally for runtime use
 # Combine update, install, and clean in one layer
@@ -59,4 +60,4 @@ USER service-user
 
 # Define the command to run the application
 # CMD ["mcp-proxy", "node", "build/index.js"] # Keep original for reference
-CMD ["mcp-proxy", "node", "build/index.js"]
+CMD ["node", "build/index.js"]
