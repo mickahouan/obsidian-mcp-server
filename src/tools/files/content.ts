@@ -15,7 +15,7 @@ const logger = createLogger('FileContentTools');
 export const FILE_CONTENT_TOOL_NAMES = {
   GET_FILE_CONTENTS: "obsidian_get_file_contents",
   APPEND_CONTENT: "obsidian_append_content",
-  PATCH_CONTENT: "obsidian_patch_content"
+  UPDATE_CONTENT: "obsidian_update_content" // Renamed from PATCH_CONTENT
 } as const;
 
 /**
@@ -36,7 +36,7 @@ export interface AppendContentArgs {
 /**
  * Arguments for updating content of a file
  */
-export interface PatchContentArgs {
+export interface UpdateContentArgs { // Renamed from PatchContentArgs
   filepath: string;
   content: string;
 }
@@ -52,7 +52,7 @@ export class GetFileContentsToolHandler extends BaseToolHandler<FileContentsArgs
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Return the content of a single file in your vault. Supports markdown files, text files, and other readable formats. Returns the raw content including any YAML frontmatter.",
+      description: "Retrieves the full content of a specified file within your Obsidian vault. Supports various readable file formats.",
       examples: [
         {
           description: "Get content of a markdown note",
@@ -103,7 +103,7 @@ export class AppendContentToolHandler extends BaseToolHandler<AppendContentArgs>
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Append content to a new or existing file in the vault.",
+      description: "Appends the provided content to the end of a specified file in the vault. If the file does not exist, it will be created.",
       examples: [
         {
           description: "Append a new task",
@@ -155,18 +155,18 @@ export class AppendContentToolHandler extends BaseToolHandler<AppendContentArgs>
 /**
  * Tool handler for updating file content
  */
-export class PatchContentToolHandler extends BaseToolHandler<PatchContentArgs> {
+export class UpdateContentToolHandler extends BaseToolHandler<UpdateContentArgs> { // Renamed from PatchContentToolHandler
   constructor(client: ObsidianClient) {
-    super(FILE_CONTENT_TOOL_NAMES.PATCH_CONTENT, client);
+    super(FILE_CONTENT_TOOL_NAMES.UPDATE_CONTENT, client); // Renamed from PATCH_CONTENT
   }
 
   getToolDescription(): Tool {
     return {
-      name: this.name,
-      description: "Update the entire content of an existing note or create a new one.",
+      name: this.name, // Will be obsidian_update_content
+      description: "Overwrites the entire content of a specified file in the vault with the provided content. If the file does not exist, it will be created.",
       examples: [
         {
-          description: "Update a note's content",
+          description: "Overwrite a note's content",
           args: {
             filepath: "project.md",
             content: "# Project Notes\n\nThis will replace the entire content of the note."
@@ -183,7 +183,7 @@ export class PatchContentToolHandler extends BaseToolHandler<PatchContentArgs> {
           },
           content: {
             type: "string",
-            description: "New content for the note (replaces existing content)"
+            description: "The new, complete content for the file (overwrites existing content)."
           }
         },
         required: ["filepath", "content"]
@@ -191,7 +191,7 @@ export class PatchContentToolHandler extends BaseToolHandler<PatchContentArgs> {
     };
   }
 
-  async runTool(args: PatchContentArgs): Promise<Array<any>> {
+  async runTool(args: UpdateContentArgs): Promise<Array<any>> { // Renamed from PatchContentArgs
     try {
       logger.debug(`Updating content of file: ${args.filepath}`);
       await this.client.updateContent(args.filepath, args.content);

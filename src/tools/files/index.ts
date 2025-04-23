@@ -8,7 +8,7 @@ import { ObsidianClient } from '../../obsidian/client.js';
 import {
   AppendContentToolHandler,
   GetFileContentsToolHandler,
-  PatchContentToolHandler
+  UpdateContentToolHandler
 } from './content.js';
 import {
   ListFilesInDirToolHandler,
@@ -26,6 +26,6 @@ export function createFileToolHandlers(client: ObsidianClient) {
     new ListFilesInDirToolHandler(client),
     new GetFileContentsToolHandler(client),
     new AppendContentToolHandler(client),
-    new PatchContentToolHandler(client)
+    new UpdateContentToolHandler(client)
   ];
 }
