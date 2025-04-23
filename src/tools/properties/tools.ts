@@ -70,10 +70,10 @@ export class GetPropertiesToolHandler extends BaseToolHandler<GetPropertiesArgs>
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Get properties (title, tags, status, etc.) from an Obsidian note's YAML frontmatter. Returns all available properties including custom fields.",
+      description: "Retrieves properties (like title, tags, status) from the YAML frontmatter of a specified Obsidian note. Returns all defined properties, including any custom fields.",
       examples: [
         {
-          description: "Get properties from a note",
+          description: "Get properties from a specific note",
           args: {
             filepath: "path/to/note.md"
           }
@@ -139,10 +139,10 @@ export class UpdatePropertiesToolHandler extends BaseToolHandler<UpdatePropertie
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Update properties in an Obsidian note's YAML frontmatter. Intelligently merges arrays (tags, type, status), handles custom fields, and automatically manages timestamps. Valid property types:\n- type: Any string value\n- status: ['draft', 'in-progress', 'review', 'complete']\n- tags: Array of strings starting with '#'\n- Other fields: title, author, version, platform, repository (URI), dependencies, sources, urls (URI), papers, custom (object)",
+      description: "Updates properties within the YAML frontmatter of a specified Obsidian note. By default, array properties (like tags, type, status) are merged; use the 'replace' option to overwrite them instead. Handles custom fields and manages timestamps automatically. See schema for supported standard fields (title, author, tags, status, etc.).",
       examples: [
         {
-          description: "Update basic metadata",
+          description: "Update title and author, merge tags",
           args: {
             filepath: "path/to/note.md",
             properties: {
@@ -235,7 +235,7 @@ export class UpdatePropertiesToolHandler extends BaseToolHandler<UpdatePropertie
           },
           replace: {
             type: "boolean",
-            description: "If true, arrays will be replaced instead of merged"
+            description: "If true, array properties (like tags, status) will be completely replaced with the provided values instead of being merged with existing values. Defaults to false (merge)."
           }
         },
         required: ["filepath", "properties"]

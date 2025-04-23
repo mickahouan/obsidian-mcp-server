@@ -55,10 +55,10 @@ export class ComplexSearchToolHandler extends BaseToolHandler<ComplexSearchArgs>
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "File path pattern matching using JsonLogic queries. Supported operations:\n- glob: Pattern matching for paths (e.g., \"*.md\")\n- Variable access: {\"var\": \"path\"}\n\nNote: For full-text content search, date-based searches, or other advanced queries, use obsidian_find_in_file instead.",
+      description: "Finds files based on path patterns using JsonLogic queries. Primarily supports `glob` for pattern matching (e.g., '*.md') and `var` for accessing the 'path' variable. Note: For content-based searches (full-text, tags within content, dates), use `obsidian_find_in_file`.",
       examples: [
         {
-          description: "Find markdown files in Projects folder",
+          description: "Find all markdown files in the 'Projects' folder",
           args: {
             query: {
               "glob": ["Projects/*.md", {"var": "path"}]
@@ -79,7 +79,7 @@ export class ComplexSearchToolHandler extends BaseToolHandler<ComplexSearchArgs>
         properties: {
           query: {
             type: "object",
-            description: "JsonLogic query object. Example: {\"glob\": [\"*.md\", {\"var\": \"path\"}]} matches all markdown files"
+            description: "A JsonLogic query object targeting file paths. Example: `{\"glob\": [\"*.md\", {\"var\": \"path\"}]}` matches all markdown files."
           }
         },
         required: ["query"]
@@ -153,10 +153,10 @@ export class GetTagsToolHandler extends BaseToolHandler<{path?: string}> {
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Get all tags used across the Obsidian vault with their usage counts. Optionally filter tags within a specific folder.",
+      description: "Retrieves all tags defined in the YAML frontmatter of markdown files within your Obsidian vault, along with their usage counts and associated file paths. Optionally, limit the search to a specific folder.",
       examples: [
         {
-          description: "Get all tags in vault",
+          description: "Get all tags across the entire vault",
           args: {}
         },
         {
@@ -192,7 +192,7 @@ export class GetTagsToolHandler extends BaseToolHandler<{path?: string}> {
         properties: {
           path: {
             type: "string",
-            description: "Optional path to limit tag search to specific folder",
+            description: "Optional folder path (relative to vault root) to restrict the tag search.",
             format: "path"
           }
         }

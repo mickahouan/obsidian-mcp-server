@@ -35,7 +35,7 @@ export class ListFilesInVaultToolHandler extends BaseToolHandler<Record<string, 
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Lists all files and directories in the root directory of your Obsidian vault. Returns a hierarchical structure of files and folders, including metadata like file type.",
+      description: "Lists all files and directories within the root of your Obsidian vault. Returns a hierarchical structure detailing files, folders, and their types.",
       examples: [
         {
           description: "List all files in vault",
@@ -92,7 +92,7 @@ export class ListFilesInDirToolHandler extends BaseToolHandler<ListFilesArgs> {
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Lists all files and directories that exist in a specific Obsidian directory. Returns a hierarchical structure showing files, folders, and their relationships. Useful for exploring vault organization and finding specific files.",
+      description: "Lists files and directories within a specific folder in your Obsidian vault. Returns a hierarchical structure. Note: Empty directories may not be included in the results. Useful for exploring vault organization.",
       examples: [
         {
           description: "List files in Documents folder",

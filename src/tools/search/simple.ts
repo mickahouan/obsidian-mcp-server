@@ -33,10 +33,10 @@ export class FindInFileToolHandler extends BaseToolHandler<SearchArgs> {
   getToolDescription(): Tool {
     return {
       name: this.name,
-      description: "Full-text search across all files in the vault. Returns matching files with surrounding context for each match. For results with more than 5 matching files, returns only file names and match counts to prevent overwhelming responses. Useful for finding specific content, references, or patterns across notes.",
+      description: "Performs a full-text search across all files in your Obsidian vault. Returns matching files with context around each match. If more than 5 files match, only filenames and match counts are returned to avoid excessive output. Ideal for locating specific text, tags, or patterns.",
       examples: [
         {
-          description: "Search for a specific term",
+          description: "Search for a specific term with custom context length",
           args: {
             query: "neural networks",
             contextLength: 20
@@ -91,7 +91,7 @@ export class FindInFileToolHandler extends BaseToolHandler<SearchArgs> {
           },
           contextLength: {
             type: "integer",
-            description: "Number of characters to include before and after each match for context (default: 10)",
+            description: "Number of characters surrounding each match to provide context (default: 10).",
             default: 10
           }
         },
