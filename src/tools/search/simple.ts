@@ -102,8 +102,8 @@ export class FindInFileToolHandler extends BaseToolHandler<SearchArgs> {
 
   async runTool(args: SearchArgs): Promise<Array<any>> {
     try {
-      logger.debug(`Searching for "${args.query}" with context length: ${args.contextLength || 100}`);
-      const results = await this.client.search(args.query, args.contextLength ?? 100);
+      logger.debug(`Searching for "${args.query}" with context length: ${args.contextLength || 10}`); // Align debug log default
+      const results = await this.client.search(args.query, args.contextLength ?? 10); // Align implemented default
       
       // If more than 5 results, only return filenames and match counts to prevent overwhelming responses
       if (results.length > 5) {
