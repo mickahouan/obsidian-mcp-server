@@ -199,9 +199,11 @@ export class TagResource {
   }
 
   /**
-   * Get the content for the resource
+   * Get the content for the resource, optionally filtering by path.
+   * Note: The path filtering logic assumes the tool handler passes the path correctly.
    */
-  async getContent(): Promise<TextContent[]> {
+  // TODO: Verify how the path argument is passed from the tool handler
+  async getContent(filterPath?: string): Promise<TextContent[]> { 
     logger.startTimer('get_tags_content');
     
     try {
@@ -212,16 +214,40 @@ export class TagResource {
         await this.updateCacheIfNeeded();
       }
 
+      let filteredTagEntries: { name: string; files: Set<string> }[] = [];
+
+      // Filter tags based on the provided path
+      if (filterPath) {
+        // Normalize path to ensure it ends with a separator for accurate startsWith check
+        const normalizedFilterPath = filterPath.endsWith(sep) ? filterPath : filterPath + sep;
+        logger.debug(`Filtering tags for path: ${normalizedFilterPath}`);
+        
+        filteredTagEntries = Array.from(this.tagCache.entries())
+          .map(([name, files]) => {
+            // Filter files within each tag entry
+            const relevantFiles = Array.from(files).filter(file => file.startsWith(normalizedFilterPath));
+            return { name, files: new Set(relevantFiles) };
+          })
+          .filter(tagEntry => tagEntry.files.size > 0); // Keep only tags that exist in the filtered path
+          
+        logger.debug(`Found ${filteredTagEntries.length} tags after filtering.`);
+      } else {
+        // If no path provided, use all tags from the cache
+        filteredTagEntries = Array.from(this.tagCache.entries()).map(([name, files]) => ({ name, files }));
+      }
+
       const response: TagResponse = {
-        tags: Array.from(this.tagCache.entries())
-          .map(([name, files]) => ({
+        tags: filteredTagEntries
+          .map(({ name, files }) => ({ // Map from the potentially filtered structure
             name,
             count: files.size,
             files: Array.from(files).sort()
           }))
-          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)), // Sort filtered results
         metadata: {
-          totalOccurrences: Array.from(this.tagCache.values())
+          // Note: Metadata currently reflects the entire vault cache, even when filtered.
+          // Adjust calculation here if path-specific metadata is desired.
+          totalOccurrences: Array.from(this.tagCache.values()) 
             .reduce((sum, files) => sum + files.size, 0),
           uniqueTags: this.tagCache.size,
           scannedFiles: new Set(

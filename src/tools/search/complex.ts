@@ -210,11 +210,14 @@ export class GetTagsToolHandler extends BaseToolHandler<{path?: string}> {
       const tagMap = new Map<string, Set<string>>();
 
       // Use searchJson to find files with .md extension
+      // Using non-recursive glob first as it seemed more reliable in testing
       const query: JsonLogicQuery = args.path
-        ? { "glob": [`${args.path}/**/*.md`.replace(/\\/g, '/'), { "var": "path" }] }
-        : { "glob": ["**/*.md", { "var": "path" }] };
+        ? { "glob": [`${args.path}/*.md`.replace(/\\/g, '/'), { "var": "path" }] } 
+        : { "glob": ["**/*.md", { "var": "path" }] }; // Keep vault-wide as recursive
 
+      logger.debug(`Constructed glob query: ${JSON.stringify(query)}`);
       const results = await this.client.searchJson(query);
+      logger.debug(`searchJson returned ${results.length} results for the query.`);
       let scannedFiles = 0;
       let processedSuccessfully = 0;
 
