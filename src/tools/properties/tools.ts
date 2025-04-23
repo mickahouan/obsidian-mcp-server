@@ -197,7 +197,8 @@ export class UpdatePropertiesToolHandler extends BaseToolHandler<UpdatePropertie
               },
               tags: {
                 type: "array",
-                items: { type: "string", pattern: "^#" }
+                // Allow tags with or without leading # - manager handles normalization
+                items: { type: "string" } 
               },
               status: {
                 type: "array",

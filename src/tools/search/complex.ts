@@ -25,7 +25,7 @@ function errorToObject(error: unknown): Record<string, unknown> {
   } else if (typeof error === 'object' && error !== null) {
     return error as Record<string, unknown>;
   } else {
-    return { 
+    return {
       error: String(error),
       errorCategory: ErrorCategoryType.CATEGORY_UNKNOWN
     };
@@ -89,15 +89,15 @@ export class ComplexSearchToolHandler extends BaseToolHandler<ComplexSearchArgs>
 
   async runTool(args: ComplexSearchArgs): Promise<Array<any>> {
     logger.startTimer('complex_search');
-    
+
     try {
       logger.debug(`Executing complex search with query: ${JSON.stringify(args.query)}`, {
         queryType: Object.keys(args.query)[0]
       });
-      
+
       // Perform search
       const results = await this.client.searchJson(args.query);
-      
+
       // Format response based on result type
       const formattedResults = results.map(result => {
         if ('matches' in result) {
@@ -121,7 +121,7 @@ export class ComplexSearchToolHandler extends BaseToolHandler<ComplexSearchArgs>
         resultCount: results.length,
         queryType: Object.keys(args.query)[0]
       });
-      
+
       logger.debug(`Complex search found ${results.length} results`);
       return this.createResponse({
         message: `Found ${results.length} result(s)`,
@@ -132,7 +132,7 @@ export class ComplexSearchToolHandler extends BaseToolHandler<ComplexSearchArgs>
       logger.logOperationResult(false, 'complex_search', elapsedMs, {
         queryType: Object.keys(args.query)[0]
       });
-      
+
       logger.error(`Complex search error`, errorToObject(error));
       return this.handleError(error);
     }
@@ -203,53 +203,66 @@ export class GetTagsToolHandler extends BaseToolHandler<{path?: string}> {
   async runTool(args: {path?: string}): Promise<Array<any>> {
     const operationId = `get_tags_${args.path || 'vault'}`;
     logger.startTimer(operationId);
-    
+
     try {
       logger.debug(`Getting tags${args.path ? ` in path: ${args.path}` : ' in whole vault'}`);
-      
+
       const tagMap = new Map<string, Set<string>>();
-      
+
       // Use searchJson to find files with .md extension
       const query: JsonLogicQuery = args.path
         ? { "glob": [`${args.path}/**/*.md`.replace(/\\/g, '/'), { "var": "path" }] }
         : { "glob": ["**/*.md", { "var": "path" }] };
-      
+
       const results = await this.client.searchJson(query);
       let scannedFiles = 0;
       let processedSuccessfully = 0;
-      
+
       // Process each file to extract tags from frontmatter
       for (const result of results) {
         if (!('filename' in result)) continue;
-        
+
         try {
           const content = await this.client.getFileContents(result.filename);
           scannedFiles++;
-          
+
           // Use PropertyManager to properly parse frontmatter
-          const properties = this.propertyManager.parseProperties(content);
-          
-          // Process tags if they exist
-          if (properties.tags && Array.isArray(properties.tags)) {
+          const parseResult = this.propertyManager.parseProperties(content);
+
+          // Check for parsing errors before accessing properties
+          if (parseResult.error) {
+            logger.warn(`Skipping tags for ${result.filename} due to parsing error: ${parseResult.error.message}`);
+            continue; // Skip to the next file
+          }
+
+          // Process tags if they exist in the parsed properties
+          const tags = parseResult.properties.tags;
+          if (tags && Array.isArray(tags)) {
             // Process each tag
-            for (const tag of properties.tags) {
-              const cleanTag = tag.replace(/^#/, ''); // Remove leading # if present
-              if (!tagMap.has(cleanTag)) {
-                tagMap.set(cleanTag, new Set());
+            for (const tag of tags) {
+              // Ensure tag is a string before processing
+              if (typeof tag === 'string') {
+                  const cleanTag = tag.startsWith('#') ? tag.substring(1) : tag; // Use updated internal logic
+                  if (!tagMap.has(cleanTag)) {
+                    tagMap.set(cleanTag, new Set());
+                  }
+                  tagMap.get(cleanTag)!.add(result.filename);
+              } else {
+                 logger.warn(`Non-string tag found in ${result.filename}: ${JSON.stringify(tag)}`);
               }
-              tagMap.get(cleanTag)!.add(result.filename);
             }
           }
           processedSuccessfully++;
         } catch (error) {
           logger.error(`Failed to process file ${result.filename}:`, errorToObject(error));
+          // Continue processing other files even if one fails
         }
       }
-      
+
       // Calculate total occurrences
       const totalOccurrences = Array.from(tagMap.values())
         .reduce((sum, files) => sum + files.size, 0);
-      
+
       const elapsedMs = logger.endTimer(operationId);
       logger.logOperationResult(true, 'get_tags', elapsedMs, {
         uniqueTags: tagMap.size,
@@ -258,7 +271,7 @@ export class GetTagsToolHandler extends BaseToolHandler<{path?: string}> {
         processedSuccessfully,
         searchPath: args.path || 'vault'
       });
-      
+
       return this.createResponse({
         tags: Array.from(tagMap.entries())
           .map(([name, files]) => ({
@@ -271,7 +284,7 @@ export class GetTagsToolHandler extends BaseToolHandler<{path?: string}> {
           totalOccurrences,
           uniqueTags: tagMap.size,
           scannedFiles,
-          lastUpdate: Date.now()
+          lastUpdate: Date.now() // Consider using a more accurate cache update time if available
         }
       });
     } catch (error) {
@@ -280,7 +293,7 @@ export class GetTagsToolHandler extends BaseToolHandler<{path?: string}> {
         searchPath: args.path || 'vault',
         error: errorToObject(error)
       });
-      
+
       return this.handleError(error);
     }
   }

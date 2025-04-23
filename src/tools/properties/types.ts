@@ -26,6 +26,7 @@ export const ObsidianPropertiesSchema = z.object({
   // Basic Metadata
   // Note: Timestamps are managed automatically
   title: z.string().optional(),
+  created: z.string().datetime().optional(), // Read-only, set on first creation
   modified: z.string().datetime().optional(), // Read-only, managed by MCP server
   author: z.string().optional(),
 

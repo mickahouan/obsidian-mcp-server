@@ -89,10 +89,15 @@ export class TagResource {
           const filename = result.filename;
           try {
             // This call is now rate-limited
-            const content = await this.client.getFileContents(filename); 
+            const content = await this.client.getFileContents(filename);
             // Only extract tags from frontmatter YAML
-            const properties = this.propertyManager.parseProperties(content);
-            return { filename, tags: properties.tags || [] };
+            const parseResult = this.propertyManager.parseProperties(content);
+            // Handle potential parsing errors before accessing properties
+            if (parseResult.error) {
+              logger.warn(`Skipping tags for ${filename} due to parsing error: ${parseResult.error.message}`);
+              return { filename, tags: [] }; // Return empty tags on error
+            }
+            return { filename, tags: parseResult.properties.tags || [] };
           } catch (error) {
             logger.error(`Failed to process file ${filename}:`, errorToObject(error));
             return { filename, error: true }; // Mark as failed
