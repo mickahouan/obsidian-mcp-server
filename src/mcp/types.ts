@@ -2,8 +2,6 @@
  * MCP server type definitions
  */
 import { TextContent, Tool } from "@modelcontextprotocol/sdk/types.js";
-import { BaseToolHandler } from "../tools/base.js";
-import { TagResource } from "../resources/tags.js";
 import { ErrorCategoryType, LogLevel, StandardizedErrorObject } from "../utils/logging.js";
 
 /**

@@ -3,8 +3,8 @@
  */
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { ObsidianClient } from "../../obsidian/client.js";
-import { BaseToolHandler } from "../base.js";
 import { createLogger } from "../../utils/logging.js";
+import { BaseToolHandler } from "../base.js";
 
 // Create a logger for search operations
 const logger = createLogger('SimpleSearchTools');

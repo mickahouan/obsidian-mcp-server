@@ -1,11 +1,13 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-04-13 20:39:14
+Generated on: 2025-04-23 03:40:49
 
 
 ```
 obsidian-mcp-server
 ├── backups
+├── docs
+    └── tree.md
 ├── scripts
     ├── clean.ts
     └── tree.ts
@@ -50,6 +52,8 @@ obsidian-mcp-server
     │   └── validation.ts
     └── index.ts
 ├── debug.js
+├── Dockerfile
+├── env.json
 ├── LICENSE
 ├── mcp-client-config.example.json
 ├── package-lock.json

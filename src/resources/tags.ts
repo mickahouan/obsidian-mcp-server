@@ -2,11 +2,11 @@
  * Tag resource implementation
  */
 import { Resource, TextContent } from "@modelcontextprotocol/sdk/types.js";
+import pLimit from 'p-limit'; // Import p-limit
+import { sep } from "path";
 import { ObsidianClient } from "../obsidian/client.js";
 import { JsonLogicQuery } from "../obsidian/types.js";
-import pLimit from 'p-limit'; // Import p-limit
 import { PropertyManager } from "../tools/properties/manager.js";
-import { join, sep } from "path";
 import { createLogger, ErrorCategoryType } from "../utils/logging.js";
 import { TagResponse } from "./types.js";
 

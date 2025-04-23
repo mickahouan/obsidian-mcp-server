@@ -1,8 +1,8 @@
 /**
  * Resources module exports
  */
-export * from './types.js';
 export * from './tags.js';
+export * from './types.js';
 
 import { ObsidianClient } from '../obsidian/client.js';
 import { TagResource } from './tags.js';

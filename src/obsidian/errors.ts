@@ -2,8 +2,8 @@
  * Error handling for Obsidian client
  */
 import { AxiosError } from "axios";
-import { ObsidianError, getErrorCodeFromStatus } from '../utils/errors.js';
 import type { ApiError } from '../utils/errors.js';
+import { ObsidianError, getErrorCodeFromStatus } from '../utils/errors.js';
 
 /**
  * Helper function to create a descriptive error message for SSL certificate issues

@@ -1,19 +1,19 @@
 /**
  * File operation tools exports
  */
-export * from './list.js';
 export * from './content.js';
+export * from './list.js';
 
 import { ObsidianClient } from '../../obsidian/client.js';
-import { 
-  ListFilesInVaultToolHandler, 
-  ListFilesInDirToolHandler 
-} from './list.js';
-import { 
-  GetFileContentsToolHandler, 
-  AppendContentToolHandler, 
-  PatchContentToolHandler 
+import {
+  AppendContentToolHandler,
+  GetFileContentsToolHandler,
+  PatchContentToolHandler
 } from './content.js';
+import {
+  ListFilesInDirToolHandler,
+  ListFilesInVaultToolHandler
+} from './list.js';
 
 /**
  * Create all file-related tool handlers

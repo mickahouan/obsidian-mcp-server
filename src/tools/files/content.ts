@@ -3,8 +3,8 @@
  */
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { ObsidianClient } from "../../obsidian/client.js";
-import { BaseToolHandler } from "../base.js";
 import { createLogger } from "../../utils/logging.js";
+import { BaseToolHandler } from "../base.js";
 
 // Create a logger for file content operations
 const logger = createLogger('FileContentTools');

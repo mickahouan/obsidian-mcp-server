@@ -1,33 +1,33 @@
 /**
  * Obsidian REST API client implementation
  */
-import axios from "axios";
 import type { AxiosInstance, AxiosRequestConfig } from "axios";
-import { Agent } from "node:https";
+import axios from "axios";
 import { readFileSync } from "fs";
-import { fileURLToPath } from 'url';
+import { Agent } from "node:https";
 import { dirname, join } from "path";
+import { fileURLToPath } from 'url';
 
-import { createLogger } from '../utils/logging.js';
 import { ObsidianError } from '../utils/errors.js';
-import { validateFilePath, sanitizeHeader } from '../utils/validation.js';
-import { 
-  ObsidianConfig, 
-  ObsidianServerConfig, 
-  DEFAULT_OBSIDIAN_CONFIG,
-  NoteJson,
-  ObsidianFile,
-  SimpleSearchResult,
-  SearchResponse,
-  JsonLogicQuery,
-  ObsidianStatus,
-  ObsidianCommand,
-  PeriodType
-} from './types.js';
-import { 
-  createMissingAPIKeyMessage, 
-  handleAxiosError 
+import { createLogger } from '../utils/logging.js';
+import { sanitizeHeader, validateFilePath } from '../utils/validation.js';
+import {
+  createMissingAPIKeyMessage,
+  handleAxiosError
 } from './errors.js';
+import {
+  DEFAULT_OBSIDIAN_CONFIG,
+  JsonLogicQuery,
+  NoteJson,
+  ObsidianCommand,
+  ObsidianConfig,
+  ObsidianFile,
+  ObsidianServerConfig,
+  ObsidianStatus,
+  PeriodType,
+  SearchResponse,
+  SimpleSearchResult
+} from './types.js';
 
 // Logger for the ObsidianClient
 const logger = createLogger('ObsidianClient');

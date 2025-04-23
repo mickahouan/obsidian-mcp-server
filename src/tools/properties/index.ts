@@ -1,9 +1,9 @@
 /**
  * Properties module exports
  */
-export * from './types.js';
 export * from './manager.js';
 export * from './tools.js';
+export * from './types.js';
 
 import { ObsidianClient } from '../../obsidian/client.js';
 import { GetPropertiesToolHandler, UpdatePropertiesToolHandler } from './tools.js';

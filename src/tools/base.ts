@@ -1,12 +1,12 @@
 /**
  * Base class for all tool handlers
  */
-import { Tool, TextContent, ImageContent, EmbeddedResource } from "@modelcontextprotocol/sdk/types.js";
+import { TextContent, Tool } from "@modelcontextprotocol/sdk/types.js";
+import { McpErrorCode } from "../mcp/types.js";
 import { ObsidianClient } from "../obsidian/client.js";
 import { ObsidianError } from "../utils/errors.js";
-import { tokenCounter } from "../utils/tokenization.js";
 import { createLogger, ErrorCategoryType } from "../utils/logging.js";
-import { McpErrorCode } from "../mcp/types.js";
+import { tokenCounter } from "../utils/tokenization.js";
 
 // Create a logger for tool operations
 const logger = createLogger('Tools');

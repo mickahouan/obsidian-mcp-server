@@ -4,9 +4,9 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { ObsidianClient } from "../../obsidian/client.js";
 import { JsonLogicQuery } from "../../obsidian/types.js";
-import { PropertyManager } from "../properties/manager.js";
-import { BaseToolHandler } from "../base.js";
 import { createLogger, ErrorCategoryType } from "../../utils/logging.js";
+import { BaseToolHandler } from "../base.js";
+import { PropertyManager } from "../properties/manager.js";
 
 // Create a logger for complex search operations
 const logger = createLogger('ComplexSearchTools');

@@ -1,25 +1,25 @@
 /**
  * MCP server implementation
  */
-import { config } from "dotenv";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { config } from "dotenv";
+import { ObsidianClient } from "../obsidian/client.js";
+import { createTagResource } from "../resources/index.js";
+import { createToolHandlerMap, createToolHandlers } from "../tools/index.js";
 import { ObsidianError } from "../utils/errors.js"; // Import ObsidianError
 import { createLogger, ErrorCategoryType } from "../utils/logging.js";
 import { rateLimiter } from "../utils/rate-limiting.js";
-import { createTagResource } from "../resources/index.js";
-import { createToolHandlers, createToolHandlerMap } from "../tools/index.js";
-import { ObsidianClient } from "../obsidian/client.js";
-import { 
-  setupToolListingHandler, 
-  setupToolCallingHandler, 
-  setupResourceListingHandler, 
-  setupResourceReadingHandler 
+import {
+  setupResourceListingHandler,
+  setupResourceReadingHandler,
+  setupToolCallingHandler,
+  setupToolListingHandler
 } from "./handlers.js";
-import { 
-  McpServerConfig, 
-  ResourceMap,
-  McpErrorCode 
+import {
+  McpErrorCode,
+  McpServerConfig,
+  ResourceMap
 } from "./types.js";
 
 // Create a logger for the server

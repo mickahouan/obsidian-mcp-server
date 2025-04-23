@@ -1,29 +1,26 @@
 /**
  * MCP server request handlers
  */
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
-  Tool,
-  TextContent,
-  ListToolsRequestSchema,
   CallToolRequestSchema,
   ListResourcesRequestSchema,
-  ReadResourceRequestSchema
+  ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+  Tool
 } from "@modelcontextprotocol/sdk/types.js";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { BaseToolHandler } from "../tools/base.js";
 import { ObsidianError } from "../utils/errors.js";
-import { validateToolArguments } from "../utils/validation.js";
-import { rateLimiter } from "../utils/rate-limiting.js";
-import { 
-  createLogger, 
+import {
+  createLogger,
   ErrorCategoryType
 } from "../utils/logging.js";
-import { 
-  DEFAULT_TIMEOUT_CONFIG, 
-  McpErrorCode,
-  createFailureResult, 
-  createSuccessResult
+import { rateLimiter } from "../utils/rate-limiting.js";
+import { validateToolArguments } from "../utils/validation.js";
+import {
+  DEFAULT_TIMEOUT_CONFIG,
+  McpErrorCode
 } from "./types.js";
-import { BaseToolHandler } from "../tools/base.js";
 
 // Create a logger for request handlers
 const logger = createLogger('McpHandlers');

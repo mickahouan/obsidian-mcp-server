@@ -17,7 +17,7 @@
     "tree": "npx ts-node --esm scripts/tree.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.1",
+    "@modelcontextprotocol/sdk": "^1.10.2",
     "@types/node": "^22.14.1",
     "@typescript-eslint/eslint-plugin": "^8.31.0",
     "@typescript-eslint/parser": "^8.31.0",
@@ -29,7 +29,7 @@
     "nanoid": "^5.1.5",
     "p-limit": "^6.2.0",
     "prettier": "^3.5.3",
-    "tiktoken": "^1.0.20",
+    "tiktoken": "^1.0.21",
     "typescript": "^5.8.3",
     "winston": "^3.17.0",
     "yaml": "^2.7.1",

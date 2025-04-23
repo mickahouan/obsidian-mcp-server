@@ -1,17 +1,17 @@
 /**
  * Tools module exports
  */
+import { ObsidianClient } from '../obsidian/client.js';
 import { BaseToolHandler } from './base.js';
 import { createFileToolHandlers } from './files/index.js';
-import { createSearchToolHandlers } from './search/index.js';
 import { createPropertyToolHandlers } from './properties/index.js';
-import { ObsidianClient } from '../obsidian/client.js';
+import { createSearchToolHandlers } from './search/index.js';
 
 // Export the base handler and all submodules
 export * from './base.js';
 export * from './files/index.js';
-export * from './search/index.js';
 export * from './properties/index.js';
+export * from './search/index.js';
 
 /**
  * Create all tool handlers

@@ -1,12 +1,12 @@
 /**
  * Property-related tool implementations
  */
-import { Tool, TextContent } from "@modelcontextprotocol/sdk/types.js";
+import { TextContent, Tool } from "@modelcontextprotocol/sdk/types.js";
 import { ObsidianClient } from "../../obsidian/client.js";
+import { createLogger, ErrorCategoryType } from "../../utils/logging.js";
 import { BaseToolHandler } from "../base.js";
 import { PropertyManager } from "./manager.js";
 import { ObsidianProperties } from "./types.js";
-import { createLogger, ErrorCategoryType } from "../../utils/logging.js";
 
 // Create a logger for property tools
 const logger = createLogger('PropertyTools');
