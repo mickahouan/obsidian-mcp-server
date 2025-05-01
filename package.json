@@ -16,6 +16,9 @@
     "rebuild": "npm run clean && npm run build",
     "tree": "npx ts-node --esm scripts/tree.ts"
   },
+  "bin": {
+    "obsidian-mcp-server": "build/index.js"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@types/node": "^22.14.1",
