@@ -2,7 +2,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
 [![Model Context Protocol](https://img.shields.io/badge/MCP-1.10.2-green.svg)](https://modelcontextprotocol.io/)
-[![Version](https://img.shields.io/badge/Version-1.5.7-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Version](https://img.shields.io/badge/Version-1.5.8-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Status](https://img.shields.io/badge/Status-Stable-green.svg)]()
 [![GitHub](https://img.shields.io/github/stars/cyanheads/obsidian-mcp-server?style=social)](https://github.com/cyanheads/obsidian-mcp-server)
 
@@ -14,7 +14,9 @@ Requires the [Local REST API plugin](https://github.com/coddingtonbear/obsidian-
 
 ## 📋 Table of Contents
 
-[Features](#-features) | [Installation](#-installation) | [Configuration](#-configuration) | [Tools](#-tools) | [Resources](#-resources) | [Project Structure](#-project-structure) | [Contributing](#-contributing) | [Publishing](#-publishing) | [License](#-license)
+[Features](#-features) | [Installation](#-installation) | [Configuration](#-configuration) |
+[Tools](#-tools) | [Resources](#-resources) | [Project Structure](#-project-structure) |
+[Contributing](#-contributing) | [Publishing](#-publishing) | [License](#-license)
 
 ## ✨ Features
 
@@ -37,7 +39,9 @@ Note: Requires Node.js and the [Local REST API plugin](https://github.com/coddin
     npm install
     npm run build
     ```
-3.  Configure the server using environment variables and run it using `node build/index.js` (see Configuration section below).
+3.  Configure the server using environment variables (see Configuration section below).
+
+4.  Configure your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mcp_settings.json`) to include the server. See the Configuration section for details.
 
 ### Option 2: Install via npm (as a dependency or globally)
 
@@ -52,7 +56,7 @@ Note: Requires Node.js and the [Local REST API plugin](https://github.com/coddin
     npm install -g obsidian-mcp-server
     ```
 
-3.  Configure the server using environment variables and run it (see Configuration section below).
+3.  Configure your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mcp_settings.json`) to include the server. See the Configuration section for details.
 
 ## ⚙️ Configuration
 
@@ -63,7 +67,7 @@ Add to your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mc
   "mcpServers": {
     "obsidian-mcp-server": {
       "command": "node",
-      "args": ["/path/to/obsidian-mcp-server/build/index.js"],
+      "args": ["/path/to/obsidian-mcp-server/dist/index.js"],
       "env": {
         "OBSIDIAN_API_KEY": "your_api_key_here",
         "VERIFY_SSL": "false",

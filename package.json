@@ -1,23 +1,36 @@
 {
   "name": "obsidian-mcp-server",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "description": "Model Context Protocol (MCP) server designed for LLMs to interact with Obsidian vaults. Provides secure, token-aware tools for seamless knowledge base management through a standardized interface.",
-  "main": "build/index.js",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "obsidian-mcp-server": "dist/index.js"
+  },
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/cyanheads/obsidian-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cyanheads/obsidian-mcp-server/issues"
+  },
+  "homepage": "https://github.com/cyanheads/obsidian-mcp-server#readme",
   "scripts": {
     "build": "tsc",
-    "postbuild": "node -e \"if (process.platform !== 'win32') require('fs').chmodSync('build/index.js', '755')\"",
-    "start": "node build/index.js",
+    "postbuild": "node -e \"if (process.platform !== 'win32') require('fs').chmodSync('dist/index.js', '755')\"",
+    "start": "node dist/index.js",
+    "start:stdio": "LOG_LEVEL=debug MCP_TRANSPORT_TYPE=stdio node dist/index.js",
+    "start:http": "LOG_LEVEL=debug MCP_TRANSPORT_TYPE=http node dist/index.js",
     "dev": "tsc -w",
     "clean": "npx ts-node scripts/clean.ts",
     "rebuild": "npm run clean && npm run build",
     "tree": "npx ts-node --esm scripts/tree.ts"
-  },
-  "bin": {
-    "obsidian-mcp-server": "build/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
@@ -25,6 +38,7 @@
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "axios": "^1.9.0",
+    "chrono-node": "^2.8.0",
     "dotenv": "^16.5.0",
     "eslint": "^9.25.1",
     "eslint-config-prettier": "^10.1.2",
@@ -46,16 +60,13 @@
     "ai",
     "claude",
     "model-context-protocol",
-    "tiktoken"
+    "mcp-server",
+    "typescript",
+    "template",
+    "AI-integration",
+    "server",
+    "knowledge-base"
   ],
-  "author": "cyanheads",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/cyanheads/obsidian-mcp-server.git"
-  },
-  "bugs": {
-    "url": "https://github.com/cyanheads/obsidian-mcp-server/issues"
-  },
-  "homepage": "https://github.com/cyanheads/obsidian-mcp-server#readme"
+  "author": "Casey Hand @cyanheads",
+  "license": "Apache-2.0"
 }
