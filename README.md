@@ -2,7 +2,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
 [![Model Context Protocol](https://img.shields.io/badge/MCP-1.10.2-green.svg)](https://modelcontextprotocol.io/)
-[![Version](https://img.shields.io/badge/Version-1.5.6-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Version](https://img.shields.io/badge/Version-1.5.7-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Status](https://img.shields.io/badge/Status-Stable-green.svg)]()
 [![GitHub](https://img.shields.io/github/stars/cyanheads/obsidian-mcp-server?style=social)](https://github.com/cyanheads/obsidian-mcp-server)
 
@@ -10,55 +10,51 @@ A Model Context Protocol server designed for LLMs to interact with Obsidian vaul
 
 The Model Context Protocol (MCP) enables AI models to interact with external tools and resources through a standardized interface.
 
-Requires the Local REST API plugin in Obsidian.
+Requires the [Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) in Obsidian.
 
-## Features
+## 📋 Table of Contents
 
-### File Operations
+[Features](#-features) | [Installation](#-installation) | [Configuration](#-configuration) | [Tools](#-tools) | [Resources](#-resources) | [Project Structure](#-project-structure) | [Contributing](#-contributing) | [Publishing](#-publishing) | [License](#-license)
 
-- Atomic file/directory operations with validation
-- Resource monitoring and cleanup
-- Error handling and graceful failure
+## ✨ Features
 
-### Search System
+- **File Operations**: Atomic file/directory operations with validation, resource monitoring, and error handling.
+- **Search System**: Full-text search with configurable context, advanced JsonLogic queries, glob patterns, and frontmatter field support.
+- **Property Management**: YAML frontmatter parsing, intelligent merging, automatic timestamps, and custom field support.
+- **Security & Performance**: API key authentication, rate limiting, SSL options, resource monitoring, and graceful shutdown.
 
-- Full-text search with configurable context
-- Advanced JsonLogic queries for files, tags, and metadata
-- Support for glob patterns and frontmatter fields
+## 🚀 Installation
 
-### Property Management
+Note: Requires Node.js and the [Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) enabled in Obsidian.
 
-- YAML frontmatter parsing and intelligent merging
-- Automatic timestamps (created by Obsidian, modified by server)
-- Custom field support
+### Option 1: Clone and Build (for development or direct use)
 
-### Security & Performance
+1.  Enable the Local REST API plugin in Obsidian.
+2.  Clone the repository, install dependencies, and build the project:
+    ```bash
+    git clone git@github.com:cyanheads/obsidian-mcp-server.git
+    cd obsidian-mcp-server
+    npm install
+    npm run build
+    ```
+3.  Configure the server using environment variables and run it using `node build/index.js` (see Configuration section below).
 
-- API key auth with rate limiting and SSL options
-- Resource monitoring and health checks
-- Graceful shutdown handling
+### Option 2: Install via npm (as a dependency or globally)
 
-## Installation
+1.  Enable the Local REST API plugin in Obsidian.
+2.  Install the package using npm:
 
-Note: Requires Node.js
+    ```bash
+    # Install locally (e.g., within another project)
+    npm install obsidian-mcp-server
 
-1. Enable Local REST API plugin in Obsidian
-2. Clone and build:
+    # Or install globally
+    npm install -g obsidian-mcp-server
+    ```
 
-```bash
-git clone git@github.com:cyanheads/obsidian-mcp-server.git
-cd obsidian-mcp-server
-npm install
-npm run build
-```
+3.  Configure the server using environment variables and run it (see Configuration section below).
 
-Or install from npm:
-
-```bash
-npm install obsidian-mcp-server
-```
-
-## Configuration
+## ⚙️ Configuration
 
 Add to your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mcp_settings.json`):
 
@@ -86,35 +82,42 @@ Add to your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mc
 }
 ```
 
-Environment Variables:
+**Environment Variables:**
 
-Required:
+- `OBSIDIAN_API_KEY` (Required): Your API key from Obsidian's Local REST API plugin settings.
+- `VERIFY_SSL` (Default: `false`): Enable SSL verification. Set to `false` for self-signed certificates or local use.
+- `OBSIDIAN_PROTOCOL` (Default: `"https"`): Protocol (`http` or `https`).
+- `OBSIDIAN_HOST` (Default: `"127.0.0.1"`): Host address.
+- `OBSIDIAN_PORT` (Default: `27124`): Port number.
+- `REQUEST_TIMEOUT` (Default: `5000`): Request timeout (ms).
+- `MAX_CONTENT_LENGTH` (Default: `52428800` [50MB]): Max response content length (bytes).
+- `MAX_BODY_LENGTH` (Default: `52428800` [50MB]): Max request body length (bytes).
+- `RATE_LIMIT_WINDOW_MS` (Default: `900000` [15 min]): Rate limit window (ms).
+- `RATE_LIMIT_MAX_REQUESTS` (Default: `200`): Max requests per window.
+- `TOOL_TIMEOUT_MS` (Default: `60000` [1 min]): Tool execution timeout (ms).
 
-- `OBSIDIAN_API_KEY`: Your API key from Obsidian's Local REST API plugin settings
+## 🛠️ Tools
 
-Connection Settings:
+| Tool                             | Description                                                                                                                                                                                                                                                                                                                                   | Parameters                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **obsidian_list_files_in_vault** | Lists all files and directories within the root of your Obsidian vault. Returns a hierarchical structure detailing files, folders, and their types.                                                                                                                                                                                           | None                                                                                                                                                                                                                                                                                         |
+| **obsidian_list_files_in_dir**   | Lists files and directories within a specific folder in your Obsidian vault. Returns a hierarchical structure. Note: Empty directories may not be included in the results. Useful for exploring vault organization.                                                                                                                           | `dirpath*`: Path to list files from (relative to vault root). Note that empty directories will not be returned.                                                                                                                                                                              |
+| **obsidian_get_file_contents**   | Retrieves the full content of a specified file within your Obsidian vault. Supports various readable file formats.                                                                                                                                                                                                                            | `filepath*`: Path to the relevant file (relative to your vault root).                                                                                                                                                                                                                        |
+| **obsidian_append_content**      | Appends the provided content to the end of a specified file in the vault. If the file does not exist, it will be created.                                                                                                                                                                                                                     | `filepath*`: Path to the file (relative to vault root)<br>`content*`: Content to append to the file                                                                                                                                                                                          |
+| **obsidian_update_content**      | Overwrites the entire content of a specified file in the vault with the provided content. If the file does not exist, it will be created.                                                                                                                                                                                                     | `filepath*`: Path to the file (relative to vault root)<br>`content*`: The new, complete content for the file (overwrites existing content).                                                                                                                                                  |
+| **obsidian_find_in_file**        | Performs a full-text search across all files in your Obsidian vault. Returns matching files with context around each match. If more than 5 files match, only filenames and match counts are returned to avoid excessive output. Ideal for locating specific text, tags, or patterns.                                                          | `query*`: Text pattern to search for. Can include tags, keywords, or phrases.<br>`contextLength`: Number of characters surrounding each match to provide context (default: 10).                                                                                                              |
+| **obsidian_complex_search**      | Finds files based on path patterns using JsonLogic queries. Primarily supports `glob` for pattern matching (e.g., '\*.md') and `var` for accessing the 'path' variable. Note: For content-based searches (full-text, tags within content, dates), use `obsidian_find_in_file`.                                                                | `query*`: A JsonLogic query object targeting file paths. Example: `{"glob": ["*.md", {"var": "path"}]}` matches all markdown files.                                                                                                                                                          |
+| **obsidian_get_tags**            | Retrieves all tags defined in the YAML frontmatter of markdown files within your Obsidian vault, along with their usage counts and associated file paths. Optionally, limit the search to a specific folder.                                                                                                                                  | `path`: Optional folder path (relative to vault root) to restrict the tag search.                                                                                                                                                                                                            |
+| **obsidian_get_properties**      | Retrieves properties (like title, tags, status) from the YAML frontmatter of a specified Obsidian note. Returns all defined properties, including any custom fields.                                                                                                                                                                          | `filepath*`: Path to the note file (relative to vault root)                                                                                                                                                                                                                                  |
+| **obsidian_update_properties**   | Updates properties within the YAML frontmatter of a specified Obsidian note. By default, array properties (like tags, type, status) are merged; use the 'replace' option to overwrite them instead. Handles custom fields and manages timestamps automatically. See schema for supported standard fields (title, author, tags, status, etc.). | `filepath*`: Path to the note file (relative to vault root)<br>`properties*`: Properties to update<br>`replace`: If true, array properties (like tags, status) will be completely replaced with the provided values instead of being merged with existing values. Defaults to false (merge). |
 
-- `VERIFY_SSL`: Enable SSL certificate verification (default: false) # This must be set to false for self-signed certificates. If you are running locally or don't understand what this means, this should be set to false.
-- `OBSIDIAN_PROTOCOL`: Protocol to use (default: "https")
-- `OBSIDIAN_HOST`: Host address (default: "127.0.0.1")
-- `OBSIDIAN_PORT`: Port number (default: 27124)
+## 🔗 Resources
 
-Request Limits:
+| Resource            | Description                                                             | Returns          |
+| ------------------- | ----------------------------------------------------------------------- | ---------------- |
+| **obsidian://tags** | List of all tags used across the Obsidian vault with their usage counts | application/json |
 
-- `REQUEST_TIMEOUT`: Request timeout in milliseconds (default: 5000)
-- `MAX_CONTENT_LENGTH`: Maximum response content length in bytes (default: 52428800 [50MB])
-- `MAX_BODY_LENGTH`: Maximum request body length in bytes (default: 52428800 [50MB])
-
-Rate Limiting:
-
-- `RATE_LIMIT_WINDOW_MS`: Rate limit window in milliseconds (default: 900000 [15 minutes])
-- `RATE_LIMIT_MAX_REQUESTS`: Maximum requests per window (default: 200)
-
-Tool Execution:
-
-- `TOOL_TIMEOUT_MS`: Tool execution timeout in milliseconds (default: 60000 [1 minute])
-
-## Project Structure
+## 📁 Project Structure
 
 The project follows a modular architecture with clear separation of concerns:
 
@@ -131,140 +134,7 @@ src/
   └── utils/            # Shared utilities
 ```
 
-## Tools
-
-### File Management
-
-```typescript
-// List vault contents
-obsidian_list_files_in_vault: {
-}
-
-// List directory contents
-obsidian_list_files_in_dir: {
-  dirpath: string; // Path relative to vault root
-}
-
-// Get file contents
-obsidian_get_file_contents: {
-  filepath: string; // Path relative to vault root
-}
-```
-
-### Search Operations
-
-```typescript
-// Text search with context
-obsidian_find_in_file: {
-  query: string,
-  contextLength?: number  // Default: 10
-}
-
-// Advanced search with JsonLogic
-obsidian_complex_search: {
-  query: JsonLogicQuery
-  // Examples:
-  // Find by tag:
-  // {"in": ["#mytag", {"var": "frontmatter.tags"}]}
-  //
-  // Find markdown files in a directory:
-  // {"glob": ["docs/*.md", {"var": "path"}]}
-  //
-  // Combine conditions:
-  // {"and": [
-  //   {"glob": ["*.md", {"var": "path"}]},
-  //   {"in": ["#mytag", {"var": "frontmatter.tags"}]}
-  // ]}
-}
-
-// Get all tags in vault or directory
-obsidian_get_tags: {
-  path?: string  // Optional: limit to specific directory
-}
-```
-
-### Content Modification
-
-```typescript
-// Append to file
-obsidian_append_content: {
-  filepath: string,  // Path relative to vault root
-  content: string    // Content to append
-}
-
-// Update file content
-obsidian_patch_content: {
-  filepath: string,  // Path relative to vault root
-  content: string    // New content (replaces existing)
-}
-```
-
-### Property Management
-
-```typescript
-// Get note properties
-obsidian_get_properties: {
-  filepath: string  // Path relative to vault root
-}
-
-// Update note properties
-obsidian_update_properties: {
-  filepath: string,  // Path relative to vault root
-  properties: {
-    title?: string,
-    author?: string,
-    // Note: created/modified timestamps are managed automatically
-    type?: Array<"concept" | "architecture" | "specification" |
-      "protocol" | "api" | "research" | "implementation" |
-      "guide" | "reference">,
-    tags?: string[],  // Must start with #
-    status?: Array<"draft" | "in-progress" | "review" | "complete">,
-    version?: string,
-    platform?: string,
-    repository?: string,  // URL
-    dependencies?: string[],
-    sources?: string[],
-    urls?: string[],      // URLs
-    papers?: string[],
-    custom?: Record<string, unknown>
-  }
-}
-```
-
-## Best Practices
-
-### File Operations
-
-- Use atomic operations with validation
-- Handle errors and monitor performance
-
-### Search Implementation
-
-- Use appropriate search tool for the task:
-  - obsidian_find_in_file for text search
-  - obsidian_complex_search for metadata/tag filtering
-- Keep context size reasonable (default: 10 chars)
-
-### Property Management
-
-- Use appropriate types and validate updates
-- Handle arrays and custom fields properly
-- Never set timestamps (managed automatically)
-
-### Error Prevention
-
-- Validate inputs and handle errors gracefully
-- Monitor patterns and respect rate limits
-
-## Resources
-
-The MCP server exposes the following resources:
-
-```
-obsidian://tags  # List of all tags used across the vault
-```
-
-## Contributing
+## 👥 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -272,19 +142,9 @@ obsidian://tags  # List of all tags used across the vault
 
 For bugs and features, create an issue at [https://github.com/cyanheads/obsidian-mcp-server/issues](https://github.com/cyanheads/obsidian-mcp-server/issues).
 
-## Publishing
+## 📄 License
 
-The package is automatically published to npm when version tags are pushed:
-
-```bash
-# Update version in package.json
-npm version patch  # or minor, or major
-git push --follow-tags
-```
-
-This will trigger the GitHub Action to build and publish the package.
-
-## License
+[![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Apache License 2.0
 
