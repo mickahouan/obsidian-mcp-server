@@ -1,6 +1,6 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-05-04 23:02:25
+Generated on: 2025-05-11 20:31:35
 
 
 ```
@@ -72,6 +72,7 @@ obsidian-mcp-server
     │   └── errors.ts
     ├── utils
     │   ├── internal
+    │   │   ├── asyncUtils.ts
     │   │   ├── errorHandler.ts
     │   │   ├── index.ts
     │   │   ├── logger.ts
@@ -95,14 +96,17 @@ obsidian-mcp-server
     ├── .DS_Store
     └── index.ts
 ├── .clinerules
+├── CHANGELOG.md
 ├── Dockerfile
 ├── env.json
 ├── LICENSE
 ├── mcp-client-config.example.json
+├── mcp.json
 ├── package-lock.json
 ├── package.json
 ├── README.md
 ├── repomix.config.json
+├── smithery.yaml
 ├── tsconfig.json
 └── typedoc.json
 
