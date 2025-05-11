@@ -19,7 +19,9 @@ try {
 } catch (error) {
   // Silently use default pkg info if reading fails.
   // Consider adding logging here if robust error handling is needed.
-  console.error("Warning: Could not read package.json for default config values.", error);
+  if (process.stderr.isTTY) {
+    console.error("Warning: Could not read package.json for default config values.", error);
+  }
 }
 
 // Define a schema for environment variables for validation and type safety
@@ -46,17 +48,15 @@ const EnvSchema = z.object({
 const parsedEnv = EnvSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error("❌ Invalid environment variables:", parsedEnv.error.flatten().fieldErrors);
-  // For critical configs like the API key, throw an error if validation fails.
-  throw new Error(`Invalid environment configuration: ${JSON.stringify(parsedEnv.error.flatten().fieldErrors)}`);
+  const errorDetails = parsedEnv.error.flatten().fieldErrors;
+  // Only log detailed errors to console if it's an interactive TTY session.
+  // Otherwise, the raw output might interfere with programmatic consumers (e.g., MCP client via stdio).
+  if (process.stderr.isTTY) {
+    console.error("❌ Invalid environment variables:", errorDetails);
+  }
+  // For critical configs, always throw an error if validation fails, so the process terminates.
+  throw new Error(`Invalid environment configuration. Please check your .env file or environment variables. Details: ${JSON.stringify(errorDetails)}`);
 }
-
-// Check specifically for OBSIDIAN_API_KEY after successful parsing, as it's critical
-if (!parsedEnv.data.OBSIDIAN_API_KEY) {
-    console.error("❌ Missing critical environment variable: OBSIDIAN_API_KEY");
-    throw new Error("OBSIDIAN_API_KEY environment variable is required but not set.");
-}
-
 
 const env = parsedEnv.data; // Use the validated data
 

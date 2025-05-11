@@ -71,10 +71,14 @@ const logsDir = path.join(projectRoot, 'logs');
 const resolvedLogsDir = path.resolve(logsDir);
 const isLogsDirSafe = resolvedLogsDir === projectRoot || resolvedLogsDir.startsWith(projectRoot + path.sep);
 if (!isLogsDirSafe) {
-  // Use console.error here as logger might not be initialized or safe
-  console.error(
-    `FATAL: logs directory "${resolvedLogsDir}" is outside project root "${projectRoot}". File logging disabled.`
-  );
+  // Use console.error here as logger might not be initialized or safe.
+  // Guard with TTY check to prevent breaking stdio transport.
+  if (process.stderr.isTTY) {
+    console.error(
+      `FATAL: logs directory "${resolvedLogsDir}" is outside project root "${projectRoot}". File logging will be disabled.`
+    );
+  }
+  // File logging will be disabled naturally as transports won't be added for unsafe dir.
 }
 
 /**
@@ -109,8 +113,23 @@ class Logger {
       try {
         if (!fs.existsSync(resolvedLogsDir)) {
           fs.mkdirSync(resolvedLogsDir, { recursive: true });
-          if (process.stdout.isTTY) console.log(`Created logs directory: ${resolvedLogsDir}`);
+          if (process.stdout.isTTY) console.log(`[Logger.initialize] Created logs directory: ${resolvedLogsDir}`);
         }
+
+        // --- DIAGNOSTIC FILE WRITE ---
+        try {
+          const testFilePath = path.join(resolvedLogsDir, 'startup_test.log');
+          fs.writeFileSync(testFilePath, `Logger initialize diagnostic: Basic file write OK at ${new Date().toISOString()}\n`);
+          if (process.stdout.isTTY) console.log(`[Logger.initialize] Successfully wrote diagnostic file: ${testFilePath}`);
+        } catch (diagError: any) {
+          if (process.stdout.isTTY) {
+            console.error(`[Logger.initialize] CRITICAL: Failed to write diagnostic file to ${resolvedLogsDir}. Error: ${diagError.message}. This may indicate a filesystem or permissions issue.`);
+          }
+          // This is a critical failure for logging, but we might not want to crash the app here,
+          // rather let Winston setup proceed (it will likely also fail to write).
+        }
+        // --- END DIAGNOSTIC FILE WRITE ---
+
       } catch (err: any) {
         if (process.stdout.isTTY) {
             console.error(
