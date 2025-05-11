@@ -212,15 +212,11 @@ export const processObsidianReadFile = async (
 
     // Populate response based on requested format
     if (requestedFormat === 'json') {
-        // Return the full NoteJson object, but replace its internal stat with the formatted one for consistency.
-        // Also include the formatted stat at the top level of the response.
-        if (noteJson.stat && formattedStat) {
-             // Modify the NoteJson object directly (use 'any' cast or define a specific type if preferred)
-             (noteJson as any).stat = formattedStat;
-        }
+        // Return the full NoteJson object. Its internal 'stat' will remain numeric.
+        // The formatted stats are provided in the top-level 'response.stats'.
         response.content = noteJson;
         response.stats = formattedStat; // Always include formatted stat at top level for JSON format
-        logger.debug(`Response format set to JSON, including full NoteJson and formatted stat.`, formatContext);
+        logger.debug(`Response format set to JSON, including full NoteJson (with original numeric stat) and top-level formatted stat.`, formatContext);
     } else { // 'markdown' format
         response.content = noteJson.content ?? ''; // Extract the markdown content string
         if (includeStat && formattedStat) {

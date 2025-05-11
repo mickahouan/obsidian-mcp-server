@@ -1,4 +1,4 @@
-import path from 'node:path'; // Using POSIX path functions for vault path manipulation
+import path from 'node:path'; // node:path provides OS-specific path functions; using path.posix for vault path manipulation.
 import { z } from 'zod';
 import { ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
 import { BaseErrorCode, McpError } from '../../../types-global/errors.js';
