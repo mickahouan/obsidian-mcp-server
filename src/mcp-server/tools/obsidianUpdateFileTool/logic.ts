@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { NoteJson, ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
 import { BaseErrorCode, McpError } from '../../../types-global/errors.js';
-import { createFormattedStatWithTokenCount, logger, RequestContext } from '../../../utils/index.js';
+import { createFormattedStatWithTokenCount, logger, RequestContext, retryWithDelay } from '../../../utils/index.js';
 
 // ====================================================================================
 // Schema Definitions for Input Validation
@@ -273,27 +273,57 @@ export const processObsidianUpdateFile = async (
     let existsBefore = false;
     const checkContext = { ...context, operation: 'existenceCheck' };
     logger.debug(`Checking existence of target: ${params.targetType} ${targetId ?? '(active)'}`, checkContext);
+
     try {
-        if (params.targetType === 'filePath' && targetId) {
-            await obsidianService.getFileContent(targetId, 'json', checkContext); // Use 'json' to get stat if needed later, implicitly checks existence
-            existsBefore = true;
-        } else if (params.targetType === 'activeFile') {
-            await obsidianService.getActiveFile('json', checkContext); // Active file must exist if API call succeeds
-            existsBefore = true;
-        } else if (params.targetType === 'periodicNote' && targetPeriod) {
-            await obsidianService.getPeriodicNote(targetPeriod, 'json', checkContext); // Check existence
-            existsBefore = true;
+      await retryWithDelay(
+        async () => {
+          if (params.targetType === 'filePath' && targetId) {
+            await obsidianService.getFileContent(targetId, 'json', checkContext);
+          } else if (params.targetType === 'activeFile') {
+            await obsidianService.getActiveFile('json', checkContext);
+          } else if (params.targetType === 'periodicNote' && targetPeriod) {
+            await obsidianService.getPeriodicNote(targetPeriod, 'json', checkContext);
+          }
+          // If any of the above succeed without throwing, the target exists.
+          existsBefore = true;
+          logger.debug(`Target exists before operation.`, checkContext);
+        },
+        {
+          operationName: 'existenceCheckObsidianUpdateFile',
+          context: checkContext,
+          maxRetries: 3, // Total attempts: 1 initial + 2 retries
+          delayMs: 250,
+          shouldRetry: (error: unknown) => {
+            // Only retry if it's a NOT_FOUND error AND createIfNeeded is true.
+            // If createIfNeeded is false, a NOT_FOUND error means we shouldn't proceed, so don't retry.
+            const should = error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND && params.createIfNeeded;
+            if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
+                logger.debug(`existenceCheckObsidianUpdateFile: shouldRetry=${should} for NOT_FOUND (createIfNeeded: ${params.createIfNeeded})`, checkContext);
+            }
+            return should;
+          },
+          onRetry: (attempt, error) => {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            logger.warning(
+              `Existence check (attempt ${attempt}) failed for target '${params.targetType} ${targetId ?? ''}'. Error: ${errorMsg}. Retrying as createIfNeeded is true...`,
+              checkContext
+            );
+          },
         }
-        logger.debug(`Target exists before operation.`, checkContext);
+      );
     } catch (error) {
-        if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
-            existsBefore = false; // Target does not exist
-            logger.debug(`Target does not exist before operation.`, checkContext);
-        } else {
-            // Re-throw unexpected errors during the existence check
-            logger.error(`Unexpected error during existence check`, error instanceof Error ? error : undefined, checkContext);
-            throw error;
-        }
+      // This catch block is primarily for the case where retryWithDelay itself throws
+      // (e.g., all retries exhausted for NOT_FOUND with createIfNeeded=true, or an unretryable error occurred).
+      if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
+        // If it's still NOT_FOUND after retries (or if createIfNeeded was false and it failed the first time),
+        // then existsBefore should definitely be false.
+        existsBefore = false;
+        logger.debug(`Target confirmed not to exist after existence check attempts (createIfNeeded: ${params.createIfNeeded}).`, checkContext);
+      } else {
+        // For any other error type, re-throw it as it's unexpected here.
+        logger.error(`Unexpected error after existence check retries`, error instanceof Error ? error : undefined, checkContext);
+        throw error;
+      }
     }
 
     // --- Step 2: Perform Safety and Configuration Checks ---
@@ -387,8 +417,51 @@ export const processObsidianUpdateFile = async (
     }
 
     // --- Step 4: Get Final State (Stat and Optional Content) ---
+    // Add a small delay before attempting to get the final state, to allow Obsidian API to stabilize after write.
+    const POST_UPDATE_DELAY_MS = 500;
+    logger.debug(`Waiting ${POST_UPDATE_DELAY_MS}ms before retrieving final state...`, { ...context, operation: 'postUpdateDelay' });
+    await new Promise(resolve => setTimeout(resolve, POST_UPDATE_DELAY_MS));
+
     // Attempt to retrieve the file's state *after* the modification.
-    const finalState = await getFinalState(params.targetType, targetId, targetPeriod, obsidianService, context);
+    let finalState: NoteJson | null = null; // Initialize to null
+    try {
+        finalState = await retryWithDelay(
+            async () => getFinalState(params.targetType, targetId, targetPeriod, obsidianService, context),
+            {
+                operationName: 'getFinalStateAfterUpdate',
+                context: { ...context, operation: 'getFinalStateAfterUpdateAttempt' }, // Use a distinct context for retry logs
+                maxRetries: 3, // Total attempts: 1 initial + 2 retries
+                delayMs: 300, // Slightly longer delay for post-write read
+                shouldRetry: (error: unknown) => {
+                    // Retry on common transient issues or if the file might not be immediately available
+                    const should = error instanceof McpError &&
+                        (error.code === BaseErrorCode.NOT_FOUND || // File might not be indexed immediately
+                         error.code === BaseErrorCode.SERVICE_UNAVAILABLE || // API temporarily busy
+                         error.code === BaseErrorCode.TIMEOUT); // API call timed out
+                    if (should) {
+                        logger.debug(`getFinalStateAfterUpdate: shouldRetry=true for error code ${ (error as McpError).code }`, context);
+                    }
+                    return should;
+                },
+                onRetry: (attempt, error) => {
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    logger.warning(
+                        `getFinalState (attempt ${attempt}) failed. Error: ${errorMsg}. Retrying...`,
+                        { ...context, operation: 'getFinalStateRetry' }
+                    );
+                }
+            }
+        );
+    } catch (error) {
+        // If retryWithDelay throws after all attempts, getFinalState effectively failed.
+        // The original getFinalState already logs a warning and returns null if it encounters an error internally
+        // and is designed not to let its failure stop the main operation.
+        // So, if retryWithDelay throws, it means even retries didn't help.
+        finalState = null; // Ensure finalState remains null
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.error(`Failed to retrieve final state for target '${params.targetType} ${targetId ?? ''}' even after retries. Error: ${errorMsg}`, error instanceof Error ? error : undefined, context);
+        // Do not re-throw here, allow the main process to construct a response with a warning.
+    }
 
     // --- Step 5: Construct Success Message ---
     // Create a user-friendly message indicating what happened.

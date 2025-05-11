@@ -2,7 +2,7 @@ import path from 'node:path'; // For file path fallback logic using POSIX separa
 import { z } from 'zod';
 import { NoteJson, ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
 import { BaseErrorCode, McpError } from '../../../types-global/errors.js';
-import { createFormattedStatWithTokenCount, logger, RequestContext } from '../../../utils/index.js';
+import { createFormattedStatWithTokenCount, logger, RequestContext, retryWithDelay } from '../../../utils/index.js';
 
 // ====================================================================================
 // Schema Definitions for Input Validation
@@ -470,6 +470,8 @@ export const processObsidianSearchReplace = async (
 
   // --- Step 3: Write Modified Content Back to Obsidian ---
   let finalState: NoteJson | null = null;
+  const POST_UPDATE_DELAY_MS = 500; // Delay before trying to read the file back
+
   // Only write back if the content actually changed to avoid unnecessary file operations.
   if (modifiedContent !== originalContent) {
     const writeContext = { ...context, operation: 'writeFileContent' };
@@ -486,7 +488,24 @@ export const processObsidianSearchReplace = async (
       logger.info(`Successfully updated ${targetDescription} with ${totalReplacementsMade} replacement(s).`, writeContext);
 
       // Attempt to get the final state *after* successfully writing.
-      finalState = await getFinalState(targetType, effectiveFilePath, targetPeriod, obsidianService, context);
+      logger.debug(`Waiting ${POST_UPDATE_DELAY_MS}ms before retrieving final state after write...`, { ...writeContext, subOperation: 'postWriteDelay' });
+      await new Promise(resolve => setTimeout(resolve, POST_UPDATE_DELAY_MS));
+      try {
+        finalState = await retryWithDelay(
+          async () => getFinalState(targetType, effectiveFilePath, targetPeriod, obsidianService, context),
+          {
+            operationName: 'getFinalStateAfterSearchReplaceWrite',
+            context: { ...context, operation: 'getFinalStateAfterSearchReplaceWriteAttempt' },
+            maxRetries: 3,
+            delayMs: 300,
+            shouldRetry: (err: unknown) => err instanceof McpError && (err.code === BaseErrorCode.NOT_FOUND || err.code === BaseErrorCode.SERVICE_UNAVAILABLE || err.code === BaseErrorCode.TIMEOUT),
+            onRetry: (attempt, err) => logger.warning(`getFinalStateAfterSearchReplaceWrite (attempt ${attempt}) failed. Error: ${(err as Error).message}. Retrying...`, writeContext)
+          }
+        );
+      } catch (retryError) {
+        finalState = null;
+        logger.error(`Failed to retrieve final state for ${targetDescription} after write, even after retries. Error: ${(retryError as Error).message}`, retryError instanceof Error ? retryError : undefined, writeContext);
+      }
 
     } catch (error) {
        // Handle errors during the write phase
@@ -499,14 +518,37 @@ export const processObsidianSearchReplace = async (
       // Content did not change, no need to write.
       logger.info(`No changes detected in ${targetDescription} after search/replace operations. Skipping write.`, context);
       // Still attempt to get the state, as the user might want stats even if content is unchanged.
-      finalState = await getFinalState(targetType, effectiveFilePath, targetPeriod, obsidianService, context);
+      logger.debug(`Waiting ${POST_UPDATE_DELAY_MS}ms before retrieving final state (no change)...`, { ...context, subOperation: 'postNoChangeDelay' });
+      await new Promise(resolve => setTimeout(resolve, POST_UPDATE_DELAY_MS));
+      try {
+        finalState = await retryWithDelay(
+          async () => getFinalState(targetType, effectiveFilePath, targetPeriod, obsidianService, context),
+          {
+            operationName: 'getFinalStateAfterSearchReplaceNoChange',
+            context: { ...context, operation: 'getFinalStateAfterSearchReplaceNoChangeAttempt' },
+            maxRetries: 3,
+            delayMs: 300,
+            shouldRetry: (err: unknown) => err instanceof McpError && (err.code === BaseErrorCode.NOT_FOUND || err.code === BaseErrorCode.SERVICE_UNAVAILABLE || err.code === BaseErrorCode.TIMEOUT),
+            onRetry: (attempt, err) => logger.warning(`getFinalStateAfterSearchReplaceNoChange (attempt ${attempt}) failed. Error: ${(err as Error).message}. Retrying...`, context)
+          }
+        );
+      } catch (retryError) {
+        finalState = null;
+        logger.error(`Failed to retrieve final state for ${targetDescription} (no change), even after retries. Error: ${(retryError as Error).message}`, retryError instanceof Error ? retryError : undefined, context);
+      }
   }
 
   // --- Step 4: Construct and Return the Response ---
   const responseContext = { ...context, operation: 'buildResponse' };
-  let message = totalReplacementsMade > 0 // Use let for potential modification
-      ? `Search/replace completed on ${targetDescription}. ${totalReplacementsMade} replacement(s) made.`
-      : `Search/replace completed on ${targetDescription}. No replacements were made.`;
+  let message: string;
+  if (totalReplacementsMade > 0) {
+    message = `Search/replace completed on ${targetDescription}. Successfully made ${totalReplacementsMade} replacement(s).`;
+  } else if (modifiedContent !== originalContent) {
+    // This case should ideally not happen if totalReplacementsMade is 0, but as a safeguard:
+    message = `Search/replace completed on ${targetDescription}. Content was modified, but replacement count is zero. Please review.`;
+  } else {
+    message = `Search/replace completed on ${targetDescription}. No matching text was found, so no replacements were made.`;
+  }
 
   // Append a warning if the final state couldn't be retrieved
   if (finalState === null) {
