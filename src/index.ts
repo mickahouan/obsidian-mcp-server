@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 // Imports MUST be at the top level
-import { logger, McpLogLevel } from "./utils/internal/logger.js"; // Import logger instance early
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { config, environment } from "./config/index.js"; // This loads .env via dotenv.config()
 import { initializeAndStartServer } from "./mcp-server/server.js";
 import { requestContextService } from "./utils/index.js";
+import { logger, McpLogLevel } from "./utils/internal/logger.js"; // Import logger instance early
 // Import Services
 import { ObsidianRestApiService } from './services/obsidianRestAPI/index.js';
 import { VaultCacheService } from './services/vaultCache/index.js'; // Import VaultCacheService
@@ -144,10 +144,10 @@ const start = async () => {
     // Initialize the server instance and start the selected transport
     logger.debug("Initializing and starting MCP server transport", startupContext);
 
-    // Start the server transport. Services are now instantiated within initializeAndStartServer -> startTransport -> createMcpServerInstance.
+    // Start the server transport. Services are instantiated here and passed down.
     // For stdio, this returns the server instance.
     // For http, it sets up the listener and returns void.
-    const potentialServerInstance = await initializeAndStartServer(); // No longer pass obsidianService
+    const potentialServerInstance = await initializeAndStartServer(obsidianService, vaultCacheService);
     if (transportType === 'stdio' && potentialServerInstance instanceof McpServer) {
         server = potentialServerInstance; // Store only for stdio
     } else {
