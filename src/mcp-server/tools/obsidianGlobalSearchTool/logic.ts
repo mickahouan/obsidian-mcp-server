@@ -28,20 +28,21 @@ export type ObsidianGlobalSearchInput = z.infer<typeof ObsidianGlobalSearchInput
 // ====================================================================================
 // Response Structure Definition (Updated)
 // ====================================================================================
-// Removed lineNumber from MatchContext
+
 export interface MatchContext {
   context: string;
   matchText?: string; // Made optional
   position?: number; // Made optional (Position relative to the start of the context snippet)
 }
 
-// Updated GlobalSearchResult to use formatted time strings
+// Updated GlobalSearchResult to use formatted time strings and include numeric mtime for sorting
 export interface GlobalSearchResult {
   path: string;
   filename: string;
   matches: MatchContext[];
   modifiedTime: string; // Formatted string
   createdTime: string; // Formatted string
+  numericMtime: number; // Numeric mtime for robust sorting
 }
 
 // Added alsoFoundInFiles
@@ -127,8 +128,8 @@ export const processObsidianGlobalSearch = async (
   // 1. Parse Date Filters
   const dateParseContext = { ...opContext, subOperation: 'parseDates' };
   try {
-    if (params.modified_since) sinceDate = await dateParser.parseDate(params.modified_since, dateParseContext);
-    if (params.modified_until) untilDate = await dateParser.parseDate(params.modified_until, dateParseContext);
+    if (params.modified_since) sinceDate = await dateParser.parseToDate(params.modified_since, dateParseContext);
+    if (params.modified_until) untilDate = await dateParser.parseToDate(params.modified_until, dateParseContext);
   } catch (error) {
     const errMsg = `Invalid date format provided`;
     logger.error(errMsg, error instanceof Error ? error : undefined, dateParseContext);
@@ -210,6 +211,7 @@ export const processObsidianGlobalSearch = async (
             matches: limitedMatches, // Use limited matches
             modifiedTime: formatTimestamp(mtime, fetchStatsContext), // Format mtime
             createdTime: formatTimestamp(ctime, fetchStatsContext), // Format ctime
+            numericMtime: mtime, // Store numeric mtime
           });
           totalMatchesCount += transformedMatches.length; // Count *all* matches before limiting for total count
           processedCount++;
@@ -273,6 +275,7 @@ export const processObsidianGlobalSearch = async (
               modifiedTime: formatTimestamp(mtime, cacheSearchContext), // Format mtime
               createdTime: formatTimestamp(ctime ?? mtime, cacheSearchContext), // Format ctime (or mtime fallback)
               matches: limitedMatches, // Use limited matches
+              numericMtime: mtime, // Store numeric mtime from cache
             });
             totalMatchesCount += matches.length; // Count *all* matches before limiting
             processedCount++;
@@ -299,15 +302,9 @@ export const processObsidianGlobalSearch = async (
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
 
-  // Sort results by modified time (descending) *before* pagination
+  // Sort results by numeric modified time (descending) *before* pagination
   allFilteredResults.sort((a, b) => {
-      // Attempt to parse back to timestamp for sorting, handle potential 'Invalid Date'
-      const timeA = new Date(a.modifiedTime.replace(' | ', ' ')).getTime();
-      const timeB = new Date(b.modifiedTime.replace(' | ', ' ')).getTime();
-      if (isNaN(timeA) && isNaN(timeB)) return 0;
-      if (isNaN(timeA)) return 1; // Put invalid dates last
-      if (isNaN(timeB)) return -1;
-      return timeB - timeA; // Descending
+    return b.numericMtime - a.numericMtime; // Descending
   });
 
   const paginatedResults = allFilteredResults.slice(startIndex, endIndex);
@@ -315,12 +312,11 @@ export const processObsidianGlobalSearch = async (
   // 5. Determine alsoFoundInFiles
   let alsoFoundInFiles: string[] | undefined = undefined;
   if (totalPages > 1) {
-      const paginatedPaths = new Set(paginatedResults.map(r => r.path));
-      alsoFoundInFiles = allFilteredResults
-          .map(r => r.filename) // Get filenames from all results
-          .filter(filename => !paginatedPaths.has(allFilteredResults.find(r => r.filename === filename)!.path)); // Filter out those on current page
-      // Remove duplicates if any (though filenames should be unique if paths are)
-      alsoFoundInFiles = [...new Set(alsoFoundInFiles)];
+    const paginatedFilePaths = new Set(paginatedResults.map(r => r.path));
+    alsoFoundInFiles = allFilteredResults
+        .filter(r => !paginatedFilePaths.has(r.path)) // Get files not on the current page
+        .map(r => r.filename);                       // Then get their filenames
+    alsoFoundInFiles = [...new Set(alsoFoundInFiles)]; // Ensure unique filenames in the final list
   }
 
 

@@ -73,45 +73,48 @@ export async function registerObsidianGlobalSearchTool(
           });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
-           // Wrap the core logic execution in a tryCatch block.
-           try {
-            // Delegate the actual search logic to the (refactored) processing function.
-            const response: ObsidianGlobalSearchResponse = await processObsidianGlobalSearch(
-              params,
+          // Use ErrorHandler.tryCatch to wrap the core logic execution.
+          // ErrorHandler.tryCatch will log errors and ensure an McpError is thrown.
+          // The McpServer SDK's server.tool() wrapper will catch this McpError
+          // and format it into the CallToolResult with isError: true.
+          return await ErrorHandler.tryCatch(
+            async () => {
+              // Delegate the actual search logic to the processing function.
+              const response: ObsidianGlobalSearchResponse = await processObsidianGlobalSearch(
+                params,
                 handlerContext,
                 obsidianService,
                 vaultCacheService // Pass vaultCacheService here
-             );
-             logger.debug(`'${toolName}' processed successfully`, handlerContext);
+              );
+              logger.debug(`'${toolName}' processed successfully`, handlerContext);
 
-             // Format the successful response object into the required MCP CallToolResult structure.
-             return {
-               content: [{
-                 type: "text", // Use text type for structured JSON data
-                 text: JSON.stringify(response, null, 2) // Pretty-print JSON
-               }],
-               isError: false // Indicate successful execution
-             };
-
-           } catch (error) {
-             // Log the error from the processing logic
-              logger.error(`Error during ${toolName} processing`, error instanceof Error ? error : undefined, handlerContext);
-
-             // Ensure we return an McpError instance
-             const mcpError = error instanceof McpError
-               ? error
-               : new McpError(
-                   BaseErrorCode.INTERNAL_ERROR,
-                   `Error processing ${toolName} tool: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                   { ...handlerContext } // Pass our custom context
-                 );
-
-             // Explicitly return the CallToolResult error structure
-             return {
-                content: [{ type: 'text', text: mcpError.message }], // Use error message as content
-                isError: true
-             };
-          }
+              // Format the successful response object into the required MCP CallToolResult structure.
+              return {
+                content: [{
+                  type: "text", // Use text type for structured JSON data
+                  text: JSON.stringify(response, null, 2) // Pretty-print JSON
+                }],
+                isError: false // Indicate successful execution
+              };
+            },
+            {
+              // Configuration for the ErrorHandler.tryCatch specific to this tool's execution.
+              operation: `executing tool ${toolName}`,
+              context: handlerContext,
+              // Default error code if an unexpected error occurs within processObsidianGlobalSearch
+              // that isn't already an McpError.
+              errorCode: BaseErrorCode.INTERNAL_ERROR,
+              // Custom error mapping can be added here if specific error transformations are needed,
+              // but often the default behavior of ErrorHandler.tryCatch (re-throwing McpError
+              // or wrapping unknown errors) is sufficient.
+              // For example:
+              // errorMapper: (error: unknown) => new McpError(
+              //   error instanceof McpError ? error.code : BaseErrorCode.TOOL_EXECUTION_ERROR,
+              //   `Error executing ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              //   { ...handlerContext, originalError: error }
+              // ),
+            }
+          );
         }
       ); // End of server.tool call
 

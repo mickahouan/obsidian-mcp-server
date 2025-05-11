@@ -75,6 +75,6 @@ async function parseDateStringDetailed(
 }
 
 export const dateParser = {
-  parse: parseDateStringDetailed,
-  parseDate: parseDateString,
+  getDetailedResults: parseDateStringDetailed, // Returns chrono.ParsedResult[]
+  parseToDate: parseDateString,             // Returns Date | null
 };
