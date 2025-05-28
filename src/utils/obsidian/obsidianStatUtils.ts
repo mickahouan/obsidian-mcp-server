@@ -1,118 +1,206 @@
-import { format } from 'date-fns';
-import { BaseErrorCode, McpError } from '../../types-global/errors.js';
-import { logger, RequestContext } from '../internal/index.js';
-import { countTokens } from '../metrics/index.js'; // Import token counter
-
 /**
- * Default format string for timestamps.
- * Example: 08:40:00 PM | 05-02-2025
+ * @fileoverview Utilities for formatting Obsidian stat objects,
+ * including timestamps and calculating estimated token counts.
+ * @module src/utils/obsidian/obsidianStatUtils
  */
-const DEFAULT_TIMESTAMP_FORMAT = 'hh:mm:ss a | MM-dd-yyyy';
+
+import { format } from "date-fns";
+import { BaseErrorCode, McpError } from "../../types-global/errors.js";
+import { logger, RequestContext } from "../internal/index.js";
+import { countTokens } from "../metrics/index.js";
 
 /**
- * Formats a Unix timestamp (milliseconds since epoch) into a human-readable string.
+ * Default format string for timestamps, providing a human-readable date and time.
+ * Example output: "08:40:00 PM | 05-02-2025"
+ */
+const DEFAULT_TIMESTAMP_FORMAT = "hh:mm:ss a | MM-dd-yyyy";
+
+/**
+ * Formats a Unix timestamp (in milliseconds since the epoch) into a human-readable string.
  *
- * @param timestampMs - The Unix timestamp in milliseconds.
- * @param context - The request context for logging.
- * @param formatString - Optional format string (uses date-fns tokens). Defaults to 'MM-dd-yyyy, h:mm a'.
- * @returns The formatted timestamp string.
- * @throws McpError if the timestamp is invalid.
+ * @param {number | undefined | null} timestampMs - The Unix timestamp in milliseconds.
+ * @param {RequestContext} context - The request context for logging and error reporting.
+ * @param {string} [formatString=DEFAULT_TIMESTAMP_FORMAT] - Optional format string adhering to `date-fns` tokens.
+ *   Defaults to 'hh:mm:ss a | MM-dd-yyyy'.
+ * @returns {string} The formatted timestamp string.
+ * @throws {McpError} If the provided `timestampMs` is invalid (e.g., undefined, null, not a finite number, or results in an invalid Date object).
  */
 export function formatTimestamp(
   timestampMs: number | undefined | null,
   context: RequestContext,
   formatString: string = DEFAULT_TIMESTAMP_FORMAT,
 ): string {
-  if (timestampMs === undefined || timestampMs === null || !Number.isFinite(timestampMs)) {
-    logger.warning(`Invalid timestamp received for formatting: ${timestampMs}`, context);
-    // Return a placeholder or throw, depending on desired strictness. Let's return a placeholder for now.
-    // throw new McpError(BaseErrorCode.VALIDATION_ERROR, `Invalid timestamp provided: ${timestampMs}`, context);
-    return 'Invalid Date';
+  const operation = "formatTimestamp";
+  if (
+    timestampMs === undefined ||
+    timestampMs === null ||
+    !Number.isFinite(timestampMs)
+  ) {
+    const errorMessage = `Invalid timestamp provided for formatting: ${timestampMs}`;
+    logger.warning(errorMessage, { ...context, operation });
+    throw new McpError(BaseErrorCode.VALIDATION_ERROR, errorMessage, {
+      ...context,
+      operation,
+    });
   }
 
   try {
     const date = new Date(timestampMs);
-    // Check if the date is valid after creation
     if (isNaN(date.getTime())) {
-      logger.warning(`Timestamp resulted in an invalid date: ${timestampMs}`, context);
-      return 'Invalid Date';
+      const errorMessage = `Timestamp resulted in an invalid date: ${timestampMs}`;
+      logger.warning(errorMessage, { ...context, operation });
+      throw new McpError(BaseErrorCode.VALIDATION_ERROR, errorMessage, {
+        ...context,
+        operation,
+      });
     }
     return format(date, formatString);
   } catch (error) {
-    // Ensure we pass an Error object or structured data to the logger
-    const errorToLog = error instanceof Error ? error : { message: String(error) };
-    logger.error('Error formatting timestamp', errorToLog, context);
-    // Throw a specific error or return a placeholder
-    throw new McpError(
-      BaseErrorCode.INTERNAL_ERROR,
-      `Failed to format timestamp ${timestampMs}: ${error instanceof Error ? error.message : String(error)}`,
-      context,
-    );
-    // return 'Formatting Error';
+    const errorMessage = `Failed to format timestamp ${timestampMs}: ${error instanceof Error ? error.message : String(error)}`;
+    logger.error(errorMessage, error instanceof Error ? error : undefined, {
+      ...context,
+      operation,
+    });
+    throw new McpError(BaseErrorCode.INTERNAL_ERROR, errorMessage, {
+      ...context,
+      operation,
+      originalError: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
 /**
- * Formats the ctime and mtime within an Obsidian API Stat object.
- * Returns a new object with formatted timestamps, leaving the original numbers intact.
+ * Represents the structure of an Obsidian API Stat object.
+ */
+export interface ObsidianStat {
+  /** Creation time as a Unix timestamp (milliseconds). */
+  ctime: number;
+  /** Modification time as a Unix timestamp (milliseconds). */
+  mtime: number;
+  /** File size in bytes. */
+  size: number;
+}
+
+/**
+ * Represents formatted timestamp information derived from an Obsidian Stat object.
+ */
+export interface FormattedTimestamps {
+  /** Human-readable creation time string. */
+  createdTime: string;
+  /** Human-readable modification time string. */
+  modifiedTime: string;
+}
+
+/**
+ * Formats the `ctime` (creation time) and `mtime` (modification time) from an
+ * Obsidian API Stat object into human-readable strings.
  *
- * @param stat - The Stat object from the Obsidian API.
- * @param context - The request context for logging.
- * @returns A new object containing formatted createdTime and modifiedTime strings.
+ * @param {ObsidianStat | undefined | null} stat - The Stat object from the Obsidian API.
+ *   If undefined or null, placeholder strings ('N/A') are returned.
+ * @param {RequestContext} context - The request context for logging and error reporting.
+ * @returns {FormattedTimestamps} An object containing `createdTime` and `modifiedTime` strings.
  */
 export function formatStatTimestamps(
-  stat: { ctime: number; mtime: number; size: number } | undefined | null,
+  stat: ObsidianStat | undefined | null,
   context: RequestContext,
-): { createdTime: string; modifiedTime: string } { // Renamed fields
+): FormattedTimestamps {
+  const operation = "formatStatTimestamps";
   if (!stat) {
+    logger.debug(
+      "Stat object is undefined or null, returning N/A for timestamps.",
+      { ...context, operation },
+    );
     return {
-      createdTime: 'N/A', // Renamed field
-      modifiedTime: 'N/A', // Renamed field
+      createdTime: "N/A",
+      modifiedTime: "N/A",
     };
   }
-  return {
-    createdTime: formatTimestamp(stat.ctime, context), // Renamed field
-    modifiedTime: formatTimestamp(stat.mtime, context), // Renamed field
-  };
+  try {
+    return {
+      createdTime: formatTimestamp(stat.ctime, context),
+      modifiedTime: formatTimestamp(stat.mtime, context),
+    };
+  } catch (error) {
+    // Log the error from formatTimestamp if it occurs during this higher-level operation
+    logger.error(
+      `Error formatting timestamps within formatStatTimestamps for ctime: ${stat.ctime}, mtime: ${stat.mtime}`,
+      error instanceof Error ? error : undefined,
+      { ...context, operation },
+    );
+    // Return N/A as a fallback if formatting fails at this stage
+    return {
+      createdTime: "N/A",
+      modifiedTime: "N/A",
+    };
+  }
 }
 
 /**
- * Creates a formatted stat object including formatted timestamps and an estimated token count.
- *
- * @param stat - The original Stat object from the Obsidian API.
- * @param content - The file content string to calculate token count from.
- * @param context - The request context for logging.
- * @returns An object containing createdTime, modifiedTime, and tokenCountEstimate, or null/undefined if input stat is null/undefined.
+ * Represents a fully formatted stat object, including human-readable timestamps
+ * and an estimated token count for the file content.
  */
-export async function createFormattedStatWithTokenCount( // Renamed function, made async
-    stat: { ctime: number; mtime: number; size: number } | null | undefined,
-    content: string, // Added content parameter
-    context: RequestContext
-): Promise<{ createdTime: string; modifiedTime: string; tokenCountEstimate: number } | null | undefined> { // Updated return type
-    if (!stat) {
-        return stat; // Return original null/undefined
+export interface FormattedStatWithTokenCount extends FormattedTimestamps {
+  /** Estimated number of tokens in the file content. -1 if counting failed or content was empty. */
+  tokenCountEstimate: number;
+}
+
+/**
+ * Creates a formatted stat object that includes human-readable timestamps
+ * (creation and modification times) and an estimated token count for the provided file content.
+ *
+ * @param {ObsidianStat | null | undefined} stat - The original Stat object from the Obsidian API.
+ *   If null or undefined, the function will return the input value (null or undefined).
+ * @param {string} content - The file content string from which to calculate the token count.
+ * @param {RequestContext} context - The request context for logging and error reporting.
+ * @returns {Promise<FormattedStatWithTokenCount | null | undefined>} A promise resolving to an object
+ *   containing `createdTime`, `modifiedTime`, and `tokenCountEstimate`. Returns `null` or `undefined`
+ *   if the input `stat` object was `null` or `undefined`, respectively.
+ */
+export async function createFormattedStatWithTokenCount(
+  stat: ObsidianStat | null | undefined,
+  content: string,
+  context: RequestContext,
+): Promise<FormattedStatWithTokenCount | null | undefined> {
+  const operation = "createFormattedStatWithTokenCount";
+  if (stat === null || stat === undefined) {
+    logger.debug("Input stat is null or undefined, returning as is.", {
+      ...context,
+      operation,
+    });
+    return stat; // Return original null/undefined
+  }
+
+  const formattedTimestamps = formatStatTimestamps(stat, context);
+  let tokenCountEstimate = -1; // Default: indicates error or empty content
+
+  if (content && content.trim().length > 0) {
+    try {
+      tokenCountEstimate = await countTokens(content, context);
+    } catch (tokenError) {
+      logger.warning(
+        `Failed to count tokens for stat object. Error: ${tokenError instanceof Error ? tokenError.message : String(tokenError)}`,
+        {
+          ...context,
+          operation,
+          originalError:
+            tokenError instanceof Error
+              ? tokenError.message
+              : String(tokenError),
+        },
+      );
+      // tokenCountEstimate remains -1
     }
+  } else {
+    logger.debug(
+      "Content is empty or whitespace-only, setting tokenCountEstimate to 0.",
+      { ...context, operation },
+    );
+    tokenCountEstimate = 0;
+  }
 
-    const formattedTimestamps = formatStatTimestamps(stat, context);
-    let tokenCountEstimate = -1; // Default value if counting fails or content is empty
-
-    if (content && content.trim().length > 0) {
-        try {
-            tokenCountEstimate = await countTokens(content, context);
-        } catch (tokenError) {
-            logger.warning(`Failed to count tokens for stat object creation. Error: ${tokenError instanceof Error ? tokenError.message : String(tokenError)}`, context);
-            // Keep tokenCountEstimate as -1 or another indicator
-        }
-    } else {
-         logger.debug('Content is empty, setting tokenCountEstimate to 0.', context);
-         tokenCountEstimate = 0;
-    }
-
-
-    // Create a new object with formatted timestamps and token count
-    return {
-        createdTime: formattedTimestamps.createdTime, // Use renamed field
-        modifiedTime: formattedTimestamps.modifiedTime, // Use renamed field
-        tokenCountEstimate: tokenCountEstimate // Use token count instead of size
-    };
+  return {
+    createdTime: formattedTimestamps.createdTime,
+    modifiedTime: formattedTimestamps.modifiedTime,
+    tokenCountEstimate: tokenCountEstimate,
+  };
 }

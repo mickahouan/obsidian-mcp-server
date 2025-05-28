@@ -4,15 +4,15 @@
  * Methods for interacting with the currently active file in Obsidian via the REST API.
  */
 
-import { AxiosRequestConfig } from 'axios';
-import { RequestContext } from '../../../utils/index.js';
-import { NoteJson } from '../types.js';
+import { AxiosRequestConfig } from "axios";
+import { RequestContext } from "../../../utils/index.js";
+import { NoteJson } from "../types.js";
 
 // Define a type for the internal request function signature
 type RequestFunction = <T = any>(
   config: AxiosRequestConfig,
   context: RequestContext,
-  operationName: string
+  operationName: string,
 ) => Promise<T>;
 
 /**
@@ -24,15 +24,20 @@ type RequestFunction = <T = any>(
  */
 export async function getActiveFile(
   _request: RequestFunction,
-  format: 'markdown' | 'json' = 'markdown',
-  context: RequestContext
+  format: "markdown" | "json" = "markdown",
+  context: RequestContext,
 ): Promise<string | NoteJson> {
-  const acceptHeader = format === 'json' ? 'application/vnd.olrapi.note+json' : 'text/markdown';
-  return _request<string | NoteJson>({
-    method: 'GET',
-    url: `/active/`,
-    headers: { 'Accept': acceptHeader },
-  }, context, 'getActiveFile');
+  const acceptHeader =
+    format === "json" ? "application/vnd.olrapi.note+json" : "text/markdown";
+  return _request<string | NoteJson>(
+    {
+      method: "GET",
+      url: `/active/`,
+      headers: { Accept: acceptHeader },
+    },
+    context,
+    "getActiveFile",
+  );
 }
 
 /**
@@ -45,14 +50,18 @@ export async function getActiveFile(
 export async function updateActiveFile(
   _request: RequestFunction,
   content: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
-  await _request<void>({
-    method: 'PUT',
-    url: `/active/`,
-    headers: { 'Content-Type': 'text/markdown' },
-    data: content,
-  }, context, 'updateActiveFile');
+  await _request<void>(
+    {
+      method: "PUT",
+      url: `/active/`,
+      headers: { "Content-Type": "text/markdown" },
+      data: content,
+    },
+    context,
+    "updateActiveFile",
+  );
 }
 
 /**
@@ -65,14 +74,18 @@ export async function updateActiveFile(
 export async function appendActiveFile(
   _request: RequestFunction,
   content: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
-  await _request<void>({
-    method: 'POST',
-    url: `/active/`,
-    headers: { 'Content-Type': 'text/markdown' },
-    data: content,
-  }, context, 'appendActiveFile');
+  await _request<void>(
+    {
+      method: "POST",
+      url: `/active/`,
+      headers: { "Content-Type": "text/markdown" },
+      data: content,
+    },
+    context,
+    "appendActiveFile",
+  );
 }
 
 /**
@@ -83,10 +96,14 @@ export async function appendActiveFile(
  */
 export async function deleteActiveFile(
   _request: RequestFunction,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
-  await _request<void>({
-    method: 'DELETE',
-    url: `/active/`,
-  }, context, 'deleteActiveFile');
+  await _request<void>(
+    {
+      method: "DELETE",
+      url: `/active/`,
+    },
+    context,
+    "deleteActiveFile",
+  );
 }

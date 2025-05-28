@@ -4,18 +4,18 @@
  * Methods for interacting with periodic notes (daily, weekly, etc.) via the Obsidian REST API.
  */
 
-import { AxiosRequestConfig } from 'axios';
-import { RequestContext } from '../../../utils/index.js';
-import { NoteJson } from '../types.js';
+import { AxiosRequestConfig } from "axios";
+import { RequestContext } from "../../../utils/index.js";
+import { NoteJson } from "../types.js";
 
 // Define a type for the internal request function signature
 type RequestFunction = <T = any>(
   config: AxiosRequestConfig,
   context: RequestContext,
-  operationName: string
+  operationName: string,
 ) => Promise<T>;
 
-type Period = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
 
 /**
  * Gets the content of a periodic note (daily, weekly, etc.).
@@ -28,15 +28,20 @@ type Period = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 export async function getPeriodicNote(
   _request: RequestFunction,
   period: Period,
-  format: 'markdown' | 'json' = 'markdown',
-  context: RequestContext
+  format: "markdown" | "json" = "markdown",
+  context: RequestContext,
 ): Promise<string | NoteJson> {
-  const acceptHeader = format === 'json' ? 'application/vnd.olrapi.note+json' : 'text/markdown';
-  return _request<string | NoteJson>({
-    method: 'GET',
-    url: `/periodic/${period}/`,
-    headers: { 'Accept': acceptHeader },
-  }, context, 'getPeriodicNote');
+  const acceptHeader =
+    format === "json" ? "application/vnd.olrapi.note+json" : "text/markdown";
+  return _request<string | NoteJson>(
+    {
+      method: "GET",
+      url: `/periodic/${period}/`,
+      headers: { Accept: acceptHeader },
+    },
+    context,
+    "getPeriodicNote",
+  );
 }
 
 /**
@@ -51,14 +56,18 @@ export async function updatePeriodicNote(
   _request: RequestFunction,
   period: Period,
   content: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
-  await _request<void>({
-    method: 'PUT',
-    url: `/periodic/${period}/`,
-    headers: { 'Content-Type': 'text/markdown' },
-    data: content,
-  }, context, 'updatePeriodicNote');
+  await _request<void>(
+    {
+      method: "PUT",
+      url: `/periodic/${period}/`,
+      headers: { "Content-Type": "text/markdown" },
+      data: content,
+    },
+    context,
+    "updatePeriodicNote",
+  );
 }
 
 /**
@@ -73,14 +82,18 @@ export async function appendPeriodicNote(
   _request: RequestFunction,
   period: Period,
   content: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
-  await _request<void>({
-    method: 'POST',
-    url: `/periodic/${period}/`,
-    headers: { 'Content-Type': 'text/markdown' },
-    data: content,
-  }, context, 'appendPeriodicNote');
+  await _request<void>(
+    {
+      method: "POST",
+      url: `/periodic/${period}/`,
+      headers: { "Content-Type": "text/markdown" },
+      data: content,
+    },
+    context,
+    "appendPeriodicNote",
+  );
 }
 
 /**
@@ -93,10 +106,14 @@ export async function appendPeriodicNote(
 export async function deletePeriodicNote(
   _request: RequestFunction,
   period: Period,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
-  await _request<void>({
-    method: 'DELETE',
-    url: `/periodic/${period}/`,
-  }, context, 'deletePeriodicNote');
+  await _request<void>(
+    {
+      method: "DELETE",
+      url: `/periodic/${period}/`,
+    },
+    context,
+    "deletePeriodicNote",
+  );
 }

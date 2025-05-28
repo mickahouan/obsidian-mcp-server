@@ -10,4 +10,4 @@
  * from this file to integrate the tool into the MCP server instance.
  */
 
-export { registerObsidianGlobalSearchTool } from './registration.js'; // Ensure '.js' extension for ES module resolution
+export { registerObsidianGlobalSearchTool } from "./registration.js"; // Ensure '.js' extension for ES module resolution

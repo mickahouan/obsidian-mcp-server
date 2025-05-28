@@ -4,14 +4,14 @@
  * Methods for opening files in Obsidian via the REST API.
  */
 
-import { AxiosRequestConfig } from 'axios';
-import { RequestContext } from '../../../utils/index.js';
+import { AxiosRequestConfig } from "axios";
+import { RequestContext } from "../../../utils/index.js";
 
 // Define a type for the internal request function signature
 type RequestFunction = <T = any>(
   config: AxiosRequestConfig,
   context: RequestContext,
-  operationName: string
+  operationName: string,
 ) => Promise<T>;
 
 /**
@@ -26,12 +26,16 @@ export async function openFile(
   _request: RequestFunction,
   filePath: string,
   newLeaf: boolean = false,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
   // This endpoint returns 200 OK, not 204
-  await _request<void>({
-    method: 'POST',
-    url: `/open/${encodeURIComponent(filePath)}`,
-    params: { newLeaf },
-  }, context, 'openFile');
+  await _request<void>(
+    {
+      method: "POST",
+      url: `/open/${encodeURIComponent(filePath)}`,
+      params: { newLeaf },
+    },
+    context,
+    "openFile",
+  );
 }

@@ -3,10 +3,14 @@
  * @description Service for building and managing an in-memory cache of Obsidian vault content.
  */
 
-import { NoteJson, ObsidianRestApiService } from '../obsidianRestAPI/index.js';
-import { logger, RequestContext, requestContextService } from '../../utils/index.js';
-import { BaseErrorCode, McpError } from '../../types-global/errors.js';
-import path from 'node:path';
+import { NoteJson, ObsidianRestApiService } from "../obsidianRestAPI/index.js";
+import {
+  logger,
+  RequestContext,
+  requestContextService,
+} from "../../utils/index.js";
+import { BaseErrorCode, McpError } from "../../types-global/errors.js";
+import path from "node:path";
 
 interface CacheEntry {
   content: string;
@@ -22,7 +26,12 @@ export class VaultCacheService {
 
   constructor(obsidianService: ObsidianRestApiService) {
     this.obsidianService = obsidianService;
-    logger.info("VaultCacheService initialized.", { operation: 'VaultCacheServiceInit' });
+    logger.info(
+      "VaultCacheService initialized.",
+      requestContextService.createRequestContext({
+        operation: "VaultCacheServiceInit",
+      }),
+    );
   }
 
   /**
@@ -65,23 +74,31 @@ export class VaultCacheService {
    * This is intended to be run in the background after server startup.
    */
   public async buildVaultCache(): Promise<void> {
+    const initialBuildContext = requestContextService.createRequestContext({
+      operation: "buildVaultCache.initialCheck",
+    });
     if (this.isBuilding) {
-      logger.warning("Cache build already in progress. Skipping.", { operation: 'buildVaultCache' });
+      logger.warning(
+        "Cache build already in progress. Skipping.",
+        initialBuildContext,
+      );
       return;
     }
     if (this.isCacheReady) {
-        logger.info("Cache already built. Skipping.", { operation: 'buildVaultCache' });
-        return;
+      logger.info("Cache already built. Skipping.", initialBuildContext);
+      return;
     }
 
     this.isBuilding = true;
     this.isCacheReady = false;
-    const context = requestContextService.createRequestContext({ operation: 'buildVaultCache' });
+    const context = requestContextService.createRequestContext({
+      operation: "buildVaultCache",
+    });
     logger.info("Starting vault cache build process...", context);
 
     try {
       const startTime = Date.now();
-      const allMarkdownFiles = await this.listAllMarkdownFiles('/', context);
+      const allMarkdownFiles = await this.listAllMarkdownFiles("/", context);
       const totalFiles = allMarkdownFiles.length;
       logger.info(`Found ${totalFiles} markdown files to cache.`, context);
 
@@ -89,33 +106,63 @@ export class VaultCacheService {
 
       for (let i = 0; i < totalFiles; i++) {
         const filePath = allMarkdownFiles[i];
-        const fileContext = { ...context, filePath, progress: `${i + 1}/${totalFiles}` };
+        const fileContext = {
+          ...context,
+          filePath,
+          progress: `${i + 1}/${totalFiles}`,
+        };
         try {
           // Fetch NoteJson to get content and mtime efficiently
-          const noteJson = await this.obsidianService.getFileContent(filePath, 'json', fileContext) as NoteJson;
+          const noteJson = (await this.obsidianService.getFileContent(
+            filePath,
+            "json",
+            fileContext,
+          )) as NoteJson;
           this.vaultContentCache.set(filePath, {
             content: noteJson.content,
             mtime: noteJson.stat.mtime,
           });
-          if ((i + 1) % 50 === 0 || i === totalFiles - 1) { // Log progress periodically
-            logger.info(`Caching progress: ${i + 1}/${totalFiles} files cached.`, fileContext);
+          if ((i + 1) % 50 === 0 || i === totalFiles - 1) {
+            // Log progress periodically
+            logger.info(
+              `Caching progress: ${i + 1}/${totalFiles} files cached.`,
+              fileContext,
+            );
           } else {
-             logger.debug(`Cached file: ${filePath}`, fileContext);
+            logger.debug(`Cached file: ${filePath}`, fileContext);
           }
         } catch (error) {
-          logger.error(`Failed to cache file: ${filePath}. Skipping. Error: ${error instanceof Error ? error.message : String(error)}`, fileContext);
+          logger.error(
+            `Failed to cache file: ${filePath}. Skipping. Error: ${error instanceof Error ? error.message : String(error)}`,
+            fileContext,
+          );
           // Optionally add error details for debugging
-          if (error instanceof Error) { logger.debug("File caching error details", { ...fileContext, errorDetails: error.stack || error.message }); }
+          if (error instanceof Error) {
+            logger.debug("File caching error details", {
+              ...fileContext,
+              errorDetails: error.stack || error.message,
+            });
+          }
         }
       }
 
       const duration = (Date.now() - startTime) / 1000;
       this.isCacheReady = true;
-      logger.info(`Vault cache build completed successfully in ${duration.toFixed(2)} seconds. Cached ${this.vaultContentCache.size} files.`, context);
-
+      logger.info(
+        `Vault cache build completed successfully in ${duration.toFixed(2)} seconds. Cached ${this.vaultContentCache.size} files.`,
+        context,
+      );
     } catch (error) {
-      logger.error(`Critical error during vault cache build process. Cache may be incomplete. Error: ${error instanceof Error ? error.message : String(error)}`, context);
-       if (error instanceof Error) { logger.debug("Cache build critical error details", { ...context, errorDetails: error.stack || error.message }); }
+      logger.error(
+        `Critical error during vault cache build process. Cache may be incomplete. Error: ${error instanceof Error ? error.message : String(error)}`,
+        context,
+      );
+      if (error instanceof Error) {
+        logger.debug("Cache build critical error details", {
+          ...context,
+          errorDetails: error.stack || error.message,
+        });
+      }
       // Keep isCacheReady as false
     } finally {
       this.isBuilding = false;
@@ -132,27 +179,37 @@ export class VaultCacheService {
   private async listAllMarkdownFiles(
     dirPath: string,
     context: RequestContext,
-    visitedDirs: Set<string> = new Set()
+    visitedDirs: Set<string> = new Set(),
   ): Promise<string[]> {
-    const operation = 'listAllMarkdownFiles';
+    const operation = "listAllMarkdownFiles";
     const opContext = { ...context, operation, dirPath };
     const normalizedPath = path.posix.normalize(dirPath === "" ? "/" : dirPath);
 
     if (visitedDirs.has(normalizedPath)) {
-      logger.warning(`Cycle detected or directory already visited during cache build: ${normalizedPath}. Skipping.`, opContext);
+      logger.warning(
+        `Cycle detected or directory already visited during cache build: ${normalizedPath}. Skipping.`,
+        opContext,
+      );
       return [];
     }
     visitedDirs.add(normalizedPath);
 
     let markdownFiles: string[] = [];
     try {
-      const entries = await this.obsidianService.listFiles(normalizedPath, opContext);
+      const entries = await this.obsidianService.listFiles(
+        normalizedPath,
+        opContext,
+      );
       for (const entry of entries) {
         const fullPath = path.posix.join(normalizedPath, entry);
-        if (entry.endsWith('/')) {
-          const subDirFiles = await this.listAllMarkdownFiles(fullPath, opContext, visitedDirs);
+        if (entry.endsWith("/")) {
+          const subDirFiles = await this.listAllMarkdownFiles(
+            fullPath,
+            opContext,
+            visitedDirs,
+          );
           markdownFiles = markdownFiles.concat(subDirFiles);
-        } else if (entry.toLowerCase().endsWith('.md')) {
+        } else if (entry.toLowerCase().endsWith(".md")) {
           markdownFiles.push(fullPath);
         }
       }
@@ -164,9 +221,18 @@ export class VaultCacheService {
         return [];
       }
       // Log and re-throw critical listing errors
-      if (error instanceof Error) { logger.error(errMsg, error, opContext); } else { logger.error(errMsg, opContext); }
-      const errorCode = error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR;
-      throw new McpError(errorCode, `${errMsg}: ${error instanceof Error ? error.message : String(error)}`, opContext);
+      if (error instanceof Error) {
+        logger.error(errMsg, error, opContext);
+      } else {
+        logger.error(errMsg, opContext);
+      }
+      const errorCode =
+        error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR;
+      throw new McpError(
+        errorCode,
+        `${errMsg}: ${error instanceof Error ? error.message : String(error)}`,
+        opContext,
+      );
     }
   }
 }

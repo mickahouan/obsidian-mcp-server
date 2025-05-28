@@ -1,11 +1,23 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
+import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import { ErrorHandler, logger, RequestContext, requestContextService } from "../../../utils/index.js";
+import {
+  ErrorHandler,
+  logger,
+  RequestContext,
+  requestContextService,
+} from "../../../utils/index.js";
 // Import types for handler signature and response structure
-import type { ObsidianUpdateFileRegistrationInput, ObsidianUpdateFileResponse } from './logic.js';
+import type {
+  ObsidianUpdateFileRegistrationInput,
+  ObsidianUpdateFileResponse,
+} from "./logic.js";
 // Import the Zod schema for validation and the core processing logic
-import { ObsidianUpdateFileInputSchema, ObsidianUpdateFileInputSchemaShape, processObsidianUpdateFile } from './logic.js';
+import {
+  ObsidianUpdateFileInputSchema,
+  ObsidianUpdateFileInputSchemaShape,
+  processObsidianUpdateFile,
+} from "./logic.js";
 
 /**
  * Registers the 'obsidian_update_file' tool with the MCP server.
@@ -27,17 +39,19 @@ import { ObsidianUpdateFileInputSchema, ObsidianUpdateFileInputSchemaShape, proc
  */
 export const registerObsidianUpdateFileTool = async (
   server: McpServer,
-  obsidianService: ObsidianRestApiService // Dependency injection for the Obsidian service
+  obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
 ): Promise<void> => {
   const toolName = "obsidian_update_file";
-  const toolDescription = "Tool to modify Obsidian notes (specified by file path, the active file, or a periodic note) using whole-file operations: 'append', 'prepend', or 'overwrite'. Options allow creating missing files/targets and controlling overwrite behavior. Returns success status, message, a formatted timestamp string, file stats (stats), and optionally the final file content.";
+  const toolDescription =
+    "Tool to modify Obsidian notes (specified by file path, the active file, or a periodic note) using whole-file operations: 'append', 'prepend', or 'overwrite'. Options allow creating missing files/targets and controlling overwrite behavior. Returns success status, message, a formatted timestamp string, file stats (stats), and optionally the final file content.";
 
   // Create a context for the registration process itself for better traceability.
-  const registrationContext: RequestContext = requestContextService.createRequestContext({
-    operation: 'RegisterObsidianUpdateFileTool',
-    toolName: toolName,
-    module: 'ObsidianUpdateFileRegistration' // Identify the module performing registration
-  });
+  const registrationContext: RequestContext =
+    requestContextService.createRequestContext({
+      operation: "RegisterObsidianUpdateFileTool",
+      toolName: toolName,
+      module: "ObsidianUpdateFileRegistration", // Identify the module performing registration
+    });
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
 
@@ -60,11 +74,13 @@ export const registerObsidianUpdateFileTool = async (
          */
         async (params: ObsidianUpdateFileRegistrationInput) => {
           // Create a specific context for this handler invocation.
-          const handlerContext: RequestContext = requestContextService.createRequestContext({
-            parentContext: registrationContext, // Link to the registration context
-            operation: 'HandleObsidianUpdateFileRequest',
-            toolName: toolName,
-            params: { // Log key parameters for easier debugging, content is omitted for brevity/security
+          const handlerContext: RequestContext =
+            requestContextService.createRequestContext({
+              parentContext: registrationContext, // Link to the registration context
+              operation: "HandleObsidianUpdateFileRequest",
+              toolName: toolName,
+              params: {
+                // Log key parameters for easier debugging, content is omitted for brevity/security
                 targetType: params.targetType,
                 modificationType: params.modificationType, // Note: Will always be 'wholeFile' due to schema
                 targetIdentifier: params.targetIdentifier,
@@ -72,9 +88,12 @@ export const registerObsidianUpdateFileTool = async (
                 createIfNeeded: params.createIfNeeded,
                 overwriteIfExists: params.overwriteIfExists,
                 returnContent: params.returnContent,
-            }
-          });
-          logger.debug(`Handling '${toolName}' request (wholeFile mode)`, handlerContext);
+              },
+            });
+          logger.debug(
+            `Handling '${toolName}' request (wholeFile mode)`,
+            handlerContext,
+          );
 
           // Wrap the core logic execution in a tryCatch block for handling errors during processing.
           return await ErrorHandler.tryCatch(
@@ -83,25 +102,32 @@ export const registerObsidianUpdateFileTool = async (
               // This ensures type safety and adherence to constraints defined in logic.ts.
               // While server.tool performs initial validation based on the shape,
               // this step applies any stricter rules or refinements from the full schema.
-              const validatedParams = ObsidianUpdateFileInputSchema.parse(params);
+              const validatedParams =
+                ObsidianUpdateFileInputSchema.parse(params);
 
               // Delegate the actual file update logic to the dedicated processing function.
               // Pass the validated parameters, the handler context, and the Obsidian service instance.
-              const response: ObsidianUpdateFileResponse = await processObsidianUpdateFile(
-                validatedParams,
+              const response: ObsidianUpdateFileResponse =
+                await processObsidianUpdateFile(
+                  validatedParams,
+                  handlerContext,
+                  obsidianService,
+                );
+              logger.debug(
+                `'${toolName}' (wholeFile mode) processed successfully`,
                 handlerContext,
-                obsidianService
               );
-              logger.debug(`'${toolName}' (wholeFile mode) processed successfully`, handlerContext);
 
               // Format the successful response from the logic function into the MCP CallToolResult structure.
               // The response object (containing status, message, timestamp, stat, etc.) is serialized to JSON.
               return {
-                content: [{
-                  type: "text", // Standard content type for structured data
-                  text: JSON.stringify(response, null, 2) // Pretty-print JSON for readability
-                }],
-                isError: false // Indicate successful execution
+                content: [
+                  {
+                    type: "text", // Standard content type for structured data
+                    text: JSON.stringify(response, null, 2), // Pretty-print JSON for readability
+                  },
+                ],
+                isError: false, // Indicate successful execution
               };
             },
             {
@@ -110,17 +136,23 @@ export const registerObsidianUpdateFileTool = async (
               context: handlerContext,
               input: params, // Log the full raw input parameters if an error occurs during processing.
               // Custom error mapping to ensure consistent McpError format.
-              errorMapper: (error: unknown) => new McpError(
-                error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR, // Use INTERNAL_ERROR as the fallback
-                `Error processing ${toolName} tool: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                { ...handlerContext } // Include context in the error details
-              )
-            }
+              errorMapper: (error: unknown) =>
+                new McpError(
+                  error instanceof McpError
+                    ? error.code
+                    : BaseErrorCode.INTERNAL_ERROR, // Use INTERNAL_ERROR as the fallback
+                  `Error processing ${toolName} tool: ${error instanceof Error ? error.message : "Unknown error"}`,
+                  { ...handlerContext }, // Include context in the error details
+                ),
+            },
           ); // End of inner ErrorHandler.tryCatch
-        }
+        },
       ); // End of server.tool call
 
-      logger.info(`Tool registered successfully: ${toolName}`, registrationContext);
+      logger.info(
+        `Tool registered successfully: ${toolName}`,
+        registrationContext,
+      );
     },
     {
       // Configuration for the outer error handler (registration process).
@@ -128,12 +160,13 @@ export const registerObsidianUpdateFileTool = async (
       context: registrationContext,
       errorCode: BaseErrorCode.INTERNAL_ERROR, // Default error code for registration failure
       // Custom error mapping for registration failures.
-      errorMapper: (error: unknown) => new McpError(
-        error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
-        `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { ...registrationContext } // Include context
-      ),
-      critical: true // Registration failure is considered critical and should likely halt server startup.
-    }
+      errorMapper: (error: unknown) =>
+        new McpError(
+          error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
+          `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : "Unknown error"}`,
+          { ...registrationContext }, // Include context
+        ),
+      critical: true, // Registration failure is considered critical and should likely halt server startup.
+    },
   ); // End of outer ErrorHandler.tryCatch
 };

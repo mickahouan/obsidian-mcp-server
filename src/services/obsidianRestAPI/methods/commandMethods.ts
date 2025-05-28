@@ -4,15 +4,15 @@
  * Methods for interacting with Obsidian commands via the REST API.
  */
 
-import { AxiosRequestConfig } from 'axios';
-import { RequestContext } from '../../../utils/index.js';
-import { ObsidianCommand, CommandListResponse } from '../types.js';
+import { AxiosRequestConfig } from "axios";
+import { RequestContext } from "../../../utils/index.js";
+import { ObsidianCommand, CommandListResponse } from "../types.js";
 
 // Define a type for the internal request function signature
 type RequestFunction = <T = any>(
   config: AxiosRequestConfig,
   context: RequestContext,
-  operationName: string
+  operationName: string,
 ) => Promise<T>;
 
 /**
@@ -25,12 +25,16 @@ type RequestFunction = <T = any>(
 export async function executeCommand(
   _request: RequestFunction,
   commandId: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
-  await _request<void>({
-    method: 'POST',
-    url: `/commands/${encodeURIComponent(commandId)}/`,
-  }, context, 'executeCommand');
+  await _request<void>(
+    {
+      method: "POST",
+      url: `/commands/${encodeURIComponent(commandId)}/`,
+    },
+    context,
+    "executeCommand",
+  );
 }
 
 /**
@@ -41,11 +45,15 @@ export async function executeCommand(
  */
 export async function listCommands(
   _request: RequestFunction,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<ObsidianCommand[]> {
-  const response = await _request<CommandListResponse>({
-      method: 'GET',
-      url: '/commands/',
-  }, context, 'listCommands');
+  const response = await _request<CommandListResponse>(
+    {
+      method: "GET",
+      url: "/commands/",
+    },
+    context,
+    "listCommands",
+  );
   return response.commands;
 }

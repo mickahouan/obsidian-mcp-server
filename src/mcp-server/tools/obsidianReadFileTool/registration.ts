@@ -1,10 +1,21 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
+import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import { ErrorHandler, logger, RequestContext, requestContextService } from "../../../utils/index.js";
+import {
+  ErrorHandler,
+  logger,
+  RequestContext,
+  requestContextService,
+} from "../../../utils/index.js";
 // Import necessary types, schema, and logic function from the logic file
-import type { ObsidianReadFileInput, ObsidianReadFileResponse } from './logic.js';
-import { ObsidianReadFileInputSchema, processObsidianReadFile } from './logic.js';
+import type {
+  ObsidianReadFileInput,
+  ObsidianReadFileResponse,
+} from "./logic.js";
+import {
+  ObsidianReadFileInputSchema,
+  processObsidianReadFile,
+} from "./logic.js";
 
 /**
  * Registers the 'obsidian_read_file' tool with the MCP server.
@@ -25,17 +36,19 @@ import { ObsidianReadFileInputSchema, processObsidianReadFile } from './logic.js
  */
 export const registerObsidianReadFileTool = async (
   server: McpServer,
-  obsidianService: ObsidianRestApiService // Dependency injection for the Obsidian service
+  obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
 ): Promise<void> => {
   const toolName = "obsidian_read_file";
-  const toolDescription = "Retrieves the content and metadata of a specified file within the Obsidian vault. Tries the exact path first, then attempts a case-insensitive fallback. Returns an object containing the content (markdown string or full NoteJson object based on 'format'), and optionally formatted file stats ('stats' object with creationTime, modifiedTime, tokenCountEstimate). Use 'includeStat: true' with 'format: markdown' to include stats; stats are always included with 'format: json'.";
+  const toolDescription =
+    "Retrieves the content and metadata of a specified file within the Obsidian vault. Tries the exact path first, then attempts a case-insensitive fallback. Returns an object containing the content (markdown string or full NoteJson object based on 'format'), and optionally formatted file stats ('stats' object with creationTime, modifiedTime, tokenCountEstimate). Use 'includeStat: true' with 'format: markdown' to include stats; stats are always included with 'format: json'.";
 
   // Create a context specifically for the registration process.
-  const registrationContext: RequestContext = requestContextService.createRequestContext({
-    operation: 'RegisterObsidianReadFileTool',
-    toolName: toolName,
-    module: 'ObsidianReadFileRegistration' // Identify the module
-  });
+  const registrationContext: RequestContext =
+    requestContextService.createRequestContext({
+      operation: "RegisterObsidianReadFileTool",
+      toolName: toolName,
+      module: "ObsidianReadFileRegistration", // Identify the module
+    });
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
 
@@ -58,18 +71,21 @@ export const registerObsidianReadFileTool = async (
          * @returns {Promise<CallToolResult>} A promise resolving to the structured result for the MCP client,
          *   containing either the successful response data (serialized JSON) or an error indication.
          */
-        async (params: ObsidianReadFileInput) => { // Type matches the inferred input schema
+        async (params: ObsidianReadFileInput) => {
+          // Type matches the inferred input schema
           // Create a specific context for this handler invocation.
-          const handlerContext: RequestContext = requestContextService.createRequestContext({
-            parentContext: registrationContext, // Link to registration context
-            operation: 'HandleObsidianReadFileRequest',
-            toolName: toolName,
-            params: { // Log key parameters for debugging
+          const handlerContext: RequestContext =
+            requestContextService.createRequestContext({
+              parentContext: registrationContext, // Link to registration context
+              operation: "HandleObsidianReadFileRequest",
+              toolName: toolName,
+              params: {
+                // Log key parameters for debugging
                 filePath: params.filePath,
                 format: params.format,
-                includeStat: params.includeStat
-            }
-          });
+                includeStat: params.includeStat,
+              },
+            });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           // Wrap the core logic execution in a tryCatch block.
@@ -78,21 +94,27 @@ export const registerObsidianReadFileTool = async (
               // Delegate the actual file reading logic to the dedicated processing function.
               // Pass the (already shape-validated) parameters, context, and the Obsidian service.
               // The process function handles the refined validation internally if needed, but here shape = refined.
-              const response: ObsidianReadFileResponse = await processObsidianReadFile(
+              const response: ObsidianReadFileResponse =
+                await processObsidianReadFile(
                   params, // Pass params directly as shape matches refined schema
                   handlerContext,
-                  obsidianService
+                  obsidianService,
+                );
+              logger.debug(
+                `'${toolName}' processed successfully`,
+                handlerContext,
               );
-              logger.debug(`'${toolName}' processed successfully`, handlerContext);
 
               // Format the successful response object from the logic function into the required MCP CallToolResult structure.
               // The entire response object (containing content and optional stat) is serialized to JSON.
               return {
-                content: [{
-                  type: "text", // Standard content type for structured JSON data
-                  text: JSON.stringify(response, null, 2) // Pretty-print JSON
-                }],
-                isError: false // Indicate successful execution
+                content: [
+                  {
+                    type: "text", // Standard content type for structured JSON data
+                    text: JSON.stringify(response, null, 2), // Pretty-print JSON
+                  },
+                ],
+                isError: false, // Indicate successful execution
               };
             },
             {
@@ -101,17 +123,23 @@ export const registerObsidianReadFileTool = async (
               context: handlerContext,
               input: params, // Log the full input parameters if an error occurs.
               // Custom error mapping for consistent error reporting.
-              errorMapper: (error: unknown) => new McpError(
-                error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
-                `Error processing ${toolName} tool: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                { ...handlerContext } // Include context
-              )
-            }
+              errorMapper: (error: unknown) =>
+                new McpError(
+                  error instanceof McpError
+                    ? error.code
+                    : BaseErrorCode.INTERNAL_ERROR,
+                  `Error processing ${toolName} tool: ${error instanceof Error ? error.message : "Unknown error"}`,
+                  { ...handlerContext }, // Include context
+                ),
+            },
           ); // End of inner ErrorHandler.tryCatch
-        }
+        },
       ); // End of server.tool call
 
-      logger.info(`Tool registered successfully: ${toolName}`, registrationContext);
+      logger.info(
+        `Tool registered successfully: ${toolName}`,
+        registrationContext,
+      );
     },
     {
       // Configuration for the outer error handler (registration process).
@@ -119,12 +147,13 @@ export const registerObsidianReadFileTool = async (
       context: registrationContext,
       errorCode: BaseErrorCode.INTERNAL_ERROR, // Default error code for registration failure.
       // Custom error mapping for registration failures.
-      errorMapper: (error: unknown) => new McpError(
-        error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
-        `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { ...registrationContext } // Include context
-      ),
-      critical: true // Treat registration failure as critical.
-    }
+      errorMapper: (error: unknown) =>
+        new McpError(
+          error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
+          `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : "Unknown error"}`,
+          { ...registrationContext }, // Include context
+        ),
+      critical: true, // Treat registration failure as critical.
+    },
   ); // End of outer ErrorHandler.tryCatch
 };

@@ -1,10 +1,21 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
+import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import { ErrorHandler, logger, RequestContext, requestContextService } from "../../../utils/index.js";
+import {
+  ErrorHandler,
+  logger,
+  RequestContext,
+  requestContextService,
+} from "../../../utils/index.js";
 // Import necessary types, schema, and logic function from the logic file
-import type { ObsidianDeleteFileInput, ObsidianDeleteFileResponse } from './logic.js';
-import { ObsidianDeleteFileInputSchema, processObsidianDeleteFile } from './logic.js';
+import type {
+  ObsidianDeleteFileInput,
+  ObsidianDeleteFileResponse,
+} from "./logic.js";
+import {
+  ObsidianDeleteFileInputSchema,
+  processObsidianDeleteFile,
+} from "./logic.js";
 
 /**
  * Registers the 'obsidian_delete_file' tool with the MCP server.
@@ -24,18 +35,20 @@ import { ObsidianDeleteFileInputSchema, processObsidianDeleteFile } from './logi
  */
 export const registerObsidianDeleteFileTool = async (
   server: McpServer,
-  obsidianService: ObsidianRestApiService // Dependency injection for the Obsidian service
+  obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
 ): Promise<void> => {
   const toolName = "obsidian_delete_file";
   // Updated description to accurately reflect the response (no timestamp)
-  const toolDescription = "Permanently deletes a specified file from the Obsidian vault. Tries the exact path first, then attempts a case-insensitive fallback if the file is not found. Requires the vault-relative path including the file extension. Returns a success message.";
+  const toolDescription =
+    "Permanently deletes a specified file from the Obsidian vault. Tries the exact path first, then attempts a case-insensitive fallback if the file is not found. Requires the vault-relative path including the file extension. Returns a success message.";
 
   // Create a context specifically for the registration process.
-  const registrationContext: RequestContext = requestContextService.createRequestContext({
-    operation: 'RegisterObsidianDeleteFileTool',
-    toolName: toolName,
-    module: 'ObsidianDeleteFileRegistration' // Identify the module
-  });
+  const registrationContext: RequestContext =
+    requestContextService.createRequestContext({
+      operation: "RegisterObsidianDeleteFileTool",
+      toolName: toolName,
+      module: "ObsidianDeleteFileRegistration", // Identify the module
+    });
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
 
@@ -55,14 +68,16 @@ export const registerObsidianDeleteFileTool = async (
          * @returns {Promise<CallToolResult>} A promise resolving to the structured result for the MCP client,
          *   containing either the successful response data (serialized JSON) or an error indication.
          */
-        async (params: ObsidianDeleteFileInput) => { // Type matches the inferred input schema
+        async (params: ObsidianDeleteFileInput) => {
+          // Type matches the inferred input schema
           // Create a specific context for this handler invocation.
-          const handlerContext: RequestContext = requestContextService.createRequestContext({
-            parentContext: registrationContext, // Link to registration context
-            operation: 'HandleObsidianDeleteFileRequest',
-            toolName: toolName,
-            params: { filePath: params.filePath } // Log the file path being targeted
-          });
+          const handlerContext: RequestContext =
+            requestContextService.createRequestContext({
+              parentContext: registrationContext, // Link to registration context
+              operation: "HandleObsidianDeleteFileRequest",
+              toolName: toolName,
+              params: { filePath: params.filePath }, // Log the file path being targeted
+            });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           // Wrap the core logic execution in a tryCatch block.
@@ -70,21 +85,27 @@ export const registerObsidianDeleteFileTool = async (
             async () => {
               // Delegate the actual file deletion logic to the processing function.
               // Note: Input schema and shape are identical, no separate refinement parse needed here.
-              const response: ObsidianDeleteFileResponse = await processObsidianDeleteFile(
+              const response: ObsidianDeleteFileResponse =
+                await processObsidianDeleteFile(
                   params,
                   handlerContext,
-                  obsidianService
+                  obsidianService,
+                );
+              logger.debug(
+                `'${toolName}' processed successfully`,
+                handlerContext,
               );
-              logger.debug(`'${toolName}' processed successfully`, handlerContext);
 
               // Format the successful response object from the logic function into the required MCP CallToolResult structure.
               // The response object (success, message) is serialized to JSON.
               return {
-                content: [{
-                  type: "text", // Standard content type for structured JSON data
-                  text: JSON.stringify(response, null, 2) // Pretty-print JSON
-                }],
-                isError: false // Indicate successful execution
+                content: [
+                  {
+                    type: "text", // Standard content type for structured JSON data
+                    text: JSON.stringify(response, null, 2), // Pretty-print JSON
+                  },
+                ],
+                isError: false, // Indicate successful execution
               };
             },
             {
@@ -93,17 +114,23 @@ export const registerObsidianDeleteFileTool = async (
               context: handlerContext,
               input: params, // Log the full input parameters if an error occurs.
               // Custom error mapping for consistent error reporting.
-              errorMapper: (error: unknown) => new McpError(
-                error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
-                `Error processing ${toolName} tool: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                { ...handlerContext } // Include context
-              )
-            }
+              errorMapper: (error: unknown) =>
+                new McpError(
+                  error instanceof McpError
+                    ? error.code
+                    : BaseErrorCode.INTERNAL_ERROR,
+                  `Error processing ${toolName} tool: ${error instanceof Error ? error.message : "Unknown error"}`,
+                  { ...handlerContext }, // Include context
+                ),
+            },
           ); // End of inner ErrorHandler.tryCatch
-        }
+        },
       ); // End of server.tool call
 
-      logger.info(`Tool registered successfully: ${toolName}`, registrationContext);
+      logger.info(
+        `Tool registered successfully: ${toolName}`,
+        registrationContext,
+      );
     },
     {
       // Configuration for the outer error handler (registration process).
@@ -111,12 +138,13 @@ export const registerObsidianDeleteFileTool = async (
       context: registrationContext,
       errorCode: BaseErrorCode.INTERNAL_ERROR, // Default error code for registration failure.
       // Custom error mapping for registration failures.
-      errorMapper: (error: unknown) => new McpError(
-        error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
-        `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { ...registrationContext } // Include context
-      ),
-      critical: true // Treat registration failure as critical.
-    }
+      errorMapper: (error: unknown) =>
+        new McpError(
+          error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
+          `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : "Unknown error"}`,
+          { ...registrationContext }, // Include context
+        ),
+      critical: true, // Treat registration failure as critical.
+    },
   ); // End of outer ErrorHandler.tryCatch
 };

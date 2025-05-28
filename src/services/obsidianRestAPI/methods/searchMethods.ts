@@ -4,15 +4,15 @@
  * Methods for performing searches via the Obsidian REST API.
  */
 
-import { AxiosRequestConfig } from 'axios';
-import { RequestContext } from '../../../utils/index.js';
-import { SimpleSearchResult, ComplexSearchResult } from '../types.js';
+import { AxiosRequestConfig } from "axios";
+import { RequestContext } from "../../../utils/index.js";
+import { SimpleSearchResult, ComplexSearchResult } from "../types.js";
 
 // Define a type for the internal request function signature
 type RequestFunction = <T = any>(
   config: AxiosRequestConfig,
   context: RequestContext,
-  operationName: string
+  operationName: string,
 ) => Promise<T>;
 
 /**
@@ -27,13 +27,17 @@ export async function searchSimple(
   _request: RequestFunction,
   query: string,
   contextLength: number = 100,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<SimpleSearchResult[]> {
-  return _request<SimpleSearchResult[]>({
-    method: 'POST',
-    url: '/search/simple/',
-    params: { query, contextLength }, // Send as query parameters
-  }, context, 'searchSimple');
+  return _request<SimpleSearchResult[]>(
+    {
+      method: "POST",
+      url: "/search/simple/",
+      params: { query, contextLength }, // Send as query parameters
+    },
+    context,
+    "searchSimple",
+  );
 }
 
 /**
@@ -47,13 +51,19 @@ export async function searchSimple(
 export async function searchComplex(
   _request: RequestFunction,
   query: string | object,
-  contentType: 'application/vnd.olrapi.dataview.dql+txt' | 'application/vnd.olrapi.jsonlogic+json',
-  context: RequestContext
+  contentType:
+    | "application/vnd.olrapi.dataview.dql+txt"
+    | "application/vnd.olrapi.jsonlogic+json",
+  context: RequestContext,
 ): Promise<ComplexSearchResult[]> {
-  return _request<ComplexSearchResult[]>({
-      method: 'POST',
-      url: '/search/',
-      headers: { 'Content-Type': contentType },
+  return _request<ComplexSearchResult[]>(
+    {
+      method: "POST",
+      url: "/search/",
+      headers: { "Content-Type": contentType },
       data: query,
-  }, context, 'searchComplex');
+    },
+    context,
+    "searchComplex",
+  );
 }

@@ -106,16 +106,16 @@ export interface ApiError {
  * Options for PATCH operations.
  */
 export interface PatchOptions {
-  operation: 'append' | 'prepend' | 'replace';
-  targetType: 'heading' | 'block' | 'frontmatter';
+  operation: "append" | "prepend" | "replace";
+  targetType: "heading" | "block" | "frontmatter";
   target: string; // The specific heading, block ID, or frontmatter key
   targetDelimiter?: string; // Default '::' for nested headings
   trimTargetWhitespace?: boolean; // Default false
   createTargetIfMissing?: boolean; // Header: Create-Target-If-Missing (not explicitly in spec headers, but implied for frontmatter)
-  contentType?: 'text/markdown' | 'application/json'; // For request body type inference
+  contentType?: "text/markdown" | "application/json"; // For request body type inference
 }
 
 /**
  * Type alias for periodic note periods.
  */
-export type Period = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+export type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";

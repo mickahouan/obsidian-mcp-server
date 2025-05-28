@@ -1,11 +1,11 @@
-import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import { encoding_for_model, Tiktoken, TiktokenModel } from 'tiktoken';
-import { BaseErrorCode, McpError } from '../../types-global/errors.js';
+import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { encoding_for_model, Tiktoken, TiktokenModel } from "tiktoken";
+import { BaseErrorCode, McpError } from "../../types-global/errors.js";
 // Import utils from the main barrel file (ErrorHandler, logger, RequestContext from ../internal/*)
-import { ErrorHandler, logger, RequestContext } from '../index.js';
+import { ErrorHandler, logger, RequestContext } from "../index.js";
 
 // Define the model used specifically for token counting
-const TOKENIZATION_MODEL: TiktokenModel = 'gpt-4o'; // Note this is strictly for token counting, not the model used for inference
+const TOKENIZATION_MODEL: TiktokenModel = "gpt-4o"; // Note this is strictly for token counting, not the model used for inference
 
 /**
  * Calculates the number of tokens for a given text using the 'gpt-4o' tokenizer.
@@ -18,7 +18,7 @@ const TOKENIZATION_MODEL: TiktokenModel = 'gpt-4o'; // Note this is strictly for
  */
 export async function countTokens(
   text: string,
-  context?: RequestContext
+  context?: RequestContext,
 ): Promise<number> {
   // Wrap the synchronous operation in tryCatch which handles both sync/async
   return ErrorHandler.tryCatch(
@@ -34,13 +34,13 @@ export async function countTokens(
       }
     },
     {
-      operation: 'countTokens',
+      operation: "countTokens",
       context: context,
-      input: { textSample: text.substring(0, 50) + '...' }, // Log sanitized input
+      input: { textSample: text.substring(0, 50) + "..." }, // Log sanitized input
       errorCode: BaseErrorCode.INTERNAL_ERROR, // Use INTERNAL_ERROR for external lib issues
-      rethrow: true // Rethrow as McpError
+      // rethrow is implicitly true for tryCatch
       // Removed onErrorReturn as we now rethrow
-    }
+    },
   );
 }
 
@@ -59,7 +59,7 @@ export async function countTokens(
  */
 export async function countChatTokens(
   messages: ReadonlyArray<ChatCompletionMessageParam>, // Use the complex type
-  context?: RequestContext
+  context?: RequestContext,
 ): Promise<number> {
   // Wrap the synchronous operation in tryCatch
   return ErrorHandler.tryCatch(
@@ -80,47 +80,60 @@ export async function countChatTokens(
           num_tokens += encoding.encode(message.role).length;
 
           // Encode content - handle potential null or array content (vision)
-          if (typeof message.content === 'string') {
+          if (typeof message.content === "string") {
             num_tokens += encoding.encode(message.content).length;
           } else if (Array.isArray(message.content)) {
             // Handle multi-part content (e.g., text + image) - simplified: encode text parts only
             for (const part of message.content) {
-              if (part.type === 'text') {
+              if (part.type === "text") {
                 num_tokens += encoding.encode(part.text).length;
-               } else {
+              } else {
                 // Add placeholder token count for non-text parts (e.g., images) if needed
                 // This requires specific model knowledge (e.g., OpenAI vision model token costs)
-                logger.warning(`Non-text content part found (type: ${part.type}), token count contribution ignored.`, context);
+                logger.warning(
+                  `Non-text content part found (type: ${part.type}), token count contribution ignored.`,
+                  context,
+                );
                 // num_tokens += IMAGE_TOKEN_COST; // Placeholder
               }
             }
           } // else: content is null, add 0 tokens
 
           // Encode name if present (often associated with 'tool' or 'function' roles in newer models)
-          if ('name' in message && message.name) {
+          if ("name" in message && message.name) {
             num_tokens += tokens_per_name;
             num_tokens += encoding.encode(message.name).length;
           }
 
           // --- Handle tool calls (specific to newer models) ---
           // Assistant message requesting tool calls
-          if (message.role === 'assistant' && 'tool_calls' in message && message.tool_calls) {
-             for(const tool_call of message.tool_calls) {
-                // Add tokens for the function name and arguments
-                if (tool_call.function.name) {
-                    num_tokens += encoding.encode(tool_call.function.name).length;
-                }
-                if (tool_call.function.arguments) {
-                    // Arguments are often JSON strings
-                    num_tokens += encoding.encode(tool_call.function.arguments).length;
-                }
-             }
-           }
+          if (
+            message.role === "assistant" &&
+            "tool_calls" in message &&
+            message.tool_calls
+          ) {
+            for (const tool_call of message.tool_calls) {
+              // Add tokens for the function name and arguments
+              if (tool_call.function.name) {
+                num_tokens += encoding.encode(tool_call.function.name).length;
+              }
+              if (tool_call.function.arguments) {
+                // Arguments are often JSON strings
+                num_tokens += encoding.encode(
+                  tool_call.function.arguments,
+                ).length;
+              }
+            }
+          }
 
           // Tool message providing results
-          if (message.role === 'tool' && 'tool_call_id' in message && message.tool_call_id) {
-             num_tokens += encoding.encode(message.tool_call_id).length;
-             // Content of the tool message (the result) is already handled by the string content check above
+          if (
+            message.role === "tool" &&
+            "tool_call_id" in message &&
+            message.tool_call_id
+          ) {
+            num_tokens += encoding.encode(message.tool_call_id).length;
+            // Content of the tool message (the result) is already handled by the string content check above
           }
         }
         num_tokens += 3; // every reply is primed with <|start|>assistant<|message|>
@@ -130,12 +143,12 @@ export async function countChatTokens(
       }
     },
     {
-      operation: 'countChatTokens',
+      operation: "countChatTokens",
       context: context,
       input: { messageCount: messages.length }, // Log sanitized input
       errorCode: BaseErrorCode.INTERNAL_ERROR, // Use INTERNAL_ERROR
-      rethrow: true // Rethrow as McpError
+      // rethrow is implicitly true for tryCatch
       // Removed onErrorReturn
-    }
+    },
   );
 }

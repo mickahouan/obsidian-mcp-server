@@ -1,8 +1,8 @@
-import path from 'node:path'; // node:path provides OS-specific path functions; using path.posix for vault path manipulation.
-import { z } from 'zod';
-import { ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
-import { BaseErrorCode, McpError } from '../../../types-global/errors.js';
-import { logger, RequestContext } from '../../../utils/index.js';
+import path from "node:path"; // node:path provides OS-specific path functions; using path.posix for vault path manipulation.
+import { z } from "zod";
+import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
+import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
+import { logger, RequestContext } from "../../../utils/index.js";
 
 // ====================================================================================
 // Schema Definitions for Input Validation
@@ -11,24 +11,32 @@ import { logger, RequestContext } from '../../../utils/index.js';
 /**
  * Zod schema for validating the input parameters of the 'obsidian_delete_file' tool.
  */
-export const ObsidianDeleteFileInputSchema = z.object({
-  /**
-   * The vault-relative path to the file to be permanently deleted.
-   * Must include the file extension (e.g., "Old Notes/Obsolete File.md").
-   * The tool first attempts a case-sensitive match. If not found, it attempts
-   * a case-insensitive fallback search within the same directory.
-   */
-  filePath: z.string().min(1, "filePath cannot be empty")
-    .describe('The vault-relative path to the file to be deleted (e.g., "archive/old-file.md"). Tries case-sensitive first, then case-insensitive fallback.'),
-}).describe(
-  'Input parameters for permanently deleting a specific file within the connected Obsidian vault. Includes a case-insensitive path fallback.'
-);
+export const ObsidianDeleteFileInputSchema = z
+  .object({
+    /**
+     * The vault-relative path to the file to be permanently deleted.
+     * Must include the file extension (e.g., "Old Notes/Obsolete File.md").
+     * The tool first attempts a case-sensitive match. If not found, it attempts
+     * a case-insensitive fallback search within the same directory.
+     */
+    filePath: z
+      .string()
+      .min(1, "filePath cannot be empty")
+      .describe(
+        'The vault-relative path to the file to be deleted (e.g., "archive/old-file.md"). Tries case-sensitive first, then case-insensitive fallback.',
+      ),
+  })
+  .describe(
+    "Input parameters for permanently deleting a specific file within the connected Obsidian vault. Includes a case-insensitive path fallback.",
+  );
 
 /**
  * TypeScript type inferred from the input schema (`ObsidianDeleteFileInputSchema`).
  * Represents the validated input parameters used within the core processing logic.
  */
-export type ObsidianDeleteFileInput = z.infer<typeof ObsidianDeleteFileInputSchema>;
+export type ObsidianDeleteFileInput = z.infer<
+  typeof ObsidianDeleteFileInputSchema
+>;
 
 // ====================================================================================
 // Response Type Definition
@@ -68,66 +76,100 @@ export interface ObsidianDeleteFileResponse {
 export const processObsidianDeleteFile = async (
   params: ObsidianDeleteFileInput,
   context: RequestContext,
-  obsidianService: ObsidianRestApiService
+  obsidianService: ObsidianRestApiService,
 ): Promise<ObsidianDeleteFileResponse> => {
   const { filePath: originalFilePath } = params;
   let effectiveFilePath = originalFilePath; // Track the path actually used for deletion
 
-  logger.debug(`Processing obsidian_delete_file request for path: ${originalFilePath}`, context);
+  logger.debug(
+    `Processing obsidian_delete_file request for path: ${originalFilePath}`,
+    context,
+  );
 
   try {
     // --- Attempt 1: Delete using the provided path (case-sensitive) ---
-    const deleteContext = { ...context, operation: 'deleteFileAttempt', caseSensitive: true };
-    logger.debug(`Attempting to delete file (case-sensitive): ${originalFilePath}`, deleteContext);
+    const deleteContext = {
+      ...context,
+      operation: "deleteFileAttempt",
+      caseSensitive: true,
+    };
+    logger.debug(
+      `Attempting to delete file (case-sensitive): ${originalFilePath}`,
+      deleteContext,
+    );
     await obsidianService.deleteFile(originalFilePath, deleteContext);
 
     // If the above call succeeds, the file was deleted using the exact path.
-    logger.debug(`Successfully deleted file using exact path: ${originalFilePath}`, deleteContext);
+    logger.debug(
+      `Successfully deleted file using exact path: ${originalFilePath}`,
+      deleteContext,
+    );
     return {
-        success: true,
-        message: `File '${originalFilePath}' deleted successfully.`,
+      success: true,
+      message: `File '${originalFilePath}' deleted successfully.`,
     };
   } catch (error) {
     // --- Attempt 2: Case-insensitive fallback if initial delete failed with NOT_FOUND ---
     if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
-      logger.info(`File not found with exact path: ${originalFilePath}. Attempting case-insensitive fallback for deletion.`, context);
-      const fallbackContext = { ...context, operation: 'deleteFileFallback' };
+      logger.info(
+        `File not found with exact path: ${originalFilePath}. Attempting case-insensitive fallback for deletion.`,
+        context,
+      );
+      const fallbackContext = { ...context, operation: "deleteFileFallback" };
 
       try {
         // Use POSIX path functions for vault path manipulation
         const dirname = path.posix.dirname(originalFilePath);
-        const filenameLower = path.posix.basename(originalFilePath).toLowerCase();
+        const filenameLower = path.posix
+          .basename(originalFilePath)
+          .toLowerCase();
         // Handle case where the file is in the vault root (dirname is '.')
-        const dirToList = dirname === '.' ? '/' : dirname;
+        const dirToList = dirname === "." ? "/" : dirname;
 
-        logger.debug(`Listing directory for fallback deletion: ${dirToList}`, fallbackContext);
-        const filesInDir = await obsidianService.listFiles(dirToList, fallbackContext);
+        logger.debug(
+          `Listing directory for fallback deletion: ${dirToList}`,
+          fallbackContext,
+        );
+        const filesInDir = await obsidianService.listFiles(
+          dirToList,
+          fallbackContext,
+        );
 
         // Filter directory listing for files matching the lowercase filename
-        const matches = filesInDir.filter(f =>
-          !f.endsWith('/') && // Ensure it's a file
-          path.posix.basename(f).toLowerCase() === filenameLower
+        const matches = filesInDir.filter(
+          (f) =>
+            !f.endsWith("/") && // Ensure it's a file
+            path.posix.basename(f).toLowerCase() === filenameLower,
         );
 
         if (matches.length === 1) {
           // Found exactly one case-insensitive match
           const correctFilename = path.posix.basename(matches[0]);
           effectiveFilePath = path.posix.join(dirname, correctFilename); // Update the path to use
-          logger.info(`Found case-insensitive match: ${effectiveFilePath}. Retrying delete.`, fallbackContext);
+          logger.info(
+            `Found case-insensitive match: ${effectiveFilePath}. Retrying delete.`,
+            fallbackContext,
+          );
 
           // Retry deleting with the correctly cased path
-          const retryContext = { ...fallbackContext, subOperation: 'retryDelete', effectiveFilePath };
+          const retryContext = {
+            ...fallbackContext,
+            subOperation: "retryDelete",
+            effectiveFilePath,
+          };
           await obsidianService.deleteFile(effectiveFilePath, retryContext);
 
-          logger.debug(`Successfully deleted file using fallback path: ${effectiveFilePath}`, retryContext);
+          logger.debug(
+            `Successfully deleted file using fallback path: ${effectiveFilePath}`,
+            retryContext,
+          );
           return {
-              success: true,
-              message: `File '${effectiveFilePath}' (found via case-insensitive match for '${originalFilePath}') deleted successfully.`,
+            success: true,
+            message: `File '${effectiveFilePath}' (found via case-insensitive match for '${originalFilePath}') deleted successfully.`,
           };
-
         } else if (matches.length > 1) {
           // Ambiguous match: Multiple files match case-insensitively
-          const errorMsg = `Deletion failed: Ambiguous case-insensitive matches for '${originalFilePath}'. Found: [${matches.join(', ')}]. Cannot determine which file to delete.`;
+          const errorMsg = `Deletion failed: Ambiguous case-insensitive matches for '${originalFilePath}'. Found: [${matches.join(", ")}]. Cannot determine which file to delete.`;
           logger.error(errorMsg, { ...fallbackContext, matches });
           // Use CONFLICT code for ambiguity, as NOT_FOUND isn't quite right anymore.
           throw new McpError(BaseErrorCode.CONFLICT, errorMsg, fallbackContext);
@@ -136,30 +178,58 @@ export const processObsidianDeleteFile = async (
           const errorMsg = `Deletion failed: File not found for '${originalFilePath}' (case-insensitive fallback also failed).`;
           logger.error(errorMsg, fallbackContext);
           // Stick with NOT_FOUND as the original error reason holds.
-          throw new McpError(BaseErrorCode.NOT_FOUND, errorMsg, fallbackContext);
+          throw new McpError(
+            BaseErrorCode.NOT_FOUND,
+            errorMsg,
+            fallbackContext,
+          );
         }
       } catch (fallbackError) {
         // Catch errors specifically from the fallback logic (e.g., listFiles error, retry delete error)
         if (fallbackError instanceof McpError) {
-            // Log and re-throw known errors from fallback
-            logger.error(`McpError during fallback deletion for ${originalFilePath}: ${fallbackError.message}`, fallbackError, fallbackContext);
-            throw fallbackError;
+          // Log and re-throw known errors from fallback
+          logger.error(
+            `McpError during fallback deletion for ${originalFilePath}: ${fallbackError.message}`,
+            fallbackError,
+            fallbackContext,
+          );
+          throw fallbackError;
         } else {
-            // Wrap unexpected fallback errors
-            const errorMessage = `Unexpected error during case-insensitive fallback deletion for ${originalFilePath}`;
-            logger.error(errorMessage, fallbackError instanceof Error ? fallbackError : undefined, fallbackContext);
-            throw new McpError(BaseErrorCode.INTERNAL_ERROR, `${errorMessage}: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`, fallbackContext);
+          // Wrap unexpected fallback errors
+          const errorMessage = `Unexpected error during case-insensitive fallback deletion for ${originalFilePath}`;
+          logger.error(
+            errorMessage,
+            fallbackError instanceof Error ? fallbackError : undefined,
+            fallbackContext,
+          );
+          throw new McpError(
+            BaseErrorCode.INTERNAL_ERROR,
+            `${errorMessage}: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`,
+            fallbackContext,
+          );
         }
       }
     } else {
       // Re-throw errors from the initial delete attempt that were not NOT_FOUND or McpError
       if (error instanceof McpError) {
-          logger.error(`McpError during initial delete attempt for ${originalFilePath}: ${error.message}`, error, context);
-          throw error;
+        logger.error(
+          `McpError during initial delete attempt for ${originalFilePath}: ${error.message}`,
+          error,
+          context,
+        );
+        throw error;
       } else {
-          const errorMessage = `Unexpected error deleting Obsidian file ${originalFilePath}`;
-          logger.error(errorMessage, error instanceof Error ? error : undefined, context);
-          throw new McpError(BaseErrorCode.INTERNAL_ERROR, `${errorMessage}: ${error instanceof Error ? error.message : String(error)}`, context);
+        const errorMessage = `Unexpected error deleting Obsidian file ${originalFilePath}`;
+        logger.error(
+          errorMessage,
+          error instanceof Error ? error : undefined,
+          context,
+        );
+        throw new McpError(
+          BaseErrorCode.INTERNAL_ERROR,
+          `${errorMessage}: ${error instanceof Error ? error.message : String(error)}`,
+          context,
+        );
       }
     }
   }

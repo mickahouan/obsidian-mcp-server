@@ -1,10 +1,21 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ObsidianRestApiService } from '../../../services/obsidianRestAPI/index.js';
+import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import { ErrorHandler, logger, RequestContext, requestContextService } from "../../../utils/index.js";
+import {
+  ErrorHandler,
+  logger,
+  RequestContext,
+  requestContextService,
+} from "../../../utils/index.js";
 // Import necessary types, schema, and logic function from the logic file
-import type { ObsidianListFilesInput, ObsidianListFilesResponse } from './logic.js';
-import { ObsidianListFilesInputSchema, processObsidianListFiles } from './logic.js';
+import type {
+  ObsidianListFilesInput,
+  ObsidianListFilesResponse,
+} from "./logic.js";
+import {
+  ObsidianListFilesInputSchema,
+  processObsidianListFiles,
+} from "./logic.js";
 
 /**
  * Registers the 'obsidian_list_files' tool with the MCP server.
@@ -24,18 +35,20 @@ import { ObsidianListFilesInputSchema, processObsidianListFiles } from './logic.
  */
 export const registerObsidianListFilesTool = async (
   server: McpServer,
-  obsidianService: ObsidianRestApiService // Dependency injection for the Obsidian service
+  obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
 ): Promise<void> => {
   const toolName = "obsidian_list_files";
   // Updated description to reflect the simplified response (path, tree, count)
-  const toolDescription = "Lists files and subdirectories within a specified Obsidian vault folder. Supports optional filtering by extension or name regex. Returns an object containing the listed directory path, a formatted tree string of its contents, and the total entry count. Use an empty string or '/' for dirPath to list the vault root.";
+  const toolDescription =
+    "Lists files and subdirectories within a specified Obsidian vault folder. Supports optional filtering by extension or name regex. Returns an object containing the listed directory path, a formatted tree string of its contents, and the total entry count. Use an empty string or '/' for dirPath to list the vault root.";
 
   // Create a context specifically for the registration process.
-  const registrationContext: RequestContext = requestContextService.createRequestContext({
-    operation: 'RegisterObsidianListFilesTool',
-    toolName: toolName,
-    module: 'ObsidianListFilesRegistration' // Identify the module
-  });
+  const registrationContext: RequestContext =
+    requestContextService.createRequestContext({
+      operation: "RegisterObsidianListFilesTool",
+      toolName: toolName,
+      module: "ObsidianListFilesRegistration", // Identify the module
+    });
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
 
@@ -55,18 +68,21 @@ export const registerObsidianListFilesTool = async (
          * @returns {Promise<CallToolResult>} A promise resolving to the structured result for the MCP client,
          *   containing either the successful response data (serialized JSON) or an error indication.
          */
-        async (params: ObsidianListFilesInput) => { // Type matches the inferred input schema
+        async (params: ObsidianListFilesInput) => {
+          // Type matches the inferred input schema
           // Create a specific context for this handler invocation.
-          const handlerContext: RequestContext = requestContextService.createRequestContext({
-            parentContext: registrationContext, // Link to registration context
-            operation: 'HandleObsidianListFilesRequest',
-            toolName: toolName,
-            params: { // Log all relevant parameters for debugging
+          const handlerContext: RequestContext =
+            requestContextService.createRequestContext({
+              parentContext: registrationContext, // Link to registration context
+              operation: "HandleObsidianListFilesRequest",
+              toolName: toolName,
+              params: {
+                // Log all relevant parameters for debugging
                 dirPath: params.dirPath,
                 fileExtensionFilter: params.fileExtensionFilter,
-                nameRegexFilter: params.nameRegexFilter
-            }
-          });
+                nameRegexFilter: params.nameRegexFilter,
+              },
+            });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           // Wrap the core logic execution in a tryCatch block.
@@ -74,21 +90,27 @@ export const registerObsidianListFilesTool = async (
             async () => {
               // Delegate the actual file listing and filtering logic to the processing function.
               // Note: The input schema and shape are identical here, so no separate refinement parse is needed.
-              const response: ObsidianListFilesResponse = await processObsidianListFiles(
+              const response: ObsidianListFilesResponse =
+                await processObsidianListFiles(
                   params,
                   handlerContext,
-                  obsidianService
+                  obsidianService,
+                );
+              logger.debug(
+                `'${toolName}' processed successfully`,
+                handlerContext,
               );
-              logger.debug(`'${toolName}' processed successfully`, handlerContext);
 
               // Format the successful response object from the logic function into the required MCP CallToolResult structure.
               // The entire response object (directoryPath, tree, totalEntries) is serialized to JSON.
               return {
-                content: [{
-                  type: "text", // Standard content type for structured JSON data
-                  text: JSON.stringify(response, null, 2) // Pretty-print JSON
-                }],
-                isError: false // Indicate successful execution
+                content: [
+                  {
+                    type: "text", // Standard content type for structured JSON data
+                    text: JSON.stringify(response, null, 2), // Pretty-print JSON
+                  },
+                ],
+                isError: false, // Indicate successful execution
               };
             },
             {
@@ -97,17 +119,23 @@ export const registerObsidianListFilesTool = async (
               context: handlerContext,
               input: params, // Log the full input parameters if an error occurs.
               // Custom error mapping for consistent error reporting.
-              errorMapper: (error: unknown) => new McpError(
-                error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
-                `Error processing ${toolName} tool: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                { ...handlerContext } // Include context
-              )
-            }
+              errorMapper: (error: unknown) =>
+                new McpError(
+                  error instanceof McpError
+                    ? error.code
+                    : BaseErrorCode.INTERNAL_ERROR,
+                  `Error processing ${toolName} tool: ${error instanceof Error ? error.message : "Unknown error"}`,
+                  { ...handlerContext }, // Include context
+                ),
+            },
           ); // End of inner ErrorHandler.tryCatch
-        }
+        },
       ); // End of server.tool call
 
-      logger.info(`Tool registered successfully: ${toolName}`, registrationContext);
+      logger.info(
+        `Tool registered successfully: ${toolName}`,
+        registrationContext,
+      );
     },
     {
       // Configuration for the outer error handler (registration process).
@@ -115,12 +143,13 @@ export const registerObsidianListFilesTool = async (
       context: registrationContext,
       errorCode: BaseErrorCode.INTERNAL_ERROR, // Default error code for registration failure.
       // Custom error mapping for registration failures.
-      errorMapper: (error: unknown) => new McpError(
-        error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
-        `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { ...registrationContext } // Include context
-      ),
-      critical: true // Treat registration failure as critical.
-    }
+      errorMapper: (error: unknown) =>
+        new McpError(
+          error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
+          `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : "Unknown error"}`,
+          { ...registrationContext }, // Include context
+        ),
+      critical: true, // Treat registration failure as critical.
+    },
   ); // End of outer ErrorHandler.tryCatch
 };

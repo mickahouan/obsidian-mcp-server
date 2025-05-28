@@ -4,15 +4,15 @@
  * Methods for interacting with vault files and directories via the Obsidian REST API.
  */
 
-import { AxiosRequestConfig } from 'axios';
-import { RequestContext } from '../../../utils/index.js';
-import { NoteJson, FileListResponse } from '../types.js';
+import { AxiosRequestConfig } from "axios";
+import { RequestContext } from "../../../utils/index.js";
+import { NoteJson, FileListResponse } from "../types.js";
 
 // Define a type for the internal request function signature
 type RequestFunction = <T = any>(
   config: AxiosRequestConfig,
   context: RequestContext,
-  operationName: string
+  operationName: string,
 ) => Promise<T>;
 
 /**
@@ -24,25 +24,24 @@ type RequestFunction = <T = any>(
  * @returns The URL-encoded path suitable for appending to `/vault`.
  */
 function encodeVaultPath(filePath: string): string {
-    // 1. Trim whitespace and remove any leading/trailing slashes for consistent processing.
-    const trimmedPath = filePath.trim().replace(/^\/+|\/+$/g, '');
+  // 1. Trim whitespace and remove any leading/trailing slashes for consistent processing.
+  const trimmedPath = filePath.trim().replace(/^\/+|\/+$/g, "");
 
-    // 2. If the original path was just '/' or empty, return an empty string (represents root for files).
-    if (trimmedPath === '') {
-        // For file operations, the API expects /vault/filename.md at the root,
-        // so an empty encoded path segment is correct here.
-        // For listFiles, we handle the root case separately.
-        return '';
-    }
+  // 2. If the original path was just '/' or empty, return an empty string (represents root for files).
+  if (trimmedPath === "") {
+    // For file operations, the API expects /vault/filename.md at the root,
+    // so an empty encoded path segment is correct here.
+    // For listFiles, we handle the root case separately.
+    return "";
+  }
 
-    // 3. Split into components, encode each component, then rejoin with literal '/'.
-    const encodedComponents = trimmedPath.split('/').map(encodeURIComponent);
-    const encodedPath = encodedComponents.join('/');
+  // 3. Split into components, encode each component, then rejoin with literal '/'.
+  const encodedComponents = trimmedPath.split("/").map(encodeURIComponent);
+  const encodedPath = encodedComponents.join("/");
 
-    // 4. Prepend the leading slash.
-    return `/${encodedPath}`;
+  // 4. Prepend the leading slash.
+  return `/${encodedPath}`;
 }
-
 
 /**
  * Gets the content of a specific file in the vault.
@@ -55,16 +54,21 @@ function encodeVaultPath(filePath: string): string {
 export async function getFileContent(
   _request: RequestFunction,
   filePath: string,
-  format: 'markdown' | 'json' = 'markdown',
-  context: RequestContext
+  format: "markdown" | "json" = "markdown",
+  context: RequestContext,
 ): Promise<string | NoteJson> {
-  const acceptHeader = format === 'json' ? 'application/vnd.olrapi.note+json' : 'text/markdown';
+  const acceptHeader =
+    format === "json" ? "application/vnd.olrapi.note+json" : "text/markdown";
   const encodedPath = encodeVaultPath(filePath); // Use the new encoding function
-  return _request<string | NoteJson>({
-    method: 'GET',
-    url: `/vault${encodedPath}`, // Construct URL correctly
-    headers: { 'Accept': acceptHeader },
-  }, context, 'getFileContent');
+  return _request<string | NoteJson>(
+    {
+      method: "GET",
+      url: `/vault${encodedPath}`, // Construct URL correctly
+      headers: { Accept: acceptHeader },
+    },
+    context,
+    "getFileContent",
+  );
 }
 
 /**
@@ -79,16 +83,20 @@ export async function updateFileContent(
   _request: RequestFunction,
   filePath: string,
   content: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
   const encodedPath = encodeVaultPath(filePath); // Use the new encoding function
   // PUT returns 204 No Content, so the expected type is void
-  await _request<void>({
-    method: 'PUT',
-    url: `/vault${encodedPath}`, // Construct URL correctly
-    headers: { 'Content-Type': 'text/markdown' },
-    data: content,
-  }, context, 'updateFileContent');
+  await _request<void>(
+    {
+      method: "PUT",
+      url: `/vault${encodedPath}`, // Construct URL correctly
+      headers: { "Content-Type": "text/markdown" },
+      data: content,
+    },
+    context,
+    "updateFileContent",
+  );
 }
 
 /**
@@ -103,15 +111,19 @@ export async function appendFileContent(
   _request: RequestFunction,
   filePath: string,
   content: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
   const encodedPath = encodeVaultPath(filePath); // Use the new encoding function
-  await _request<void>({
-      method: 'POST',
+  await _request<void>(
+    {
+      method: "POST",
       url: `/vault${encodedPath}`, // Construct URL correctly
-      headers: { 'Content-Type': 'text/markdown' },
+      headers: { "Content-Type": "text/markdown" },
       data: content,
-  }, context, 'appendFileContent');
+    },
+    context,
+    "appendFileContent",
+  );
 }
 
 /**
@@ -124,13 +136,17 @@ export async function appendFileContent(
 export async function deleteFile(
   _request: RequestFunction,
   filePath: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<void> {
   const encodedPath = encodeVaultPath(filePath); // Use the new encoding function
-  await _request<void>({
-    method: 'DELETE',
-    url: `/vault${encodedPath}`, // Construct URL correctly
-  }, context, 'deleteFile');
+  await _request<void>(
+    {
+      method: "DELETE",
+      url: `/vault${encodedPath}`, // Construct URL correctly
+    },
+    context,
+    "deleteFile",
+  );
 }
 
 /**
@@ -143,7 +159,7 @@ export async function deleteFile(
 export async function listFiles(
   _request: RequestFunction,
   dirPath: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<string[]> {
   // Normalize path: remove leading/trailing slashes for consistency, except for root
   let pathSegment = dirPath.trim();
@@ -151,24 +167,32 @@ export async function listFiles(
   // Explicitly handle root path variations ('', '/') by setting pathSegment to empty.
   // This ensures that the final URL constructed later will be '/vault/', which the API
   // uses to list the root directory contents.
-  if (pathSegment === '' || pathSegment === '/') {
-      pathSegment = ''; // Use empty string to signify root for URL construction
+  if (pathSegment === "" || pathSegment === "/") {
+    pathSegment = ""; // Use empty string to signify root for URL construction
   } else {
-      // For non-root paths:
-      // 1. Remove any leading/trailing slashes to prevent issues like '/vault//path/' or '/vault/path//'.
-      // 2. URI-encode *each component* of the remaining path segment to handle special characters safely.
-      pathSegment = pathSegment.replace(/^\/+|\/+$/g, '').split('/').map(encodeURIComponent).join('/');
+    // For non-root paths:
+    // 1. Remove any leading/trailing slashes to prevent issues like '/vault//path/' or '/vault/path//'.
+    // 2. URI-encode *each component* of the remaining path segment to handle special characters safely.
+    pathSegment = pathSegment
+      .replace(/^\/+|\/+$/g, "")
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/");
   }
 
   // Construct the final URL for the API request:
   // - If pathSegment is not empty (i.e., it's a specific directory), format as '/vault/{encoded_path}/'.
   // - If pathSegment IS empty (signifying the root), format as '/vault/'.
   // The trailing slash is important for directory listing endpoints in this API.
-  const url = pathSegment ? `/vault/${pathSegment}/` : '/vault/';
+  const url = pathSegment ? `/vault/${pathSegment}/` : "/vault/";
 
-  const response = await _request<FileListResponse>({
-    method: 'GET',
-    url: url, // Use the correctly constructed URL
-  }, context, 'listFiles');
+  const response = await _request<FileListResponse>(
+    {
+      method: "GET",
+      url: url, // Use the correctly constructed URL
+    },
+    context,
+    "listFiles",
+  );
   return response.files;
 }
