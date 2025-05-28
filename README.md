@@ -2,9 +2,9 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-^5.8.3-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-blue.svg)](https://nodejs.org/)
-[![Model Context Protocol](https://img.shields.io/badge/MCP_SDK-^1.11.0-green.svg)](https://modelcontextprotocol.io/)
+[![Model Context Protocol](https://img.shields.io/badge/MCP_SDK-^1.12.0-green.svg)](https://modelcontextprotocol.io/)
 [![Obsidian Local REST API](https://img.shields.io/badge/Requires-Obsidian_Local_REST_API-purple.svg)](https://github.com/coddingtonbear/obsidian-local-rest-api)
-[![Version](https://img.shields.io/badge/Version-1.1.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Status](https://img.shields.io/badge/Status-Development-orange.svg)](https://github.com/casey/obsidian-mcp-server/issues)
 [![GitHub](https://img.shields.io/github/stars/casey/obsidian-mcp-server?style=social)](https://github.com/casey/obsidian-mcp-server)
@@ -12,7 +12,7 @@
 **Connect your AI models to your Obsidian vault!**
 An MCP (Model Context Protocol) server providing tools to interact with your Obsidian vault. Enables LLMs and AI agents to perform vault operations like reading, writing, searching, and listing files via the MCP standard, leveraging the [Obsidian Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api).
 
-Built on the [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template), this server follows a modular architecture:
+Built on the [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template), this server follows a modular architecture.
 
 > **Note:** This server requires the Obsidian Local REST API plugin to be installed and configured in your Obsidian vault.
 
@@ -108,6 +108,7 @@ Configure the server using environment variables. Create a `.env` file in the pr
 | `MCP_ALLOWED_ORIGINS`     | Comma-separated allowed origins for CORS (if `MCP_TRANSPORT_TYPE=http`). **Set for production.**           | No (if `stdio`)     | (none)              |
 | **`MCP_AUTH_SECRET_KEY`** | Secret key (min 32 chars) for signing/verifying auth tokens (JWT). **Required for `http` transport.**      | **Yes (if `http`)** | `undefined`         |
 | `MCP_LOG_LEVEL`           | Server logging level (`debug`, `info`, `notice`, `warning`, `error`, `crit`, `alert`, `emerg`).            | No                  | `info`              |
+| `LOGS_PATH`               | Optional custom absolute or relative path for storing log files.                                           | No                  | `logs/` (in project root) |
 | `MCP_SERVER_NAME`         | Optional server name (used in MCP initialization).                                                         | No                  | (from package.json) |
 | `MCP_SERVER_VERSION`      | Optional server version (used in MCP initialization).                                                      | No                  | (from package.json) |
 | `NODE_ENV`                | Runtime environment (`development`, `production`).                                                         | No                  | `development`       |
@@ -121,18 +122,15 @@ Add to your MCP client settings (e.g., `cline_mcp_settings.json`):
 ```json
 {
   "mcpServers": {
-    "obsidian": {
-      "command": "node", // Use node to run the script
-      "args": ["/path/to/your/obsidian-mcp-server/dist/index.js"], // Absolute path to the built entry point
+    "obsidian-mcp-server": {
+      "command": "node",
+      "args": ["/path/to/your/obsidian-mcp-server/dist/index.js"],
       "env": {
         "OBSIDIAN_API_KEY": "YOUR_OBSIDIAN_API_KEY",
-        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123" // Adjust if needed
-        // "MCP_TRANSPORT_TYPE": "http", // Optional: if using http
-        // "MCP_HTTP_PORT": "3011",      // Optional: if using http and non-default port
-        // "MCP_AUTH_SECRET_KEY": "YOUR_SECRET_KEY_FOR_HTTP" // Required if using http
+        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123"
       },
       "disabled": false,
-      "autoApprove": [] // Configure auto-approval rules if desired
+      "autoApprove": []
     }
   }
 }
@@ -190,8 +188,8 @@ This server currently focuses on providing interactive tools for vault manipulat
 # Build the project (compile TS to JS in dist/ and make executable)
 npm run build
 
-# Watch for changes and recompile automatically (if nodemon/similar is configured)
-# npm run watch # (Add this script to package.json if needed)
+# Format code using Prettier
+npm run format
 
 # Test the server locally using stdio transport
 npm start
@@ -209,6 +207,9 @@ npm run rebuild
 
 # Fetch the Obsidian API spec (requires Obsidian running with Local REST API)
 npm run fetch:spec http://127.0.0.1:27123/ docs/obsidian-api/obsidian_rest_api_spec
+
+# Generate API documentation using TypeDoc
+npm run docs:generate
 ```
 
 ## License

@@ -39,11 +39,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "ctime",
-              "mtime",
-              "size"
-            ],
+            "required": ["ctime", "mtime", "size"],
             "type": "object"
           },
           "tags": {
@@ -53,13 +49,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "tags",
-          "frontmatter",
-          "stat",
-          "path",
-          "content"
-        ],
+        "required": ["tags", "frontmatter", "stat", "path", "content"],
         "type": "object"
       }
     },
@@ -121,9 +111,7 @@
           }
         },
         "summary": "Returns basic details about the server.\n",
-        "tags": [
-          "Status"
-        ]
+        "tags": ["Status"]
       }
     },
     "/active/": {
@@ -155,9 +143,7 @@
           }
         },
         "summary": "Deletes the currently-active file in Obsidian.\n",
-        "tags": [
-          "Active File"
-        ]
+        "tags": ["Active File"]
       },
       "get": {
         "description": "Returns the content of the currently active file in Obsidian.\n\nIf you specify the header `Accept: application/vnd.olrapi.note+json`, will return a JSON representation of your note including parsed tag and frontmatter data as well as filesystem metadata.  See \"responses\" below for details.\n",
@@ -184,9 +170,7 @@
           }
         },
         "summary": "Return the content of the active file open in Obsidian.\n",
-        "tags": [
-          "Active File"
-        ]
+        "tags": ["Active File"]
       },
       "patch": {
         "description": "Inserts content into the currently-open note relative to a heading within that note.\n\nAllows you to modify the content relative to a heading, block reference, or frontmatter field in your document.\n\nNote that this API was changed in Version 3.0 of this extension and the earlier PATCH API is now deprecated. Requests made using the previous version of this API will continue to work until Version 4.0 is released.  See https://github.com/coddingtonbear/obsidian-local-rest-api/wiki/Changes-to-PATCH-requests-between-versions-2.0-and-3.0 for more details and migration instructions.\n\n# Examples\n\nAll of the below examples assume you have a document that looks like\nthis:\n\n```markdown\n---\nalpha: 1\nbeta: test\ndelta:\nzeta: 1\nyotta: 1\ngamma:\n- one\n- two\n---\n\n# Heading 1\n\nThis is the content for heading one\n\nAlso references some [[#^484ef2]]\n\n## Subheading 1:1\nContent for Subheading 1:1\n\n### Subsubheading 1:1:1\n\n### Subsubheading 1:1:2\n\nTesting how block references work for a table.[[#^2c7cfa]]\nSome content for Subsubheading 1:1:2\n\nMore random text.\n\n^2d9b4a\n\n## Subheading 1:2\n\nContent for Subheading 1:2.\n\nsome content with a block reference ^484ef2\n\n## Subheading 1:3\n| City         | Population |\n| ------------ | ---------- |\n| Seattle, WA  | 8          |\n| Portland, OR | 4          |\n\n^2c7cfa\n```\n\n## Append Content Below a Heading\n\nIf you wanted to append the content \"Hello\" below \"Subheading 1:1:1\" under \"Heading 1\",\nyou could send a request with the following headers:\n\n- `Operation`: `append`\n- `Target-Type`: `heading`\n- `Target`: `Heading 1::Subheading 1:1:1`\n- with the request body: `Hello`\n\nThe above would work just fine for `prepend` or `replace`, too, of course,\nbut with different results.\n\n## Append Content to a Block Reference\n\nIf you wanted to append the content \"Hello\" below the block referenced by\n\"2d9b4a\" above (\"More random text.\"), you could send the following headers:\n\n- `Operation`: `append`\n- `Target-Type`: `block`\n- `Target`: `2d9b4a`\n- with the request body: `Hello`\n\nThe above would work just fine for `prepend` or `replace`, too, of course,\nbut with different results.\n\n## Add a Row to a Table Referenced by a Block Reference\n\nIf you wanted to add a new city (\"Chicago, IL\") and population (\"16\") pair to the table above\nreferenced by the block reference `2c7cfa`, you could send the following\nheaders:\n\n- `Operation`: `append`\n- `TargetType`: `block`\n- `Target`: `2c7cfa`\n- `Content-Type`: `application/json`\n- with the request body: `[[\"Chicago, IL\", \"16\"]]`\n\nThe use of a `Content-Type` of `application/json` allows the API\nto infer that member of your array represents rows and columns of your\nto append to the referenced table.  You can of course just use a\n`Content-Type` of `text/markdown`, but in such a case you'll have to\nformat your table row manually instead of letting the library figure\nit out for you.\n\nYou also have the option of using `prepend` (in which case, your new\nrow would be the first -- right below the table heading) or `replace` (in which\ncase all rows except the table heading would be replaced by the new row(s)\nyou supplied).\n\n## Setting a Frontmatter Field\n\nIf you wanted to set the frontmatter field `alpha` to `2`, you could\nsend the following headers:\n\n- `Operation`: `replace`\n- `TargetType`: `frontmatter`\n- `Target`: `beep`\n- with the request body `2`\n\nIf you're setting a frontmatter field that might not already exist\nyou may want to use the `Create-Target-If-Missing` header so the\nnew frontmatter field is created and set to your specified value\nif it doesn't already exist.\n\nYou may find using a `Content-Type` of `application/json` to be\nparticularly useful in the case of frontmatter since frontmatter\nfields' values are JSON data, and the API can be smarter about\ninterpreting yoru `prepend` or `append` requests if you specify\nyour data as JSON (particularly when appending, for example,\nlist items).\n",
@@ -197,11 +181,7 @@
             "name": "Operation",
             "required": true,
             "schema": {
-              "enum": [
-                "append",
-                "prepend",
-                "replace"
-              ],
+              "enum": ["append", "prepend", "replace"],
               "type": "string"
             }
           },
@@ -211,11 +191,7 @@
             "name": "Target-Type",
             "required": true,
             "schema": {
-              "enum": [
-                "heading",
-                "block",
-                "frontmatter"
-              ],
+              "enum": ["heading", "block", "frontmatter"],
               "type": "string"
             }
           },
@@ -245,10 +221,7 @@
             "required": false,
             "schema": {
               "default": "false",
-              "enum": [
-                "true",
-                "false"
-              ],
+              "enum": ["true", "false"],
               "type": "string"
             }
           }
@@ -307,9 +280,7 @@
           }
         },
         "summary": "Insert content into the currently open note in Obsidian relative to a heading within that document.\n",
-        "tags": [
-          "Active File"
-        ]
+        "tags": ["Active File"]
       },
       "post": {
         "description": "Appends content to the end of the currently-open note.\n\nIf you would like to insert text relative to a particular heading instead of appending to the end of the file, see 'patch'.\n",
@@ -352,9 +323,7 @@
           }
         },
         "summary": "Append content to the active file open in Obsidian.\n",
-        "tags": [
-          "Active File"
-        ]
+        "tags": ["Active File"]
       },
       "put": {
         "requestBody": {
@@ -400,9 +369,7 @@
           }
         },
         "summary": "Update the content of the active file open in Obsidian.\n",
-        "tags": [
-          "Active File"
-        ]
+        "tags": ["Active File"]
       }
     },
     "/commands/": {
@@ -448,9 +415,7 @@
           }
         },
         "summary": "Get a list of available commands.\n",
-        "tags": [
-          "Commands"
-        ]
+        "tags": ["Commands"]
       }
     },
     "/commands/{commandId}/": {
@@ -482,9 +447,7 @@
           }
         },
         "summary": "Execute a command.\n",
-        "tags": [
-          "Commands"
-        ]
+        "tags": ["Commands"]
       }
     },
     "/open/{filename}": {
@@ -517,9 +480,7 @@
           }
         },
         "summary": "Open the specified document in Obsidian\n",
-        "tags": [
-          "Open"
-        ]
+        "tags": ["Open"]
       }
     },
     "/periodic/{period}/": {
@@ -533,13 +494,7 @@
             "required": true,
             "schema": {
               "default": "daily",
-              "enum": [
-                "daily",
-                "weekly",
-                "monthly",
-                "quarterly",
-                "yearly"
-              ],
+              "enum": ["daily", "weekly", "monthly", "quarterly", "yearly"],
               "type": "string"
             }
           }
@@ -570,9 +525,7 @@
           }
         },
         "summary": "Delete a periodic note.\n",
-        "tags": [
-          "Periodic Notes"
-        ]
+        "tags": ["Periodic Notes"]
       },
       "get": {
         "parameters": [
@@ -583,13 +536,7 @@
             "required": true,
             "schema": {
               "default": "daily",
-              "enum": [
-                "daily",
-                "weekly",
-                "monthly",
-                "quarterly",
-                "yearly"
-              ],
+              "enum": ["daily", "weekly", "monthly", "quarterly", "yearly"],
               "type": "string"
             }
           }
@@ -616,9 +563,7 @@
           }
         },
         "summary": "Get current periodic note for the specified period.\n",
-        "tags": [
-          "Periodic Notes"
-        ]
+        "tags": ["Periodic Notes"]
       },
       "patch": {
         "description": "Inserts content into an existing note relative to a heading within your note.\n\nAllows you to modify the content relative to a heading, block reference, or frontmatter field in your document.\n\nNote that this API was changed in Version 3.0 of this extension and the earlier PATCH API is now deprecated. Requests made using the previous version of this API will continue to work until Version 4.0 is released.  See https://github.com/coddingtonbear/obsidian-local-rest-api/wiki/Changes-to-PATCH-requests-between-versions-2.0-and-3.0 for more details and migration instructions.\n\n# Examples\n\nAll of the below examples assume you have a document that looks like\nthis:\n\n```markdown\n---\nalpha: 1\nbeta: test\ndelta:\nzeta: 1\nyotta: 1\ngamma:\n- one\n- two\n---\n\n# Heading 1\n\nThis is the content for heading one\n\nAlso references some [[#^484ef2]]\n\n## Subheading 1:1\nContent for Subheading 1:1\n\n### Subsubheading 1:1:1\n\n### Subsubheading 1:1:2\n\nTesting how block references work for a table.[[#^2c7cfa]]\nSome content for Subsubheading 1:1:2\n\nMore random text.\n\n^2d9b4a\n\n## Subheading 1:2\n\nContent for Subheading 1:2.\n\nsome content with a block reference ^484ef2\n\n## Subheading 1:3\n| City         | Population |\n| ------------ | ---------- |\n| Seattle, WA  | 8          |\n| Portland, OR | 4          |\n\n^2c7cfa\n```\n\n## Append Content Below a Heading\n\nIf you wanted to append the content \"Hello\" below \"Subheading 1:1:1\" under \"Heading 1\",\nyou could send a request with the following headers:\n\n- `Operation`: `append`\n- `Target-Type`: `heading`\n- `Target`: `Heading 1::Subheading 1:1:1`\n- with the request body: `Hello`\n\nThe above would work just fine for `prepend` or `replace`, too, of course,\nbut with different results.\n\n## Append Content to a Block Reference\n\nIf you wanted to append the content \"Hello\" below the block referenced by\n\"2d9b4a\" above (\"More random text.\"), you could send the following headers:\n\n- `Operation`: `append`\n- `Target-Type`: `block`\n- `Target`: `2d9b4a`\n- with the request body: `Hello`\n\nThe above would work just fine for `prepend` or `replace`, too, of course,\nbut with different results.\n\n## Add a Row to a Table Referenced by a Block Reference\n\nIf you wanted to add a new city (\"Chicago, IL\") and population (\"16\") pair to the table above\nreferenced by the block reference `2c7cfa`, you could send the following\nheaders:\n\n- `Operation`: `append`\n- `TargetType`: `block`\n- `Target`: `2c7cfa`\n- `Content-Type`: `application/json`\n- with the request body: `[[\"Chicago, IL\", \"16\"]]`\n\nThe use of a `Content-Type` of `application/json` allows the API\nto infer that member of your array represents rows and columns of your\nto append to the referenced table.  You can of course just use a\n`Content-Type` of `text/markdown`, but in such a case you'll have to\nformat your table row manually instead of letting the library figure\nit out for you.\n\nYou also have the option of using `prepend` (in which case, your new\nrow would be the first -- right below the table heading) or `replace` (in which\ncase all rows except the table heading would be replaced by the new row(s)\nyou supplied).\n\n## Setting a Frontmatter Field\n\nIf you wanted to set the frontmatter field `alpha` to `2`, you could\nsend the following headers:\n\n- `Operation`: `replace`\n- `TargetType`: `frontmatter`\n- `Target`: `beep`\n- with the request body `2`\n\nIf you're setting a frontmatter field that might not already exist\nyou may want to use the `Create-Target-If-Missing` header so the\nnew frontmatter field is created and set to your specified value\nif it doesn't already exist.\n\nYou may find using a `Content-Type` of `application/json` to be\nparticularly useful in the case of frontmatter since frontmatter\nfields' values are JSON data, and the API can be smarter about\ninterpreting yoru `prepend` or `append` requests if you specify\nyour data as JSON (particularly when appending, for example,\nlist items).\n",
@@ -629,11 +574,7 @@
             "name": "Operation",
             "required": true,
             "schema": {
-              "enum": [
-                "append",
-                "prepend",
-                "replace"
-              ],
+              "enum": ["append", "prepend", "replace"],
               "type": "string"
             }
           },
@@ -643,11 +584,7 @@
             "name": "Target-Type",
             "required": true,
             "schema": {
-              "enum": [
-                "heading",
-                "block",
-                "frontmatter"
-              ],
+              "enum": ["heading", "block", "frontmatter"],
               "type": "string"
             }
           },
@@ -677,10 +614,7 @@
             "required": false,
             "schema": {
               "default": "false",
-              "enum": [
-                "true",
-                "false"
-              ],
+              "enum": ["true", "false"],
               "type": "string"
             }
           },
@@ -691,13 +625,7 @@
             "required": true,
             "schema": {
               "default": "daily",
-              "enum": [
-                "daily",
-                "weekly",
-                "monthly",
-                "quarterly",
-                "yearly"
-              ],
+              "enum": ["daily", "weekly", "monthly", "quarterly", "yearly"],
               "type": "string"
             }
           }
@@ -756,9 +684,7 @@
           }
         },
         "summary": "Insert content into a periodic note relative to a heading within that document.\n",
-        "tags": [
-          "Periodic Notes"
-        ]
+        "tags": ["Periodic Notes"]
       },
       "post": {
         "description": "Appends content to the periodic note for the specified period.  This will create the relevant periodic note if necessary.\n",
@@ -770,13 +696,7 @@
             "required": true,
             "schema": {
               "default": "daily",
-              "enum": [
-                "daily",
-                "weekly",
-                "monthly",
-                "quarterly",
-                "yearly"
-              ],
+              "enum": ["daily", "weekly", "monthly", "quarterly", "yearly"],
               "type": "string"
             }
           }
@@ -819,9 +739,7 @@
           }
         },
         "summary": "Append content to a periodic note.\n",
-        "tags": [
-          "Periodic Notes"
-        ]
+        "tags": ["Periodic Notes"]
       },
       "put": {
         "parameters": [
@@ -832,13 +750,7 @@
             "required": true,
             "schema": {
               "default": "daily",
-              "enum": [
-                "daily",
-                "weekly",
-                "monthly",
-                "quarterly",
-                "yearly"
-              ],
+              "enum": ["daily", "weekly", "monthly", "quarterly", "yearly"],
               "type": "string"
             }
           }
@@ -886,9 +798,7 @@
           }
         },
         "summary": "Update the content of a periodic note.\n",
-        "tags": [
-          "Periodic Notes"
-        ]
+        "tags": ["Periodic Notes"]
       }
     },
     "/search/": {
@@ -966,10 +876,7 @@
                         ]
                       }
                     },
-                    "required": [
-                      "filename",
-                      "result"
-                    ],
+                    "required": ["filename", "result"],
                     "type": "object"
                   },
                   "type": "array"
@@ -990,9 +897,7 @@
           }
         },
         "summary": "Search for documents matching a specified search query\n",
-        "tags": [
-          "Search"
-        ]
+        "tags": ["Search"]
       }
     },
     "/search/simple/": {
@@ -1044,17 +949,11 @@
                                   "type": "number"
                                 }
                               },
-                              "required": [
-                                "start",
-                                "end"
-                              ],
+                              "required": ["start", "end"],
                               "type": "object"
                             }
                           },
-                          "required": [
-                            "match",
-                            "context"
-                          ],
+                          "required": ["match", "context"],
                           "type": "object"
                         },
                         "type": "array"
@@ -1073,9 +972,7 @@
           }
         },
         "summary": "Search for documents matching a specified text query\n",
-        "tags": [
-          "Search"
-        ]
+        "tags": ["Search"]
       }
     },
     "/vault/": {
@@ -1086,10 +983,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "files": [
-                    "mydocument.md",
-                    "somedirectory/"
-                  ]
+                  "files": ["mydocument.md", "somedirectory/"]
                 },
                 "schema": {
                   "properties": {
@@ -1118,9 +1012,7 @@
           }
         },
         "summary": "List files that exist in the root of your vault.\n",
-        "tags": [
-          "Vault Directories"
-        ]
+        "tags": ["Vault Directories"]
       }
     },
     "/vault/{filename}": {
@@ -1163,9 +1055,7 @@
           }
         },
         "summary": "Delete a particular file in your vault.\n",
-        "tags": [
-          "Vault Files"
-        ]
+        "tags": ["Vault Files"]
       },
       "get": {
         "description": "Returns the content of the file at the specified path in your vault should the file exist.\n\nIf you specify the header `Accept: application/vnd.olrapi.note+json`, will return a JSON representation of your note including parsed tag and frontmatter data as well as filesystem metadata.  See \"responses\" below for details.\n",
@@ -1203,9 +1093,7 @@
           }
         },
         "summary": "Return the content of a single file in your vault.\n",
-        "tags": [
-          "Vault Files"
-        ]
+        "tags": ["Vault Files"]
       },
       "patch": {
         "description": "Inserts content into an existing note relative to a heading within your note.\n\nAllows you to modify the content relative to a heading, block reference, or frontmatter field in your document.\n\nNote that this API was changed in Version 3.0 of this extension and the earlier PATCH API is now deprecated. Requests made using the previous version of this API will continue to work until Version 4.0 is released.  See https://github.com/coddingtonbear/obsidian-local-rest-api/wiki/Changes-to-PATCH-requests-between-versions-2.0-and-3.0 for more details and migration instructions.\n\n# Examples\n\nAll of the below examples assume you have a document that looks like\nthis:\n\n```markdown\n---\nalpha: 1\nbeta: test\ndelta:\nzeta: 1\nyotta: 1\ngamma:\n- one\n- two\n---\n\n# Heading 1\n\nThis is the content for heading one\n\nAlso references some [[#^484ef2]]\n\n## Subheading 1:1\nContent for Subheading 1:1\n\n### Subsubheading 1:1:1\n\n### Subsubheading 1:1:2\n\nTesting how block references work for a table.[[#^2c7cfa]]\nSome content for Subsubheading 1:1:2\n\nMore random text.\n\n^2d9b4a\n\n## Subheading 1:2\n\nContent for Subheading 1:2.\n\nsome content with a block reference ^484ef2\n\n## Subheading 1:3\n| City         | Population |\n| ------------ | ---------- |\n| Seattle, WA  | 8          |\n| Portland, OR | 4          |\n\n^2c7cfa\n```\n\n## Append Content Below a Heading\n\nIf you wanted to append the content \"Hello\" below \"Subheading 1:1:1\" under \"Heading 1\",\nyou could send a request with the following headers:\n\n- `Operation`: `append`\n- `Target-Type`: `heading`\n- `Target`: `Heading 1::Subheading 1:1:1`\n- with the request body: `Hello`\n\nThe above would work just fine for `prepend` or `replace`, too, of course,\nbut with different results.\n\n## Append Content to a Block Reference\n\nIf you wanted to append the content \"Hello\" below the block referenced by\n\"2d9b4a\" above (\"More random text.\"), you could send the following headers:\n\n- `Operation`: `append`\n- `Target-Type`: `block`\n- `Target`: `2d9b4a`\n- with the request body: `Hello`\n\nThe above would work just fine for `prepend` or `replace`, too, of course,\nbut with different results.\n\n## Add a Row to a Table Referenced by a Block Reference\n\nIf you wanted to add a new city (\"Chicago, IL\") and population (\"16\") pair to the table above\nreferenced by the block reference `2c7cfa`, you could send the following\nheaders:\n\n- `Operation`: `append`\n- `TargetType`: `block`\n- `Target`: `2c7cfa`\n- `Content-Type`: `application/json`\n- with the request body: `[[\"Chicago, IL\", \"16\"]]`\n\nThe use of a `Content-Type` of `application/json` allows the API\nto infer that member of your array represents rows and columns of your\nto append to the referenced table.  You can of course just use a\n`Content-Type` of `text/markdown`, but in such a case you'll have to\nformat your table row manually instead of letting the library figure\nit out for you.\n\nYou also have the option of using `prepend` (in which case, your new\nrow would be the first -- right below the table heading) or `replace` (in which\ncase all rows except the table heading would be replaced by the new row(s)\nyou supplied).\n\n## Setting a Frontmatter Field\n\nIf you wanted to set the frontmatter field `alpha` to `2`, you could\nsend the following headers:\n\n- `Operation`: `replace`\n- `TargetType`: `frontmatter`\n- `Target`: `beep`\n- with the request body `2`\n\nIf you're setting a frontmatter field that might not already exist\nyou may want to use the `Create-Target-If-Missing` header so the\nnew frontmatter field is created and set to your specified value\nif it doesn't already exist.\n\nYou may find using a `Content-Type` of `application/json` to be\nparticularly useful in the case of frontmatter since frontmatter\nfields' values are JSON data, and the API can be smarter about\ninterpreting yoru `prepend` or `append` requests if you specify\nyour data as JSON (particularly when appending, for example,\nlist items).\n",
@@ -1216,11 +1104,7 @@
             "name": "Operation",
             "required": true,
             "schema": {
-              "enum": [
-                "append",
-                "prepend",
-                "replace"
-              ],
+              "enum": ["append", "prepend", "replace"],
               "type": "string"
             }
           },
@@ -1230,11 +1114,7 @@
             "name": "Target-Type",
             "required": true,
             "schema": {
-              "enum": [
-                "heading",
-                "block",
-                "frontmatter"
-              ],
+              "enum": ["heading", "block", "frontmatter"],
               "type": "string"
             }
           },
@@ -1264,10 +1144,7 @@
             "required": false,
             "schema": {
               "default": "false",
-              "enum": [
-                "true",
-                "false"
-              ],
+              "enum": ["true", "false"],
               "type": "string"
             }
           },
@@ -1336,9 +1213,7 @@
           }
         },
         "summary": "Insert content into an existing note relative to a heading within that document.\n",
-        "tags": [
-          "Vault Files"
-        ]
+        "tags": ["Vault Files"]
       },
       "post": {
         "description": "Appends content to the end of an existing note. If the specified file does not yet exist, it will be created as an empty file.\n\nIf you would like to insert text relative to a particular heading instead of appending to the end of the file, see 'patch'.\n",
@@ -1392,9 +1267,7 @@
           }
         },
         "summary": "Append content to a new or existing file.\n",
-        "tags": [
-          "Vault Files"
-        ]
+        "tags": ["Vault Files"]
       },
       "put": {
         "description": "Creates a new file in your vault or updates the content of an existing one if the specified file already exists.\n",
@@ -1453,9 +1326,7 @@
           }
         },
         "summary": "Create a new file in your vault or update the content of an existing one.\n",
-        "tags": [
-          "Vault Files"
-        ]
+        "tags": ["Vault Files"]
       }
     },
     "/vault/{pathToDirectory}/": {
@@ -1477,10 +1348,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "files": [
-                    "mydocument.md",
-                    "somedirectory/"
-                  ]
+                  "files": ["mydocument.md", "somedirectory/"]
                 },
                 "schema": {
                   "properties": {
@@ -1509,9 +1377,7 @@
           }
         },
         "summary": "List files that exist in the specified directory.\n",
-        "tags": [
-          "Vault Directories"
-        ]
+        "tags": ["Vault Directories"]
       }
     }
   },
