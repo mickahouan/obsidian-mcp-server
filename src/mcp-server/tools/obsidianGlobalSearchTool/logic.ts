@@ -5,7 +5,7 @@ import {
   ObsidianRestApiService,
   SimpleSearchResult,
 } from "../../../services/obsidianRestAPI/index.js"; // Removed NoteStat import
-import { VaultCacheService } from "../../../services/vaultCache/index.js";
+import { VaultCacheService } from "../../../services/obsidianRestAPI/vaultCache/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 // Import formatTimestamp utility
 import {

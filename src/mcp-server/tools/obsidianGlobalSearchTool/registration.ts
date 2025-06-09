@@ -6,7 +6,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
-import type { VaultCacheService } from "../../../services/vaultCache/index.js"; // Import VaultCacheService type
+import type { VaultCacheService } from "../../../services/obsidianRestAPI/vaultCache/index.js"; // Import VaultCacheService type
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 import {
   ErrorHandler,

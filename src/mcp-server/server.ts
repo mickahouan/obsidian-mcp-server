@@ -14,6 +14,7 @@
  * @module src/mcp-server/server
  */
 
+import { ServerType } from "@hono/node-server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 // Import validated configuration and environment details.
 import { config, environment } from "../config/index.js";
@@ -22,7 +23,7 @@ import { ErrorHandler, logger, requestContextService } from "../utils/index.js";
 // Import the Obsidian service
 import { ObsidianRestApiService } from "../services/obsidianRestAPI/index.js";
 // Import the Vault Cache service
-import { VaultCacheService } from "../services/vaultCache/index.js";
+import { VaultCacheService } from "../services/obsidianRestAPI/vaultCache/index.js";
 // Import registration functions for specific resources and tools.
 import { registerObsidianDeleteFileTool } from "./tools/obsidianDeleteFileTool/index.js";
 import { registerObsidianGlobalSearchTool } from "./tools/obsidianGlobalSearchTool/index.js";
@@ -159,7 +160,7 @@ async function createMcpServerInstance(
 async function startTransport(
   obsidianService: ObsidianRestApiService,
   vaultCacheService: VaultCacheService,
-): Promise<McpServer | void> {
+): Promise<McpServer | ServerType | void> {
   const transportType = config.mcpTransportType;
   const context = requestContextService.createRequestContext({
     operation: "startTransport",
@@ -176,8 +177,8 @@ async function startTransport(
     // It needs a factory function to create new McpServer instances, passing along the shared services.
     const mcpServerFactory = async () =>
       createMcpServerInstance(obsidianService, vaultCacheService);
-    await startHttpTransport(mcpServerFactory, context);
-    return; // HTTP server runs indefinitely, no single server instance returned here.
+    const httpServerInstance = await startHttpTransport(mcpServerFactory, context);
+    return httpServerInstance; // Return the http.Server instance.
   }
 
   if (transportType === "stdio") {
@@ -220,7 +221,7 @@ async function startTransport(
 export async function initializeAndStartServer(
   obsidianService: ObsidianRestApiService,
   vaultCacheService: VaultCacheService,
-): Promise<void | McpServer> {
+): Promise<void | McpServer | ServerType> {
   const context = requestContextService.createRequestContext({
     operation: "initializeAndStartServer",
   });

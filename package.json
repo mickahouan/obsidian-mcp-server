@@ -33,8 +33,9 @@
     "inspect:http": "mcp-inspector --config mcp.json --server obsidian-mcp-server-http"
   },
   "dependencies": {
-    "@modelcontextprotocol/inspector": "^0.13.0",
-    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@modelcontextprotocol/inspector": "^0.14.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@hono/node-server": "^1.14.3",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/sanitize-html": "^2.16.0",
     "@types/validator": "13.15.1",
@@ -43,19 +44,20 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "ignore": "^7.0.4",
+    "ignore": "^7.0.5",
     "jsonwebtoken": "^9.0.2",
-    "openai": "^4.103.0",
+    "openai": "^5.2.0",
     "partial-json": "^0.1.7",
     "sanitize-html": "^2.17.0",
     "tiktoken": "^1.0.21",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
+    "hono": "^4.7.11",
     "validator": "13.15.15",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "yargs": "^18.0.0",
-    "zod": "^3.25.34"
+    "zod": "^3.25.56"
   },
   "keywords": [
     "typescript",
@@ -75,9 +77,9 @@
     "node": ">=16.0.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.2",
+    "@types/express": "^5.0.3",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^22.15.24",
+    "@types/node": "^22.15.30",
     "js-yaml": "^4.1.0",
     "prettier": "^3.5.3",
     "typedoc": "^0.28.5"

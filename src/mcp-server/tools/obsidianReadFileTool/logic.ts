@@ -41,7 +41,7 @@ export const ObsidianReadFileInputSchema = z
       .string()
       .min(1, "filePath cannot be empty")
       .describe(
-        'The vault-relative path to the target file (e.g., "Folder/My Note.md"). Tries case-sensitive first, then case-insensitive fallback.',
+        'The vault-relative path to the target file (e.g., "developer/github/tips.md"). Tries case-sensitive first, then case-insensitive fallback.',
       ),
     /**
      * Specifies the desired format for the returned content.

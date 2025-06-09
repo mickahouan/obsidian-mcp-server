@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Imports MUST be at the top level
-import http from "http"; // Added for httpServerInstance type
+import { ServerType } from "@hono/node-server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { config, environment } from "./config/index.js"; // This loads .env via dotenv.config()
 import { initializeAndStartServer } from "./mcp-server/server.js";
@@ -9,7 +9,7 @@ import { requestContextService } from "./utils/index.js";
 import { logger, McpLogLevel } from "./utils/internal/logger.js"; // Import logger instance early
 // Import Services
 import { ObsidianRestApiService } from "./services/obsidianRestAPI/index.js";
-import { VaultCacheService } from "./services/vaultCache/index.js"; // Import VaultCacheService
+import { VaultCacheService } from "./services/obsidianRestAPI/vaultCache/index.js"; // Import VaultCacheService
 
 /**
  * The main MCP server instance (only stored globally for stdio shutdown).
@@ -18,9 +18,9 @@ import { VaultCacheService } from "./services/vaultCache/index.js"; // Import Va
 let server: McpServer | undefined;
 /**
  * The main HTTP server instance (only stored globally for http shutdown).
- * @type {http.Server | undefined}
+ * @type {ServerType | undefined}
  */
-let httpServerInstance: http.Server | undefined;
+let httpServerInstance: ServerType | undefined;
 /**
  * Shared Obsidian REST API service instance.
  * @type {ObsidianRestApiService | undefined}
@@ -244,11 +244,9 @@ const start = async () => {
         "Stored McpServer instance for stdio transport.",
         startupContext,
       );
-    } else if (
-      transportType === "http" &&
-      serverOrHttpInstance instanceof http.Server
-    ) {
-      httpServerInstance = serverOrHttpInstance; // Store http.Server for http transport
+    } else if (transportType === "http" && serverOrHttpInstance) {
+      // The instance is of ServerType (http.Server or https.Server)
+      httpServerInstance = serverOrHttpInstance as ServerType; // Store ServerType for http transport
       logger.debug(
         "Stored http.Server instance for http transport.",
         startupContext,

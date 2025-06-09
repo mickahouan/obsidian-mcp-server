@@ -1,6 +1,6 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-05-28 23:58:18
+Generated on: 2025-06-09 20:57:10
 
 ```
 obsidian-mcp-server
@@ -55,21 +55,21 @@ obsidian-mcp-server
 │   │   │   └── stdioTransport.ts
 │   │   └── server.ts
 │   ├── services
-│   │   ├── obsidianRestAPI
-│   │   │   ├── methods
-│   │   │   │   ├── activeFileMethods.ts
-│   │   │   │   ├── commandMethods.ts
-│   │   │   │   ├── openMethods.ts
-│   │   │   │   ├── patchMethods.ts
-│   │   │   │   ├── periodicNoteMethods.ts
-│   │   │   │   ├── searchMethods.ts
-│   │   │   │   └── vaultMethods.ts
-│   │   │   ├── index.ts
-│   │   │   ├── service.ts
-│   │   │   └── types.ts
-│   │   └── vaultCache
+│   │   └── obsidianRestAPI
+│   │       ├── methods
+│   │       │   ├── activeFileMethods.ts
+│   │       │   ├── commandMethods.ts
+│   │       │   ├── openMethods.ts
+│   │       │   ├── patchMethods.ts
+│   │       │   ├── periodicNoteMethods.ts
+│   │       │   ├── searchMethods.ts
+│   │       │   └── vaultMethods.ts
+│   │       ├── vaultCache
+│   │       │   ├── index.ts
+│   │       │   └── service.ts
 │   │       ├── index.ts
-│   │       └── service.ts
+│   │       ├── service.ts
+│   │       └── types.ts
 │   ├── types-global
 │   │   └── errors.ts
 │   ├── utils

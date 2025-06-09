@@ -3,13 +3,13 @@
  * @description Service for building and managing an in-memory cache of Obsidian vault content.
  */
 
-import { NoteJson, ObsidianRestApiService } from "../obsidianRestAPI/index.js";
+import { NoteJson, ObsidianRestApiService } from "../index.js";
 import {
   logger,
   RequestContext,
   requestContextService,
-} from "../../utils/index.js";
-import { BaseErrorCode, McpError } from "../../types-global/errors.js";
+} from "../../../utils/index.js";
+import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 import path from "node:path";
 
 interface CacheEntry {
@@ -216,21 +216,22 @@ export class VaultCacheService {
       return markdownFiles;
     } catch (error) {
       const errMsg = `Failed to list directory during cache build scan: ${normalizedPath}`;
-      if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
+      const err = error as McpError | Error; // Type assertion
+      if (err instanceof McpError && err.code === BaseErrorCode.NOT_FOUND) {
         logger.warning(`${errMsg} - Directory not found, skipping.`, opContext);
         return [];
       }
       // Log and re-throw critical listing errors
-      if (error instanceof Error) {
-        logger.error(errMsg, error, opContext);
+      if (err instanceof Error) {
+        logger.error(errMsg, err, opContext);
       } else {
         logger.error(errMsg, opContext);
       }
       const errorCode =
-        error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR;
+        err instanceof McpError ? err.code : BaseErrorCode.INTERNAL_ERROR;
       throw new McpError(
         errorCode,
-        `${errMsg}: ${error instanceof Error ? error.message : String(error)}`,
+        `${errMsg}: ${err instanceof Error ? err.message : String(err)}`,
         opContext,
       );
     }
