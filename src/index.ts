@@ -51,7 +51,11 @@ const shutdown = async (signal: string) => {
   );
 
   try {
-    // Close the main MCP server (only relevant for stdio)
+    // Stop cache refresh timer first
+    if (vaultCacheService) {
+      vaultCacheService.stopPeriodicRefresh();
+    }
+
     // Close the main MCP server (only relevant for stdio)
     if (server) {
       logger.info("Closing main MCP server (stdio)...", shutdownContext);
@@ -276,19 +280,27 @@ const start = async () => {
     // Tools needing the cache should check its readiness state.
     logger.info("Triggering background vault cache build...", startupContext);
     // No 'await' here - run in background
-    vaultCacheService.buildVaultCache().catch((cacheBuildError) => {
-      // Log errors during the background build process
-      logger.error("Error occurred during background vault cache build", {
-        ...startupContext, // Use startup context for correlation
-        operation: "BackgroundCacheBuild",
-        error:
-          cacheBuildError instanceof Error
-            ? cacheBuildError.message
-            : String(cacheBuildError),
-        stack:
-          cacheBuildError instanceof Error ? cacheBuildError.stack : undefined,
+    vaultCacheService
+      .buildVaultCache()
+      .then(() => {
+        // Once the initial build is done, start the periodic refresh
+        vaultCacheService?.startPeriodicRefresh();
+      })
+      .catch((cacheBuildError) => {
+        // Log errors during the background build process
+        logger.error("Error occurred during background vault cache build", {
+          ...startupContext, // Use startup context for correlation
+          operation: "BackgroundCacheBuild",
+          error:
+            cacheBuildError instanceof Error
+              ? cacheBuildError.message
+              : String(cacheBuildError),
+          stack:
+            cacheBuildError instanceof Error
+              ? cacheBuildError.stack
+              : undefined,
+        });
       });
-    });
     // --- End Cache Build Trigger ---
 
     // --- Signal and Error Handling Setup ---

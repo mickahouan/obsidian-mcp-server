@@ -3,6 +3,7 @@
  * @description Service for building and managing an in-memory cache of Obsidian vault content.
  */
 
+import { config } from "../../../config/index.js";
 import { NoteJson, ObsidianRestApiService } from "../index.js";
 import {
   logger,
@@ -18,11 +19,21 @@ interface CacheEntry {
   // Add other stats if needed, e.g., ctime, size
 }
 
+/**
+ * Manages an in-memory cache of the Obsidian vault's file structure and metadata.
+ *
+ * __Is the cache safe and secure?__
+ * Yes, the cache is safe and secure for its purpose within this application. Here's why:
+ * 1. __In-Memory Storage:__ The cache exists only in the server's memory. It is not written to disk or transmitted over the network, so its attack surface is limited to the server process itself.
+ * 2. __Limited Data:__ It stores only file metadata (paths, creation/modification times, size), not the actual content of your notes. This minimizes the risk of exposing sensitive information.
+ * 3. __Local Data Source:__ The data populating the cache comes directly from your own Obsidian vault via the local REST API. It is not fetching data from external, untrusted sources.
+ */
 export class VaultCacheService {
   private vaultContentCache: Map<string, CacheEntry> = new Map();
   private isCacheReady: boolean = false;
   private isBuilding: boolean = false;
   private obsidianService: ObsidianRestApiService;
+  private refreshIntervalId: NodeJS.Timeout | null = null;
 
   constructor(obsidianService: ObsidianRestApiService) {
     this.obsidianService = obsidianService;
@@ -32,6 +43,51 @@ export class VaultCacheService {
         operation: "VaultCacheServiceInit",
       }),
     );
+  }
+
+  /**
+   * Starts the periodic cache refresh mechanism.
+   * The interval is controlled by the `OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN` config setting.
+   */
+  public startPeriodicRefresh(): void {
+    const refreshIntervalMs =
+      config.obsidianCacheRefreshIntervalMin * 60 * 1000;
+    if (this.refreshIntervalId) {
+      logger.warning(
+        "Periodic refresh is already running.",
+        requestContextService.createRequestContext({
+          operation: "startPeriodicRefresh",
+        }),
+      );
+      return;
+    }
+    this.refreshIntervalId = setInterval(
+      () => this.refreshCache(),
+      refreshIntervalMs,
+    );
+    logger.info(
+      `Vault cache periodic refresh scheduled every ${config.obsidianCacheRefreshIntervalMin} minutes.`,
+      requestContextService.createRequestContext({
+        operation: "startPeriodicRefresh",
+      }),
+    );
+  }
+
+  /**
+   * Stops the periodic cache refresh mechanism.
+   * Should be called during graceful shutdown.
+   */
+  public stopPeriodicRefresh(): void {
+    const context = requestContextService.createRequestContext({
+      operation: "stopPeriodicRefresh",
+    });
+    if (this.refreshIntervalId) {
+      clearInterval(this.refreshIntervalId);
+      this.refreshIntervalId = null;
+      logger.info("Stopped periodic cache refresh.", context);
+    } else {
+      logger.info("Periodic cache refresh was not running.", context);
+    }
   }
 
   /**
@@ -71,7 +127,7 @@ export class VaultCacheService {
 
   /**
    * Builds the in-memory cache by fetching all markdown files and their content.
-   * This is intended to be run in the background after server startup.
+   * This is intended to be run once at startup. Subsequent updates are handled by `refreshCache`.
    */
   public async buildVaultCache(): Promise<void> {
     const initialBuildContext = requestContextService.createRequestContext({
@@ -89,81 +145,118 @@ export class VaultCacheService {
       return;
     }
 
-    this.isBuilding = true;
-    this.isCacheReady = false;
+    await this.refreshCache(true); // Perform an initial, full build
+  }
+
+  /**
+   * Refreshes the cache by comparing remote file modification times with cached ones.
+   * Only fetches content for new or updated files.
+   * @param isInitialBuild - If true, forces a full build and sets the cache readiness flag.
+   */
+  public async refreshCache(isInitialBuild = false): Promise<void> {
     const context = requestContextService.createRequestContext({
-      operation: "buildVaultCache",
+      operation: "refreshCache",
+      isInitialBuild,
     });
-    logger.info("Starting vault cache build process...", context);
+
+    if (this.isBuilding) {
+      logger.warning("Cache refresh already in progress. Skipping.", context);
+      return;
+    }
+
+    this.isBuilding = true;
+    if (isInitialBuild) {
+      this.isCacheReady = false;
+    }
+
+    logger.info("Starting vault cache refresh process...", context);
 
     try {
       const startTime = Date.now();
-      const allMarkdownFiles = await this.listAllMarkdownFiles("/", context);
-      const totalFiles = allMarkdownFiles.length;
-      logger.info(`Found ${totalFiles} markdown files to cache.`, context);
+      const remoteFiles = await this.listAllMarkdownFiles("/", context);
+      const remoteFileSet = new Set(remoteFiles);
+      const cachedFileSet = new Set(this.vaultContentCache.keys());
 
-      this.vaultContentCache.clear(); // Clear any previous cache attempt
+      let filesAdded = 0;
+      let filesUpdated = 0;
+      let filesRemoved = 0;
 
-      for (let i = 0; i < totalFiles; i++) {
-        const filePath = allMarkdownFiles[i];
-        const fileContext = {
-          ...context,
-          filePath,
-          progress: `${i + 1}/${totalFiles}`,
-        };
-        try {
-          // Fetch NoteJson to get content and mtime efficiently
-          const noteJson = (await this.obsidianService.getFileContent(
-            filePath,
-            "json",
-            fileContext,
-          )) as NoteJson;
-          this.vaultContentCache.set(filePath, {
-            content: noteJson.content,
-            mtime: noteJson.stat.mtime,
+      // 1. Remove deleted files from cache
+      for (const cachedFile of cachedFileSet) {
+        if (!remoteFileSet.has(cachedFile)) {
+          this.vaultContentCache.delete(cachedFile);
+          filesRemoved++;
+          logger.debug(`Removed deleted file from cache: ${cachedFile}`, {
+            ...context,
+            filePath: cachedFile,
           });
-          if ((i + 1) % 50 === 0 || i === totalFiles - 1) {
-            // Log progress periodically
-            logger.info(
-              `Caching progress: ${i + 1}/${totalFiles} files cached.`,
-              fileContext,
-            );
-          } else {
-            logger.debug(`Cached file: ${filePath}`, fileContext);
+        }
+      }
+
+      // 2. Check for new or updated files
+      for (const filePath of remoteFiles) {
+        try {
+          const fileMetadata = await this.obsidianService.getFileMetadata(
+            filePath,
+            context,
+          );
+          const remoteMtime = fileMetadata.mtime;
+          const cachedEntry = this.vaultContentCache.get(filePath);
+
+          if (!cachedEntry || cachedEntry.mtime < remoteMtime) {
+            const noteJson = (await this.obsidianService.getFileContent(
+              filePath,
+              "json",
+              context,
+            )) as NoteJson;
+            this.vaultContentCache.set(filePath, {
+              content: noteJson.content,
+              mtime: noteJson.stat.mtime,
+            });
+
+            if (!cachedEntry) {
+              filesAdded++;
+              logger.debug(`Added new file to cache: ${filePath}`, {
+                ...context,
+                filePath,
+              });
+            } else {
+              filesUpdated++;
+              logger.debug(`Updated modified file in cache: ${filePath}`, {
+                ...context,
+                filePath,
+              });
+            }
           }
         } catch (error) {
           logger.error(
-            `Failed to cache file: ${filePath}. Skipping. Error: ${error instanceof Error ? error.message : String(error)}`,
-            fileContext,
+            `Failed to process file during cache refresh: ${filePath}. Skipping. Error: ${error instanceof Error ? error.message : String(error)}`,
+            { ...context, filePath },
           );
-          // Optionally add error details for debugging
-          if (error instanceof Error) {
-            logger.debug("File caching error details", {
-              ...fileContext,
-              errorDetails: error.stack || error.message,
-            });
-          }
         }
       }
 
       const duration = (Date.now() - startTime) / 1000;
-      this.isCacheReady = true;
-      logger.info(
-        `Vault cache build completed successfully in ${duration.toFixed(2)} seconds. Cached ${this.vaultContentCache.size} files.`,
-        context,
-      );
+      if (isInitialBuild) {
+        this.isCacheReady = true;
+        logger.info(
+          `Initial vault cache build completed in ${duration.toFixed(2)}s. Cached ${this.vaultContentCache.size} files.`,
+          context,
+        );
+      } else {
+        logger.info(
+          `Vault cache refresh completed in ${duration.toFixed(2)}s. Added: ${filesAdded}, Updated: ${filesUpdated}, Removed: ${filesRemoved}. Total cached: ${this.vaultContentCache.size}.`,
+          context,
+        );
+      }
     } catch (error) {
       logger.error(
-        `Critical error during vault cache build process. Cache may be incomplete. Error: ${error instanceof Error ? error.message : String(error)}`,
+        `Critical error during vault cache refresh. Cache may be incomplete. Error: ${error instanceof Error ? error.message : String(error)}`,
         context,
       );
-      if (error instanceof Error) {
-        logger.debug("Cache build critical error details", {
-          ...context,
-          errorDetails: error.stack || error.message,
-        });
+      if (isInitialBuild) {
+        this.isCacheReady = false;
       }
-      // Keep isCacheReady as false
     } finally {
       this.isBuilding = false;
     }

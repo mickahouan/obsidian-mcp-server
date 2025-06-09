@@ -6,7 +6,7 @@
 
 import { AxiosRequestConfig } from "axios";
 import { RequestContext } from "../../../utils/index.js";
-import { NoteJson, FileListResponse } from "../types.js";
+import { NoteJson, FileListResponse, NoteStat } from "../types.js";
 
 // Define a type for the internal request function signature
 type RequestFunction = <T = any>(
@@ -195,4 +195,41 @@ export async function listFiles(
     "listFiles",
   );
   return response.files;
+}
+
+/**
+ * Gets the metadata (stat) of a specific file using a lightweight HEAD request.
+ * @param _request - The internal request function from the service instance.
+ * @param filePath - Vault-relative path to the file.
+ * @param context - Request context.
+ * @returns The file's metadata.
+ */
+export async function getFileMetadata(
+  _request: RequestFunction,
+  filePath: string,
+  context: RequestContext,
+): Promise<NoteStat> {
+  const encodedPath = encodeVaultPath(filePath);
+  const response = await _request<any>(
+    {
+      method: "HEAD",
+      url: `/vault${encodedPath}`,
+    },
+    context,
+    "getFileMetadata",
+  );
+
+  // Extract headers and parse them into a NoteStat object
+  const headers = response.headers;
+  return {
+    mtime: headers["x-obsidian-mtime"]
+      ? parseFloat(headers["x-obsidian-mtime"]) * 1000
+      : 0,
+    ctime: headers["x-obsidian-ctime"]
+      ? parseFloat(headers["x-obsidian-ctime"]) * 1000
+      : 0,
+    size: headers["content-length"]
+      ? parseInt(headers["content-length"], 10)
+      : 0,
+  };
 }

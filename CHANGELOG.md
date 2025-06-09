@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HTTP Transport**: Migrated from Express to Hono for the HTTP transport (`httpTransport.ts`), resulting in a more modern, lightweight, and performant server. This includes a complete rewrite of the authentication middleware (`authMiddleware.ts`) and request handlers to align with Hono's context-based approach.
 - **Vault Cache Service**: Relocated the `VaultCacheService` from `src/services/vaultCache/` to `src/services/obsidianRestAPI/vaultCache/` to better group it with the Obsidian-related services it depends on.
 - **Tool Logic**: Minor improvements to logging and context handling in various tool logic files (e.g., `obsidianGlobalSearchTool`, `obsidianReadFileTool`).
+- **Vault Cache Optimization**: The `VaultCacheService` has been significantly refactored to improve performance and efficiency. Instead of rebuilding the entire cache from scratch, it now performs incremental updates. It fetches a list of all files and compares their modification times (`mtime`) against the cached versions. Content is only re-fetched for files that are new or have been modified, drastically reducing the number of API calls to the Obsidian vault during a refresh. The service now also supports periodic refreshing.
 
 ### Added
 

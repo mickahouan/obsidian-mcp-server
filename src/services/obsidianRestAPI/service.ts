@@ -26,6 +26,7 @@ import {
   ApiStatusResponse, // Import PatchOptions type
   ComplexSearchResult,
   NoteJson,
+  NoteStat,
   ObsidianCommand,
   PatchOptions,
   Period,
@@ -293,6 +294,23 @@ export class ObsidianRestApiService {
    */
   async listFiles(dirPath: string, context: RequestContext): Promise<string[]> {
     return vaultMethods.listFiles(this._request.bind(this), dirPath, context);
+  }
+
+  /**
+   * Gets the metadata (stat) of a specific file using a lightweight HEAD request.
+   * @param filePath - Vault-relative path to the file.
+   * @param context - Request context.
+   * @returns The file's metadata.
+   */
+  async getFileMetadata(
+    filePath: string,
+    context: RequestContext,
+  ): Promise<NoteStat> {
+    return vaultMethods.getFileMetadata(
+      this._request.bind(this),
+      filePath,
+      context,
+    );
   }
 
   // --- Search Methods ---
