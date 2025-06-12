@@ -1,6 +1,6 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-06-09 20:57:10
+Generated on: 2025-06-12 21:59:32
 
 ```
 obsidian-mcp-server
@@ -12,6 +12,7 @@ obsidian-mcp-server
 │   │   ├── obsidian_rest_api_spec.json
 │   │   └── obsidian_rest_api_spec.yaml
 │   ├── obsidian_mcp_tools_spec.md
+│   ├── obsidian_tools_phase2.md
 │   └── tree.md
 ├── examples
 ├── scripts
@@ -50,7 +51,11 @@ obsidian-mcp-server
 │   │   │       └── registration.ts
 │   │   ├── transports
 │   │   │   ├── authentication
-│   │   │   │   └── authMiddleware.ts
+│   │   │   │   ├── authContext.ts
+│   │   │   │   ├── authMiddleware.ts
+│   │   │   │   ├── authUtils.ts
+│   │   │   │   ├── oauthMiddleware.ts
+│   │   │   │   └── types.ts
 │   │   │   ├── httpTransport.ts
 │   │   │   └── stdioTransport.ts
 │   │   └── server.ts
@@ -84,6 +89,7 @@ obsidian-mcp-server
 │   │   │   └── tokenCounter.ts
 │   │   ├── obsidian
 │   │   │   ├── index.ts
+│   │   │   ├── obsidianApiUtils.ts
 │   │   │   └── obsidianStatUtils.ts
 │   │   ├── parsing
 │   │   │   ├── dateParser.ts

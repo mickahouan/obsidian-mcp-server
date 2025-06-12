@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2025-05-28
+## [2.0.1] - 2025-06-12
+
+### Added
+
+- **OAuth 2.1 Authentication**: Introduced support for OAuth 2.1 bearer token validation. This includes a new `oauthMiddleware.ts` that validates JWTs against a remote JWKS, along with new configuration options (`MCP_AUTH_MODE`, `OAUTH_ISSUER_URL`, `OAUTH_AUDIENCE`).
+- **Authentication Context & Scopes**: Added `authContext.ts` using `AsyncLocalStorage` to make authentication details available throughout the request lifecycle. Implemented `authUtils.ts` with `withRequiredScopes` for fine-grained, scope-based authorization on tools and resources.
+- **New Dependencies**: Added the `jose` library for robust JWT/JWS handling required for the OAuth implementation.
+- **Session Garbage Collection**: Implemented a session garbage collector in `httpTransport.ts` to automatically clean up stale or inactive client sessions, improving server stability.
+- **New Documentation**: Added `docs/obsidian_tools_phase2.md` to outline potential future tool developments.
+
+### Changed
+
+- **Authentication System Refactor**: The entire authentication layer in the HTTP transport has been refactored. It now supports both the original secret key-based JWTs and the new OAuth 2.1 flow, determined by the `MCP_AUTH_MODE` environment variable.
+- **Obsidian API Utilities**: Refactored shared logic by moving the `RequestFunction` type to a central `types.ts` and extracting `encodeVaultPath` into a dedicated `obsidianApiUtils.ts` for better code organization.
+- **Dependency Updates**: Updated key dependencies to their latest versions, including `@hono/node-server`, `openai`, and `zod`.
+- **Logging Enhancements**: The logger in `logger.ts` now correctly handles `bigint` serialization in log metadata.
+- **Code Cleanup**: General code cleanup and minor refactoring across various files for improved readability and maintainability.
+
+## [2.0.0] - 2025-06-09
 
 ### Changed
 
