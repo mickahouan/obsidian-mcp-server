@@ -4,15 +4,8 @@
  * Methods for opening files in Obsidian via the REST API.
  */
 
-import { AxiosRequestConfig } from "axios";
 import { RequestContext } from "../../../utils/index.js";
-
-// Define a type for the internal request function signature
-type RequestFunction = <T = any>(
-  config: AxiosRequestConfig,
-  context: RequestContext,
-  operationName: string,
-) => Promise<T>;
+import { RequestFunction } from "../types.js";
 
 /**
  * Opens a specific file in Obsidian. Creates the file if it doesn't exist.

@@ -3,15 +3,15 @@
  * @description Service for building and managing an in-memory cache of Obsidian vault content.
  */
 
+import path from "node:path";
 import { config } from "../../../config/index.js";
-import { NoteJson, ObsidianRestApiService } from "../index.js";
+import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 import {
   logger,
   RequestContext,
   requestContextService,
 } from "../../../utils/index.js";
-import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import path from "node:path";
+import { NoteJson, ObsidianRestApiService } from "../index.js";
 
 interface CacheEntry {
   content: string;
@@ -25,8 +25,7 @@ interface CacheEntry {
  * __Is the cache safe and secure?__
  * Yes, the cache is safe and secure for its purpose within this application. Here's why:
  * 1. __In-Memory Storage:__ The cache exists only in the server's memory. It is not written to disk or transmitted over the network, so its attack surface is limited to the server process itself.
- * 2. __Limited Data:__ It stores only file metadata (paths, creation/modification times, size), not the actual content of your notes. This minimizes the risk of exposing sensitive information.
- * 3. __Local Data Source:__ The data populating the cache comes directly from your own Obsidian vault via the local REST API. It is not fetching data from external, untrusted sources.
+ * 2. __Local Data Source:__ The data populating the cache comes directly from your own Obsidian vault via the local REST API. It is not fetching data from external, untrusted sources.
  */
 export class VaultCacheService {
   private vaultContentCache: Map<string, CacheEntry> = new Map();

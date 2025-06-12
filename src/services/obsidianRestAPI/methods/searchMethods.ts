@@ -4,16 +4,12 @@
  * Methods for performing searches via the Obsidian REST API.
  */
 
-import { AxiosRequestConfig } from "axios";
 import { RequestContext } from "../../../utils/index.js";
-import { SimpleSearchResult, ComplexSearchResult } from "../types.js";
-
-// Define a type for the internal request function signature
-type RequestFunction = <T = any>(
-  config: AxiosRequestConfig,
-  context: RequestContext,
-  operationName: string,
-) => Promise<T>;
+import {
+  SimpleSearchResult,
+  ComplexSearchResult,
+  RequestFunction,
+} from "../types.js";
 
 /**
  * Performs a simple text search across the vault.

@@ -4,12 +4,11 @@
  * It handles different log levels compliant with RFC 5424 and MCP specifications.
  * @module src/utils/internal/logger
  */
-import fs from "fs";
 import path from "path";
 import winston from "winston";
 import TransportStream from "winston-transport";
-import { config } from "../../config/index.js"; // Centralized config
-import { RequestContext } from "./requestContext.js"; // Import RequestContext
+import { config } from "../../config/index.js";
+import { RequestContext } from "./requestContext.js";
 
 /**
  * Defines the supported logging levels based on RFC 5424 Syslog severity levels,
@@ -130,7 +129,9 @@ function createWinstonConsoleFormat(): winston.Logform.Format {
       }
       if (Object.keys(metaCopy).length > 0) {
         try {
-          const remainingMetaJson = JSON.stringify(metaCopy, null, 2);
+          const replacer = (_key: string, value: unknown) =>
+            typeof value === "bigint" ? value.toString() : value;
+          const remainingMetaJson = JSON.stringify(metaCopy, replacer, 2);
           if (remainingMetaJson !== "{}")
             metaString += `\n  Meta: ${remainingMetaJson}`;
         } catch (stringifyError: unknown) {
@@ -174,35 +175,22 @@ export class Logger {
     if (this.initialized) {
       this.warning("Logger already initialized.", {
         loggerSetup: true,
-        requestId: "logger-init", // Consistent requestId
+        requestId: "logger-init",
         timestamp: new Date().toISOString(),
       });
       return;
     }
+
+    // Set initialized to true at the beginning of the initialization process.
+    this.initialized = true;
+
     this.currentMcpLevel = level;
     this.currentWinstonLevel = mcpToWinstonLevel[level];
 
-    let logsDirCreatedMessage: string | null = null;
-
-    if (isLogsDirSafe) {
-      // Directory creation is handled by config/index.ts ensureDirectory.
-      // This check is a fallback or for scenarios where the dir might be removed post-config init.
-      if (!fs.existsSync(resolvedLogsDir)) {
-        try {
-          await fs.promises.mkdir(resolvedLogsDir, { recursive: true });
-          logsDirCreatedMessage = `Re-created logs directory (should have been created by config): ${resolvedLogsDir}`;
-        } catch (err: unknown) {
-          if (process.stdout.isTTY) {
-            const errorMessage =
-              err instanceof Error ? err.message : String(err);
-            console.error(
-              `Error creating logs directory at ${resolvedLogsDir}: ${errorMessage}. File logging disabled.`,
-            );
-          }
-          throw err; // Critical if logs dir cannot be ensured
-        }
-      }
-    }
+    // The logs directory (config.logsPath / resolvedLogsDir) is expected to be created and validated
+    // by the configuration module (src/config/index.ts) before logger initialization.
+    // If isLogsDirSafe is true, we assume resolvedLogsDir exists and is usable.
+    // No redundant directory creation logic here.
 
     const fileFormat = winston.format.combine(
       winston.format.timestamp(),
@@ -259,6 +247,7 @@ export class Logger {
       exitOnError: false,
     });
 
+    // Configure console transport after Winston logger is created
     const consoleStatus = this._configureConsoleTransport();
 
     const initialContext: RequestContext = {
@@ -266,14 +255,12 @@ export class Logger {
       requestId: "logger-init-deferred",
       timestamp: new Date().toISOString(),
     };
-    if (logsDirCreatedMessage) {
-      this.info(logsDirCreatedMessage, initialContext);
-    }
+    // Removed logging of logsDirCreatedMessage as it's no longer set
     if (consoleStatus.message) {
       this.info(consoleStatus.message, initialContext);
     }
 
-    this.initialized = true;
+    this.initialized = true; // Ensure this is set after successful setup
     this.info(
       `Logger initialized. File logging level: ${this.currentWinstonLevel}. MCP logging level: ${this.currentMcpLevel}. Console logging: ${consoleStatus.enabled ? "enabled" : "disabled"}`,
       {
@@ -329,6 +316,7 @@ export class Logger {
     this.currentMcpLevel = newLevel;
     this.currentWinstonLevel = mcpToWinstonLevel[newLevel];
     if (this.winstonLogger) {
+      // Ensure winstonLogger is defined
       this.winstonLogger.level = this.currentWinstonLevel;
     }
 
@@ -409,7 +397,6 @@ export class Logger {
   private ensureInitialized(): boolean {
     if (!this.initialized || !this.winstonLogger) {
       if (process.stdout.isTTY) {
-        // Avoid logging to stdio if not a TTY
         console.warn("Logger not initialized; message dropped.");
       }
       return false;
@@ -428,7 +415,7 @@ export class Logger {
   private log(
     level: McpLogLevel,
     msg: string,
-    context?: RequestContext, // Use RequestContext type
+    context?: RequestContext,
     error?: Error,
   ): void {
     if (!this.ensureInitialized()) return;
@@ -451,6 +438,7 @@ export class Logger {
         mcpDataPayload.context = context;
       if (error) {
         mcpDataPayload.error = { message: error.message };
+        // Include stack trace in debug mode for MCP notifications, truncated for brevity
         if (this.currentMcpLevel === "debug" && error.stack) {
           mcpDataPayload.error.stack = error.stack.substring(
             0,
@@ -471,11 +459,11 @@ export class Logger {
           originalLevel: level,
           originalMessage: msg,
           sendError: errorMessage,
-          mcpPayload: JSON.stringify(mcpDataPayload).substring(0, 500),
+          mcpPayload: JSON.stringify(mcpDataPayload).substring(0, 500), // Log a preview
         };
         this.winstonLogger!.error(
           "Failed to send MCP log notification",
-          internalErrorContext as any, // Cast to any to satisfy Winston's meta type
+          internalErrorContext,
         );
       }
     }
@@ -567,7 +555,6 @@ export class Logger {
 
   /**
    * Logs a message at the 'emerg' (emergency) level, typically for fatal errors.
-   * This is an alias for `emerg`.
    * @param msg - The main log message.
    * @param err - Optional. Error object or RequestContext.
    * @param context - Optional. RequestContext if `err` is an Error.
@@ -579,7 +566,7 @@ export class Logger {
   ): void {
     const errorObj = err instanceof Error ? err : undefined;
     const actualContext = err instanceof Error ? context : err;
-    this.log("emerg", msg, actualContext, errorObj); // Use 'emerg' as per template
+    this.log("emerg", msg, actualContext, errorObj);
   }
 }
 

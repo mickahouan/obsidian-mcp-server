@@ -4,16 +4,12 @@
  * Methods for interacting with Obsidian commands via the REST API.
  */
 
-import { AxiosRequestConfig } from "axios";
 import { RequestContext } from "../../../utils/index.js";
-import { ObsidianCommand, CommandListResponse } from "../types.js";
-
-// Define a type for the internal request function signature
-type RequestFunction = <T = any>(
-  config: AxiosRequestConfig,
-  context: RequestContext,
-  operationName: string,
-) => Promise<T>;
+import {
+  ObsidianCommand,
+  CommandListResponse,
+  RequestFunction,
+} from "../types.js";
 
 /**
  * Executes a registered Obsidian command by its ID.

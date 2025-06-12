@@ -6,7 +6,7 @@
  * @module src/utils/internal/requestContext
  */
 
-import { generateUUID } from "../index.js"; // Correctly imports from barrel file
+import { generateUUID } from "../index.js";
 import { logger } from "./logger.js";
 
 /**
@@ -29,9 +29,8 @@ export interface RequestContext {
    * Allows arbitrary key-value pairs for specific context needs.
    * Using `unknown` promotes type-safe access.
    * Consumers must type-check/assert when accessing extended properties.
-   * For simplicity in this project, `any` is used, but `unknown` is preferred for stricter typing.
    */
-  [key: string]: any; // Kept as `any` to match existing project style, consider `unknown` for new projects.
+  [key: string]: unknown;
 }
 
 /**
@@ -78,10 +77,9 @@ const requestContextServiceInstance = {
       ...this.config,
       ...config,
     };
-    // Create a dedicated log context for this operation, as per template style
     const logContext = this.createRequestContext({
       operation: "RequestContextService.configure",
-      newConfigState: { ...this.config }, // Log the new state
+      newConfigState: { ...this.config },
     });
     logger.debug("RequestContextService configuration updated", logContext);
     return { ...this.config };

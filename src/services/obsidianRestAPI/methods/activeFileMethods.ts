@@ -4,16 +4,8 @@
  * Methods for interacting with the currently active file in Obsidian via the REST API.
  */
 
-import { AxiosRequestConfig } from "axios";
 import { RequestContext } from "../../../utils/index.js";
-import { NoteJson } from "../types.js";
-
-// Define a type for the internal request function signature
-type RequestFunction = <T = any>(
-  config: AxiosRequestConfig,
-  context: RequestContext,
-  operationName: string,
-) => Promise<T>;
+import { NoteJson, RequestFunction } from "../types.js";
 
 /**
  * Gets the content of the currently active file in Obsidian.

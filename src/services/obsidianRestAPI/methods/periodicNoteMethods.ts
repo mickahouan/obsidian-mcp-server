@@ -4,18 +4,8 @@
  * Methods for interacting with periodic notes (daily, weekly, etc.) via the Obsidian REST API.
  */
 
-import { AxiosRequestConfig } from "axios";
 import { RequestContext } from "../../../utils/index.js";
-import { NoteJson } from "../types.js";
-
-// Define a type for the internal request function signature
-type RequestFunction = <T = any>(
-  config: AxiosRequestConfig,
-  context: RequestContext,
-  operationName: string,
-) => Promise<T>;
-
-type Period = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+import { NoteJson, Period, RequestFunction } from "../types.js";
 
 /**
  * Gets the content of a periodic note (daily, weekly, etc.).

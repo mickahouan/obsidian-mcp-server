@@ -5,6 +5,26 @@
  * based on its OpenAPI specification.
  */
 
+import { AxiosRequestConfig } from "axios";
+import { RequestContext } from "../../utils/index.js";
+
+/**
+ * Defines the signature for the internal request function passed to method implementations.
+ * This function is bound to the `ObsidianRestApiService` instance and handles the core
+ * logic of making an HTTP request, including authentication, error handling, and logging.
+ *
+ * @template T The expected return type of the API call.
+ * @param config The Axios request configuration.
+ * @param context The request context for logging and correlation.
+ * @param operationName A descriptive name for the operation being performed, used for logging.
+ * @returns A promise that resolves with the data of type `T`.
+ */
+export type RequestFunction = <T = any>(
+  config: AxiosRequestConfig,
+  context: RequestContext,
+  operationName: string,
+) => Promise<T>;
+
 /**
  * Filesystem metadata for a note.
  */
@@ -111,7 +131,12 @@ export interface PatchOptions {
   target: string; // The specific heading, block ID, or frontmatter key
   targetDelimiter?: string; // Default '::' for nested headings
   trimTargetWhitespace?: boolean; // Default false
-  createTargetIfMissing?: boolean; // Header: Create-Target-If-Missing (not explicitly in spec headers, but implied for frontmatter)
+  /**
+   * If true, creates the target if it's missing.
+   * This is implemented via the `Create-Target-If-Missing` HTTP header.
+   * Particularly useful for adding new frontmatter keys.
+   */
+  createTargetIfMissing?: boolean;
   contentType?: "text/markdown" | "application/json"; // For request body type inference
 }
 

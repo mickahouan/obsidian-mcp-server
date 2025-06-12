@@ -4,44 +4,14 @@
  * Methods for interacting with vault files and directories via the Obsidian REST API.
  */
 
-import { AxiosRequestConfig } from "axios";
 import { RequestContext } from "../../../utils/index.js";
-import { NoteJson, FileListResponse, NoteStat } from "../types.js";
-
-// Define a type for the internal request function signature
-type RequestFunction = <T = any>(
-  config: AxiosRequestConfig,
-  context: RequestContext,
-  operationName: string,
-) => Promise<T>;
-
-/**
- * Encodes a vault-relative file path correctly for API URLs.
- * Ensures path separators '/' are not encoded, but individual components are.
- * Handles leading slashes correctly.
- *
- * @param filePath - The raw vault-relative file path (e.g., "/Notes/My File.md" or "Notes/My File.md").
- * @returns The URL-encoded path suitable for appending to `/vault`.
- */
-function encodeVaultPath(filePath: string): string {
-  // 1. Trim whitespace and remove any leading/trailing slashes for consistent processing.
-  const trimmedPath = filePath.trim().replace(/^\/+|\/+$/g, "");
-
-  // 2. If the original path was just '/' or empty, return an empty string (represents root for files).
-  if (trimmedPath === "") {
-    // For file operations, the API expects /vault/filename.md at the root,
-    // so an empty encoded path segment is correct here.
-    // For listFiles, we handle the root case separately.
-    return "";
-  }
-
-  // 3. Split into components, encode each component, then rejoin with literal '/'.
-  const encodedComponents = trimmedPath.split("/").map(encodeURIComponent);
-  const encodedPath = encodedComponents.join("/");
-
-  // 4. Prepend the leading slash.
-  return `/${encodedPath}`;
-}
+import {
+  NoteJson,
+  FileListResponse,
+  NoteStat,
+  RequestFunction,
+} from "../types.js";
+import { encodeVaultPath } from "../../../utils/obsidian/obsidianApiUtils.js";
 
 /**
  * Gets the content of a specific file in the vault.
@@ -63,7 +33,7 @@ export async function getFileContent(
   return _request<string | NoteJson>(
     {
       method: "GET",
-      url: `/vault${encodedPath}`, // Construct URL correctly
+      url: `/vault${encodedPath}`,
       headers: { Accept: acceptHeader },
     },
     context,

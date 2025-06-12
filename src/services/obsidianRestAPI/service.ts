@@ -33,13 +33,6 @@ import {
   SimpleSearchResult,
 } from "./types.js"; // Import types from the new file
 
-// Define the type for the internal request function signature, used by method files
-export type RequestFunction = <T = any>(
-  config: AxiosRequestConfig,
-  context: RequestContext,
-  operationName: string,
-) => Promise<T>;
-
 export class ObsidianRestApiService {
   private axiosInstance: AxiosInstance;
   private apiKey: string;
@@ -483,7 +476,7 @@ export class ObsidianRestApiService {
    * @returns The note content or NoteJson.
    */
   async getPeriodicNote(
-    period: "daily" | "weekly" | "monthly" | "quarterly" | "yearly",
+    period: Period,
     format: "markdown" | "json" = "markdown",
     context: RequestContext,
   ): Promise<string | NoteJson> {
@@ -503,7 +496,7 @@ export class ObsidianRestApiService {
    * @returns {Promise<void>} Resolves on success (204 No Content).
    */
   async updatePeriodicNote(
-    period: "daily" | "weekly" | "monthly" | "quarterly" | "yearly",
+    period: Period,
     content: string,
     context: RequestContext,
   ): Promise<void> {
@@ -523,7 +516,7 @@ export class ObsidianRestApiService {
    * @returns {Promise<void>} Resolves on success (204 No Content).
    */
   async appendPeriodicNote(
-    period: "daily" | "weekly" | "monthly" | "quarterly" | "yearly",
+    period: Period,
     content: string,
     context: RequestContext,
   ): Promise<void> {
@@ -542,7 +535,7 @@ export class ObsidianRestApiService {
    * @returns {Promise<void>} Resolves on success (204 No Content).
    */
   async deletePeriodicNote(
-    period: "daily" | "weekly" | "monthly" | "quarterly" | "yearly",
+    period: Period,
     context: RequestContext,
   ): Promise<void> {
     return periodicNoteMethods.deletePeriodicNote(
