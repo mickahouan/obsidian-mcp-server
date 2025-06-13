@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Code Consistency**: Standardized the module export pattern for all tools to use explicit, named exports, improving code clarity and maintainability.
 - **Configuration Schema**: Refined the Zod schema in the configuration to use `z.coerce.boolean()` for the `OBSIDIAN_VERIFY_SSL` environment variable, making type validation more robust.
+- **Dynamic SSL Configuration**: The `ObsidianRestApiService` now dynamically applies the `OBSIDIAN_VERIFY_SSL` setting on each request, ensuring that changes to the configuration are respected immediately without a server restart.
 
 ## [2.0.2] - 2025-06-12
 
