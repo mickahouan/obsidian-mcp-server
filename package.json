@@ -1,7 +1,7 @@
 {
   "name": "obsidian-mcp-server",
   "version": "2.0.0",
-  "description": "MCP (Model Context Protocol) server for interacting with Obsidian, built using the mcp-ts-template. Provides tools to read, write, and search notes within an Obsidian vault.",
+  "description": "Obsidian Knowledge-Management MCP (Model Context Protocol) server that enables AI agents and development tools to interact with an Obsidian vault. It provides a comprehensive suite of tools for reading, writing, searching, and managing notes, tags, and frontmatter, acting as a bridge to the Obsidian Local REST API plugin.",
   "main": "dist/index.js",
   "files": [
     "dist"
@@ -61,16 +61,21 @@
     "zod": "^3.25.63"
   },
   "keywords": [
-    "typescript",
-    "MCP",
+    "mcp",
     "model-context-protocol",
     "obsidian",
-    "obsidian-plugin",
-    "LLM",
-    "AI-integration",
-    "server",
+    "obsidian-md",
+    "ai",
+    "llm",
+    "agent",
     "automation",
-    "notes"
+    "api",
+    "server",
+    "typescript",
+    "knowledge-management",
+    "note-taking",
+    "rest-api",
+    "integration"
   ],
   "author": "Casey Hand @cyanheads",
   "license": "Apache-2.0",

@@ -4,15 +4,15 @@ This cheatsheet provides quick references for common patterns, utilities, server
 
 # Instructions for using this file:
 
-1. Carefully review this file line by line to understand this repo and Model Context Protocol (MCP).
-2. If you are creating new MCP Server tools, review the files:
+1.  Carefully review this file line by line to understand this repo and Model Context Protocol (MCP).
+2.  If you are creating new MCP Server tools, review the files:
 
-- src/mcp-server/tools/obsidianUpdateFileTool (all files)
-- src/mcp-server/tools/obsidianGlobalSearchTool (all files)
-- src/services/obsidianRestAPI (Any files relevant to the tool you are creating)
-- src/services/obsidianRestAPI/vaultCache (If the tool needs vault structure/metadata caching)
+    - `src/mcp-server/tools/obsidianUpdateFileTool` (all files)
+    - `src/mcp-server/tools/obsidianGlobalSearchTool` (all files)
+    - `src/services/obsidianRestAPI` (Any files relevant to the tool you are creating)
+    - `src/services/obsidianRestAPI/vaultCache` (If the tool needs vault structure/metadata caching)
 
-3. Keep this file updated to accurately reflect the state of the code base
+3.  Keep this file updated to accurately reflect the state of the code base
 
 ## Server Transports & Configuration
 
@@ -20,7 +20,7 @@ The server can run using different communication transports, configured via envi
 
 - **`MCP_TRANSPORT_TYPE`**: Specifies the transport.
   - `"stdio"` (Default): Uses standard input/output for communication. Suitable for direct integration with parent processes.
-  - `"http"`: Uses Streamable HTTP Server-Sent Events (SSE) for communication. Runs an Express server.
+  - `"http"`: Uses Streamable HTTP Server-Sent Events (SSE) for communication. Runs a Hono server.
 - **`MCP_HTTP_PORT`**: Port for the HTTP server (Default: `3010`). Used only if `MCP_TRANSPORT_TYPE=http`.
 - **`MCP_HTTP_HOST`**: Host address for the HTTP server (Default: `127.0.0.1`). Used only if `MCP_TRANSPORT_TYPE=http`.
 - **`MCP_ALLOWED_ORIGINS`**: Comma-separated list of allowed origins for HTTP requests (e.g., `http://localhost:8080,https://my-frontend.com`). Used only if `MCP_TRANSPORT_TYPE=http`.
@@ -29,6 +29,7 @@ The server can run using different communication transports, configured via envi
 - **`OBSIDIAN_API_KEY`**: **Required.** API key for the Obsidian Local REST API plugin.
 - **`OBSIDIAN_BASE_URL`**: **Required.** Base URL for the Obsidian Local REST API (e.g., `http://127.0.0.1:27123`).
 - **`OBSIDIAN_VERIFY_SSL`**: Set to `false` to disable SSL certificate verification for the Obsidian API (e.g., for self-signed certs). Defaults to `true`.
+- **`OBSIDIAN_ENABLE_CACHE`**: Set to `true` (default) or `false` to enable or disable the in-memory vault cache.
 - **`OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN`**: Interval in minutes for the vault cache to refresh automatically. Defaults to `10`.
 
 ### HTTP Transport Details (`MCP_TRANSPORT_TYPE=http`)
@@ -38,7 +39,7 @@ The server can run using different communication transports, configured via envi
   - `GET /mcp`: Client initiates SSE stream for server-sent messages. Requires `mcp-session-id` header.
   - `DELETE /mcp`: Client signals session termination. Requires `mcp-session-id` header.
 - **Session Management**: Each client connection establishes a session identified by the `mcp-session-id` header. The server maintains state per session.
-- **Security**: Robust origin checking is implemented via `originCheckMiddleware`. Configure `MCP_ALLOWED_ORIGINS` for production environments.
+- **Security**: Robust origin checking is implemented via CORS middleware. Configure `MCP_ALLOWED_ORIGINS` for production environments.
 
 ### Running the Server
 
@@ -155,7 +156,7 @@ Servers expose functionality via:
 - **Input Validation:** Use schemas (Zod), sanitize inputs (paths, HTML, SQL).
 - **Access Control:** Least privilege, respect roots.
 - **Transport Security:**
-  - **HTTP:** Mandatory JWT authentication (`src/mcp-server/transports/authentication/authMiddleware.ts`). **Requires `MCP_AUTH_SECRET_KEY` to be set.** Validate `Origin` header (via `isOriginAllowed` in `httpTransport.ts`). Use HTTPS in production. Bind to `127.0.0.1` for local servers.
+  - **HTTP:** Mandatory JWT authentication (`src/mcp-server/transports/authentication/authMiddleware.ts`). **Requires `MCP_AUTH_SECRET_KEY` to be set.** Validate `Origin` header (via CORS middleware). Use HTTPS in production. Bind to `127.0.0.1` for local servers.
   - **Stdio:** Authentication typically handled by the host process. Best practice is to not apply authentication to MCP Server stdio processes.
 - **Secrets Management:** Use env vars (`MCP_AUTH_SECRET_KEY`, `OBSIDIAN_API_KEY`) or secrets managers, avoid hardcoding/logging.
 - **Dependency Security:** Keep dependencies updated (`npm audit`).
@@ -225,6 +226,20 @@ async function handleReadFile(filePath: string, context: RequestContext) {
 ```
 
 - **Key Takeaway**: Use the methods provided by `ObsidianRestApiService` for all interactions with the Obsidian vault via the REST API. Do not make direct HTTP calls to the Obsidian API elsewhere.
+
+## Agent Instructions for API Connection Help
+
+If the user asks for help connecting to the Obsidian API, follow these steps:
+
+1.  **Acknowledge the two connection methods**: Explain that the Obsidian Local REST API plugin offers two main connection URLs: an encrypted HTTPS one and a non-encrypted HTTP one.
+2.  **Recommend the HTTP Method for Simplicity**:
+    - Advise the user to enable the "Enable Non-encrypted (HTTP) Server" option in the plugin's settings in Obsidian.
+    - Explain that this is the simplest method as it does not require dealing with SSL certificates.
+    - Provide the corresponding `OBSIDIAN_BASE_URL` (e.g., `http://127.0.0.1:27123`).
+3.  **Explain the HTTPS Method**:
+    - If the user prefers to use the default encrypted HTTPS URL (e.g., `https://127.0.0.1:27124`), explain that it uses a self-signed certificate.
+    - Clearly state that this will cause connection failures unless they set the `OBSIDIAN_VERIFY_SSL` environment variable to `"false"`.
+4.  **Provide Clear Examples**: Show example `env` configurations for both methods, as seen in the main `README.md`.
 
 ## Vault Cache Service (`src/services/obsidianRestAPI/vaultCache/`)
 

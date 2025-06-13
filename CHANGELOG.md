@@ -5,108 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.4] - 2025-06-12
+## [2.0.0] - 2025-06-12
+
+Version 2.0.0 is a complete overhaul of the Obsidian MCP Server, migrating it to my [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template). This release introduces a more robust architecture, a streamlined toolset, enhanced security, and significant performance improvements. It is a breaking change from the 1.x series.
 
 ### Added
 
-- **Cache Configuration**: Introduced a new environment variable `OBSIDIAN_ENABLE_CACHE` (defaults to `true`) to allow disabling the in-memory vault cache for a lighter server footprint.
+- **New Core Architecture**: The server is now built on the [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template), providing a standardized, modular, and maintainable structure.
+- **Hono HTTP Transport**: The HTTP transport has been migrated from Express to Hono, offering a more lightweight and performant server.
+- **Vault Cache Service**: A new in-memory `VaultCacheService` has been introduced. It caches vault content to improve performance for search operations and provides a resilient fallback if the Obsidian API is temporarily unavailable. It also refreshes periodically.
+- **Advanced Authentication**:
+  - Added support for **OAuth 2.1** bearer token validation alongside the existing secret key-based JWTs.
+  - Introduced `authContext` using `AsyncLocalStorage` for secure, request-scoped access to authentication details.
+- **New Tools**:
+  - `obsidian_delete_file`: A new tool to permanently delete files from the vault.
+  - `obsidian_search_replace`: A powerful new tool to perform search and replace operations with regex support.
+- **Enhanced Utilities**:
+  - **Request Context**: A robust request context system (`requestContextService`) for improved logging and tracing.
+  - **Error Handling**: A centralized `ErrorHandler` for consistent and detailed error reporting.
+  - **Async Utilities**: A `retryWithDelay` utility is now used across the application to make API calls more resilient.
+- **New Development Scripts**: Added `docs:generate` (for TypeDoc) and `inspect:stdio`/`inspect:http` (for MCP Inspector) to `package.json`.
 
 ### Changed
 
-- **Tool Reliability**: Refactored the `obsidian_manage_frontmatter` and `obsidian_manage_tags` tools to use a more reliable read-modify-write strategy instead of relying on the Obsidian API's patch operations. This provides more robust control over the final state of the file.
-- **API Resilience**: Enhanced the `obsidian_global_search` tool with a retry mechanism to improve resilience against transient network errors or timeouts.
+- **Project Structure**: The entire project has been reorganized to align with the [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template), improving separation of concerns (e.g., `services`, `mcp-server`, `types-global`).
+- **Tool Consolidation and Enhancement**: The toolset has been redesigned for clarity and power:
+  - `obsidian_list_files` replaces `obsidian_list_files_in_vault` and `obsidian_list_files_in_dir`, offering more flexible filtering.
+  - `obsidian_read_file` replaces `obsidian_get_file_contents` and now supports returning content as structured JSON.
+  - `obsidian_update_file` replaces `obsidian_append_content` and `obsidian_update_content` with explicit modes (`append`, `prepend`, `overwrite`).
+  - `obsidian_global_search` replaces `obsidian_find_in_file` with added support for path/date filtering and pagination.
+  - `obsidian_manage_frontmatter` replaces `obsidian_get_properties` and `obsidian_update_properties` with atomic get/set/delete operations.
+  - `obsidian_manage_tags` replaces `obsidian_get_tags` and now manages both frontmatter and inline tags.
+- **Configuration Overhaul**: Environment variables have been renamed for consistency and clarity.
+  - `OBSIDIAN_BASE_URL` now consolidates protocol, host, and port.
+  - New variables like `MCP_TRANSPORT_TYPE`, `MCP_LOG_LEVEL`, and `MCP_AUTH_SECRET_KEY` have been introduced.
+- **Dependency Updates**: All dependencies, including the MCP SDK, have been updated to their latest stable versions.
+- **Obsidian API Service**: The `ObsidianRestApiService` has been completely refactored into a modular class, providing a typed, resilient, and centralized client for all interactions with the Obsidian Local REST API.
 
-### Fixed
+### Removed
 
-- **SSL Verification**: Fixed a bug where the `OBSIDIAN_VERIFY_SSL` environment variable was not being correctly applied to API requests.
-
-### Chore
-
-- **Dependencies**: Updated `package-lock.json` to reflect the latest dependency versions.
-- **Documentation**: Regenerated `docs/tree.md` and updated `.clinerules` to ensure all documentation is current.
-
-## [2.0.3] - 2025-06-12
-
-### Fixed
-
-- **Frontmatter Deletion**: The `obsidianManageFrontmatterTool` now correctly deletes keys by setting their value to `null` via the Obsidian API, ensuring complete removal from the note's frontmatter.
-- **Startup Stability**: The server now performs a mandatory status check on startup and will exit if it cannot connect to the Obsidian REST API, preventing it from running in a non-functional state. The health check now also retries several times on failure, making the server more resilient to slow-starting Obsidian instances.
-- **Log Sanitization**: Fixed a bug where the logger would crash when trying to sanitize request objects containing a non-serializable `httpsAgent`. The sanitization logic now correctly handles this case.
-
-### Changed
-
-- **Code Consistency**: Standardized the module export pattern for all tools to use explicit, named exports, improving code clarity and maintainability.
-- **Configuration Schema**: Refined the Zod schema in the configuration to use `z.coerce.boolean()` for the `OBSIDIAN_VERIFY_SSL` environment variable, making type validation more robust.
-- **Dynamic SSL Configuration**: The `ObsidianRestApiService` now dynamically applies the `OBSIDIAN_VERIFY_SSL` setting on each request, ensuring that changes to the configuration are respected immediately without a server restart.
-
-## [2.0.2] - 2025-06-12
-
-### Added
-
-- **New Tool: `obsidian_manage_frontmatter`**: Added a new tool to atomically get, set, and delete keys in a note's YAML frontmatter without rewriting the entire file.
-- **New Tool: `obsidian_manage_tags`**: Added a new tool to add, remove, and list tags in a note, modifying both the frontmatter `tags` key and inline tags.
-- **Funding File**: Added `.github/FUNDING.yml` to provide options for supporting the project.
-
-### Changed
-
-- **Vault Cache Integration**: Refactored existing tools (`obsidianDeleteFileTool`, `obsidianSearchReplaceTool`, `obsidianUpdateFileTool`) to integrate with the `VaultCacheService`. These tools now proactively update or invalidate the cache after file modifications, ensuring data consistency and improving performance.
-- **Resilient API Calls**: Enhanced file operation tools (`obsidianDeleteFileTool`, `obsidianManageFrontmatterTool`, `obsidianManageTagsTool`) with a `retryWithDelay` mechanism. This makes API calls to the Obsidian vault more resilient to transient errors, especially `NOT_FOUND` errors that can occur briefly after file operations.
-- **Obsidian Service Enhancements**:
-  - The `getFileMetadata` method in `vaultMethods.ts` now gracefully handles cases where a file is not found by returning `null` instead of throwing an error.
-  - The main `ObsidianRestApiService` now correctly handles `HEAD` requests to return the full response object, which is necessary for metadata extraction.
-  - Improved network error logging to be more descriptive.
-- **CI Workflow**: Updated `.github/workflows/publish.yml` to use Node.js v20.x and streamlined the build and publish steps.
-- **Sanitization Utility**: Added a `sanitizeTagName` method to `sanitization.ts` to clean tag inputs.
-
-## [2.0.1] - 2025-06-12
-
-### Added
-
-- **OAuth 2.1 Authentication**: Introduced support for OAuth 2.1 bearer token validation. This includes a new `oauthMiddleware.ts` that validates JWTs against a remote JWKS, along with new configuration options (`MCP_AUTH_MODE`, `OAUTH_ISSUER_URL`, `OAUTH_AUDIENCE`).
-- **Authentication Context & Scopes**: Added `authContext.ts` using `AsyncLocalStorage` to make authentication details available throughout the request lifecycle. Implemented `authUtils.ts` with `withRequiredScopes` for fine-grained, scope-based authorization on tools and resources.
-- **New Dependencies**: Added the `jose` library for robust JWT/JWS handling required for the OAuth implementation.
-- **Session Garbage Collection**: Implemented a session garbage collector in `httpTransport.ts` to automatically clean up stale or inactive client sessions, improving server stability.
-- **New Documentation**: Added `docs/obsidian_tools_phase2.md` to outline potential future tool developments.
-
-### Changed
-
-- **Authentication System Refactor**: The entire authentication layer in the HTTP transport has been refactored. It now supports both the original secret key-based JWTs and the new OAuth 2.1 flow, determined by the `MCP_AUTH_MODE` environment variable.
-- **Obsidian API Utilities**: Refactored shared logic by moving the `RequestFunction` type to a central `types.ts` and extracting `encodeVaultPath` into a dedicated `obsidianApiUtils.ts` for better code organization.
-- **Dependency Updates**: Updated key dependencies to their latest versions, including `@hono/node-server`, `openai`, and `zod`.
-- **Logging Enhancements**: The logger in `logger.ts` now correctly handles `bigint` serialization in log metadata.
-- **Code Cleanup**: General code cleanup and minor refactoring across various files for improved readability and maintainability.
-
-## [2.0.0] - 2025-06-09
-
-### Changed
-
-- **Project Renamed & Refocused**: Project officially transitioned from `mcp-ts-template` to `obsidian-mcp-server`. The primary focus is now providing MCP tools for Obsidian vault interaction.
-- **Extensive Refactoring**: Major refactoring across the codebase to align with the new project scope, including updates to server logic, tool implementations, configuration, and utility functions.
-- **Updated Dependencies**: All dependencies have been updated to their latest versions as of May 2025, including `@modelcontextprotocol/sdk` to `^1.12.0`, `zod` to `^3.25.34`, `typescript` to `^5.8.3`, and many others. See `package-lock.json` for full details.
-- **Enhanced Path Sanitization**: Improved `src/utils/security/sanitization.ts` with clearer `PathSanitizeOptions`, `SanitizedPathInfo` return type, better handling of absolute/relative paths, and strengthened traversal detection.
-- **Configuration Updates**:
-  - `LOGS_PATH` environment variable added to allow custom log directory specification.
-  - `MCP_HTTP_PORT` default changed to `3010`.
-  - Improved startup logging for configuration and logger initialization.
-- **Script Enhancements**:
-  - `scripts/clean.ts`: Improved logging and error reporting.
-  - `scripts/fetch-openapi-spec.ts`: Made more robust with fallback URL logic, better parsing, and security checks for output paths.
-  - `scripts/make-executable.ts`: Enhanced logging and security checks for output paths.
-  - `scripts/tree.ts`: Improved ignore logic using the `ignore` package, better path handling, and security checks.
-- **Documentation**:
-  - `README.md`: Overhauled to reflect the `obsidian-mcp-server` project, its features, installation, configuration, and usage. Added new `LOGS_PATH` to config table and `npm run format`, `npm run docs:generate` to development scripts.
-  - `docs/tree.md`: Regenerated to reflect current project structure.
-  - `typedoc.json`: Updated entry points for API documentation generation.
-- **Obsidian Local REST API Spec**: Updated `docs/obsidian-api/obsidian_rest_api_spec.json` and `docs/obsidian-api/obsidian_rest_api_spec.yaml` to the latest version.
-- **Build Process**: Added `npm run format` script using Prettier. Updated `docs:generate` script to use `tsconfig.typedoc.json`.
-- **Internal Logging & Error Handling**: Refined logging contexts and error reporting throughout the application for better traceability and debugging. `ErrorHandler.handleError` now consolidates context more effectively. `logger.ts` has improved console transport configuration and initialization logging.
-- **HTTP Transport**: Migrated from Express to Hono for the HTTP transport (`httpTransport.ts`), resulting in a more modern, lightweight, and performant server. This includes a complete rewrite of the authentication middleware (`authMiddleware.ts`) and request handlers to align with Hono's context-based approach.
-- **Vault Cache Service**: Relocated the `VaultCacheService` from `src/services/vaultCache/` to `src/services/obsidianRestAPI/vaultCache/` to better group it with the Obsidian-related services it depends on.
-- **Tool Logic**: Minor improvements to logging and context handling in various tool logic files (e.g., `obsidianGlobalSearchTool`, `obsidianReadFileTool`).
-- **Vault Cache Optimization**: The `VaultCacheService` has been significantly refactored to improve performance and efficiency. Instead of rebuilding the entire cache from scratch, it now performs incremental updates. It fetches a list of all files and compares their modification times (`mtime`) against the cached versions. Content is only re-fetched for files that are new or have been modified, drastically reducing the number of API calls to the Obsidian vault during a refresh. The service now also supports periodic refreshing.
-
-### Added
-
-- `.ncurc.json` for `npm-check-updates` configuration.
-- `.github/workflows/publish.yml` for potential future automated publishing.
-- `tsconfig.typedoc.json` for TypeDoc specific TypeScript configuration.
+- **Removed Tools**: The following tools from version 1.x have been removed and their functionality integrated into the new, more comprehensive tools:
+  - `obsidian_list_files_in_vault`
+  - `obsidian_list_files_in_dir`
+  - `obsidian_get_file_contents`
+  - `obsidian_append_content`
+  - `obsidian_update_content`
+  - `obsidian_find_in_file`
+  - `obsidian_complex_search` (path-based searching is now a filter in `obsidian_global_search`)
+  - `obsidian_get_tags`
+  - `obsidian_get_properties`
+  - `obsidian_update_properties`
+- **Removed Resources**: The `obsidian://tags` resource has been removed. Tag information is now available through the `obsidian_manage_tags` tool. I may add the resource back in the future if there is demand for it. Please open an issue if you would like to see it return.
+- **Old Configuration**: All old, non-prefixed environment variables (e.g., `VERIFY_SSL`, `REQUEST_TIMEOUT`) have been removed in favor of the new, standardized configuration schema.
