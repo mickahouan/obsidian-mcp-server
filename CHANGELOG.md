@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Frontmatter Deletion**: The `obsidianManageFrontmatterTool` now correctly deletes keys by setting their value to `null` via the Obsidian API, ensuring complete removal from the note's frontmatter.
 - **Startup Stability**: The server now performs a mandatory status check on startup and will exit if it cannot connect to the Obsidian REST API, preventing it from running in a non-functional state. The health check now also retries several times on failure, making the server more resilient to slow-starting Obsidian instances.
+- **Log Sanitization**: Fixed a bug where the logger would crash when trying to sanitize request objects containing a non-serializable `httpsAgent`. The sanitization logic now correctly handles this case.
 
 ### Changed
 

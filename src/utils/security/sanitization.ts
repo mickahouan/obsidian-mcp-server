@@ -757,6 +757,13 @@ export class Sanitization {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = (obj as Record<string, unknown>)[key];
         const lowerKey = key.toLowerCase();
+
+        // Special handling for non-serializable but non-sensitive objects
+        if (key === "httpsAgent") {
+          (obj as Record<string, unknown>)[key] = "[HttpAgent Instance]";
+          continue; // Skip further processing for this key
+        }
+
         // Check if the lowercase key includes any of the lowercase sensitive field terms
         const isSensitive = this.sensitiveFields.some(
           (field) => lowerKey.includes(field), // sensitiveFields are already stored as lowercase
