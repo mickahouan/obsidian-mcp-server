@@ -1,6 +1,6 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-06-13 04:17:38
+Generated on: 2025-06-13 07:41:01
 
 ```
 obsidian-mcp-server
@@ -15,7 +15,6 @@ obsidian-mcp-server
 │   ├── obsidian_mcp_tools_spec.md
 │   ├── obsidian_tools_phase2.md
 │   └── tree.md
-├── examples
 ├── scripts
 │   ├── clean.ts
 │   ├── fetch-openapi-spec.ts
@@ -118,7 +117,6 @@ obsidian-mcp-server
 ├── Dockerfile
 ├── env.json
 ├── LICENSE
-├── mcp-client-config.example.json
 ├── mcp.json
 ├── package-lock.json
 ├── package.json
