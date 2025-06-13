@@ -86,11 +86,7 @@ const EnvSchema = z.object({
   // --- Obsidian Specific Config ---
   OBSIDIAN_API_KEY: z.string().min(1, "OBSIDIAN_API_KEY cannot be empty"),
   OBSIDIAN_BASE_URL: z.string().url().default("http://127.0.0.1:27123"),
-  OBSIDIAN_VERIFY_SSL: z
-    .string()
-    .transform((val) => val.toLowerCase() === "true")
-    .optional()
-    .default("true"),
+  OBSIDIAN_VERIFY_SSL: z.coerce.boolean().default(false),
   OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN: z.coerce
     .number()
     .int()
