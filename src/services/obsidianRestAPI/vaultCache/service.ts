@@ -27,6 +27,9 @@ interface CacheEntry {
  * Yes, the cache is safe and secure for its purpose within this application. Here's why:
  * 1. __In-Memory Storage:__ The cache exists only in the server's memory. It is not written to disk or transmitted over the network, so its attack surface is limited to the server process itself.
  * 2. __Local Data Source:__ The data populating the cache comes directly from your own Obsidian vault via the local REST API. It is not fetching data from external, untrusted sources.
+ *
+ * __Warning: High Memory Usage__
+ * This service stores the entire content of every markdown file in the vault in memory. For users with very large vaults (e.g., many gigabytes of markdown files), this can lead to significant RAM consumption. If you experience high memory usage, consider disabling the cache via the `OBSIDIAN_ENABLE_CACHE` environment variable.
  */
 export class VaultCacheService {
   private vaultContentCache: Map<string, CacheEntry> = new Map();

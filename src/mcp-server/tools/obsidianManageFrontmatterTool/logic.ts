@@ -128,6 +128,12 @@ export const processObsidianManageFrontmatter = async (
     }
 
     case "delete": {
+        // Note on deletion strategy: The Obsidian REST API's PATCH endpoint for frontmatter
+        // supports adding/updating keys but does not have a dedicated "delete key" operation.
+        // Therefore, deletion is handled by reading the note content, parsing the frontmatter,
+        // removing the key from the JavaScript object, and then overwriting the entire note
+        // with the updated frontmatter block. This regex-based replacement is a workaround
+        // for the current API limitations.
         const noteJson = await getFileWithRetry(context, 'json') as NoteJson;
         const frontmatter = noteJson.frontmatter;
 
