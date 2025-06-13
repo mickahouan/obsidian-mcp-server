@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
+import { ObsidianRestApiService, VaultCacheService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 import {
   ErrorHandler,
@@ -35,7 +35,8 @@ import {
  */
 export const registerObsidianDeleteFileTool = async (
   server: McpServer,
-  obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
+  obsidianService: ObsidianRestApiService,
+  vaultCacheService: VaultCacheService,
 ): Promise<void> => {
   const toolName = "obsidian_delete_file";
   // Updated description to accurately reflect the response (no timestamp)
@@ -90,6 +91,7 @@ export const registerObsidianDeleteFileTool = async (
                   params,
                   handlerContext,
                   obsidianService,
+                  vaultCacheService,
                 );
               logger.debug(
                 `'${toolName}' processed successfully`,

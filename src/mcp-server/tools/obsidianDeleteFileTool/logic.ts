@@ -1,8 +1,8 @@
 import path from "node:path"; // node:path provides OS-specific path functions; using path.posix for vault path manipulation.
 import { z } from "zod";
-import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
+import { ObsidianRestApiService, VaultCacheService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import { logger, RequestContext } from "../../../utils/index.js";
+import { logger, RequestContext, retryWithDelay } from "../../../utils/index.js";
 
 // ====================================================================================
 // Schema Definitions for Input Validation
@@ -77,6 +77,7 @@ export const processObsidianDeleteFile = async (
   params: ObsidianDeleteFileInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
+  vaultCacheService: VaultCacheService,
 ): Promise<ObsidianDeleteFileResponse> => {
   const { filePath: originalFilePath } = params;
   let effectiveFilePath = originalFilePath; // Track the path actually used for deletion
@@ -85,6 +86,9 @@ export const processObsidianDeleteFile = async (
     `Processing obsidian_delete_file request for path: ${originalFilePath}`,
     context,
   );
+
+  const shouldRetryNotFound = (err: unknown) =>
+    err instanceof McpError && err.code === BaseErrorCode.NOT_FOUND;
 
   try {
     // --- Attempt 1: Delete using the provided path (case-sensitive) ---
@@ -97,13 +101,23 @@ export const processObsidianDeleteFile = async (
       `Attempting to delete file (case-sensitive): ${originalFilePath}`,
       deleteContext,
     );
-    await obsidianService.deleteFile(originalFilePath, deleteContext);
+    await retryWithDelay(
+      () => obsidianService.deleteFile(originalFilePath, deleteContext),
+      {
+        operationName: "deleteFile",
+        context: deleteContext,
+        maxRetries: 3,
+        delayMs: 300,
+        shouldRetry: shouldRetryNotFound,
+      },
+    );
 
     // If the above call succeeds, the file was deleted using the exact path.
     logger.debug(
       `Successfully deleted file using exact path: ${originalFilePath}`,
       deleteContext,
     );
+    await vaultCacheService.updateCacheForFile(originalFilePath, deleteContext);
     return {
       success: true,
       message: `File '${originalFilePath}' deleted successfully.`,
@@ -130,9 +144,15 @@ export const processObsidianDeleteFile = async (
           `Listing directory for fallback deletion: ${dirToList}`,
           fallbackContext,
         );
-        const filesInDir = await obsidianService.listFiles(
-          dirToList,
-          fallbackContext,
+        const filesInDir = await retryWithDelay(
+          () => obsidianService.listFiles(dirToList, fallbackContext),
+          {
+            operationName: "listFilesForDeleteFallback",
+            context: fallbackContext,
+            maxRetries: 3,
+            delayMs: 300,
+            shouldRetry: shouldRetryNotFound,
+          },
         );
 
         // Filter directory listing for files matching the lowercase filename
@@ -157,12 +177,22 @@ export const processObsidianDeleteFile = async (
             subOperation: "retryDelete",
             effectiveFilePath,
           };
-          await obsidianService.deleteFile(effectiveFilePath, retryContext);
+          await retryWithDelay(
+            () => obsidianService.deleteFile(effectiveFilePath, retryContext),
+            {
+              operationName: "deleteFileFallback",
+              context: retryContext,
+              maxRetries: 3,
+              delayMs: 300,
+              shouldRetry: shouldRetryNotFound,
+            },
+          );
 
           logger.debug(
             `Successfully deleted file using fallback path: ${effectiveFilePath}`,
             retryContext,
           );
+          await vaultCacheService.updateCacheForFile(effectiveFilePath, retryContext);
           return {
             success: true,
             message: `File '${effectiveFilePath}' (found via case-insensitive match for '${originalFilePath}') deleted successfully.`,

@@ -178,28 +178,35 @@ export async function getFileMetadata(
   _request: RequestFunction,
   filePath: string,
   context: RequestContext,
-): Promise<NoteStat> {
+): Promise<NoteStat | null> {
   const encodedPath = encodeVaultPath(filePath);
-  const response = await _request<any>(
-    {
-      method: "HEAD",
-      url: `/vault${encodedPath}`,
-    },
-    context,
-    "getFileMetadata",
-  );
+  try {
+    const response = await _request<any>(
+      {
+        method: "HEAD",
+        url: `/vault${encodedPath}`,
+      },
+      context,
+      "getFileMetadata",
+    );
 
-  // Extract headers and parse them into a NoteStat object
-  const headers = response.headers;
-  return {
-    mtime: headers["x-obsidian-mtime"]
-      ? parseFloat(headers["x-obsidian-mtime"]) * 1000
-      : 0,
-    ctime: headers["x-obsidian-ctime"]
-      ? parseFloat(headers["x-obsidian-ctime"]) * 1000
-      : 0,
-    size: headers["content-length"]
-      ? parseInt(headers["content-length"], 10)
-      : 0,
-  };
+    if (response && response.headers) {
+      const headers = response.headers;
+      return {
+        mtime: headers["x-obsidian-mtime"]
+          ? parseFloat(headers["x-obsidian-mtime"]) * 1000
+          : 0,
+        ctime: headers["x-obsidian-ctime"]
+          ? parseFloat(headers["x-obsidian-ctime"]) * 1000
+          : 0,
+        size: headers["content-length"]
+          ? parseInt(headers["content-length"], 10)
+          : 0,
+      };
+    }
+    return null;
+  } catch (error) {
+    // Errors are already logged by the _request function, so we can just return null
+    return null;
+  }
 }

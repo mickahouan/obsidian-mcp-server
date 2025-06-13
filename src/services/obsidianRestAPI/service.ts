@@ -99,7 +99,11 @@ export class ObsidianRestApiService {
             `Obsidian API request successful: ${config.method} ${config.url}`,
             { ...operationContext, status: response.status },
           );
-          // For 204 No Content, response.data might be empty, handle appropriately
+          // For HEAD requests, we need the headers, so return the whole response.
+          // For other requests, returning response.data is fine.
+          if (config.method === "HEAD") {
+            return response as T;
+          }
           return response.data;
         } catch (error) {
           const axiosError = error as AxiosError;
@@ -155,7 +159,7 @@ export class ObsidianRestApiService {
           } else if (axiosError.request) {
             // Network error (no response received)
             errorCode = BaseErrorCode.SERVICE_UNAVAILABLE;
-            errorMessage = `Obsidian API Network Error: No response received from ${config.url}`;
+            errorMessage = `Obsidian API Network Error: No response received from ${config.url}. This may be due to Obsidian not running, the Local REST API plugin being disabled, or a network issue.`;
             logger.error(errorMessage, {
               ...operationContext,
               ...errorDetails,
@@ -298,7 +302,7 @@ export class ObsidianRestApiService {
   async getFileMetadata(
     filePath: string,
     context: RequestContext,
-  ): Promise<NoteStat> {
+  ): Promise<NoteStat | null> {
     return vaultMethods.getFileMetadata(
       this._request.bind(this),
       filePath,

@@ -10,6 +10,7 @@ import {
   logger,
   RequestContext,
   requestContextService,
+  retryWithDelay,
 } from "../../../utils/index.js";
 import { NoteJson, ObsidianRestApiService } from "../index.js";
 
@@ -125,6 +126,64 @@ export class VaultCacheService {
   }
 
   /**
+   * Immediately fetches the latest data for a single file and updates its entry in the cache.
+   * This is useful for ensuring cache consistency immediately after a file modification.
+   * @param {string} filePath - The vault-relative path of the file to update.
+   * @param {RequestContext} context - The request context for logging.
+   */
+  public async updateCacheForFile(
+    filePath: string,
+    context: RequestContext,
+  ): Promise<void> {
+    const opContext = { ...context, operation: "updateCacheForFile", filePath };
+    logger.debug(`Proactively updating cache for file: ${filePath}`, opContext);
+    try {
+      const noteJson = await retryWithDelay(
+        () => this.obsidianService.getFileContent(filePath, "json", opContext) as Promise<NoteJson>,
+        {
+          operationName: "proactiveCacheUpdate",
+          context: opContext,
+          maxRetries: 3,
+          delayMs: 300,
+          shouldRetry: (err: unknown) =>
+            err instanceof McpError &&
+            (err.code === BaseErrorCode.NOT_FOUND ||
+              err.code === BaseErrorCode.SERVICE_UNAVAILABLE),
+        },
+      );
+
+      if (noteJson && noteJson.content && noteJson.stat) {
+        this.vaultContentCache.set(filePath, {
+          content: noteJson.content,
+          mtime: noteJson.stat.mtime,
+        });
+        logger.info(`Proactively updated cache for: ${filePath}`, opContext);
+      } else {
+        logger.warning(
+          `Proactive cache update for ${filePath} received invalid data, skipping update.`,
+          opContext,
+        );
+      }
+    } catch (error) {
+      // If the file was deleted, a NOT_FOUND error is expected. We should remove it from the cache.
+      if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
+        if (this.vaultContentCache.has(filePath)) {
+          this.vaultContentCache.delete(filePath);
+          logger.info(
+            `Proactively removed deleted file from cache: ${filePath}`,
+            opContext,
+          );
+        }
+      } else {
+        logger.error(
+          `Failed to proactively update cache for ${filePath}. Error: ${error instanceof Error ? error.message : String(error)}`,
+          opContext,
+        );
+      }
+    }
+  }
+
+  /**
    * Builds the in-memory cache by fetching all markdown files and their content.
    * This is intended to be run once at startup. Subsequent updates are handled by `refreshCache`.
    */
@@ -199,6 +258,15 @@ export class VaultCacheService {
             filePath,
             context,
           );
+
+          if (!fileMetadata) {
+            logger.warning(
+              `Skipping file during cache refresh due to missing or invalid metadata: ${filePath}`,
+              { ...context, filePath },
+            );
+            continue;
+          }
+
           const remoteMtime = fileMetadata.mtime;
           const cachedEntry = this.vaultContentCache.get(filePath);
 

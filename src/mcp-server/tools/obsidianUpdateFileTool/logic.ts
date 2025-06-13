@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   NoteJson,
   ObsidianRestApiService,
+  VaultCacheService,
 } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 import {
@@ -339,6 +340,7 @@ export const processObsidianUpdateFile = async (
   params: ObsidianUpdateFileInput, // Use the refined, validated type
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
+  vaultCacheService: VaultCacheService,
 ): Promise<ObsidianUpdateFileResponse> => {
   logger.debug(`Processing obsidian_update_file request (wholeFile mode)`, {
     ...context,
@@ -587,6 +589,9 @@ export const processObsidianUpdateFile = async (
         `Successfully wrote combined content for ${mode}`,
         writeContext,
       );
+      if (params.targetType === "filePath" && targetId) {
+        await vaultCacheService.updateCacheForFile(targetId, writeContext);
+      }
     } else {
       // Handle 'overwrite' mode directly.
       switch (params.targetType) {
@@ -614,6 +619,9 @@ export const processObsidianUpdateFile = async (
         `Successfully performed overwrite on target: ${params.targetType} ${targetId ?? "(active)"}`,
         updateContext,
       );
+      if (params.targetType === "filePath" && targetId) {
+        await vaultCacheService.updateCacheForFile(targetId, updateContext);
+      }
     }
 
     // --- Step 4: Get Final State (Stat and Optional Content) ---

@@ -15,3 +15,4 @@ export * as patchMethods from "./methods/patchMethods.js";
 export * as periodicNoteMethods from "./methods/periodicNoteMethods.js";
 export * as searchMethods from "./methods/searchMethods.js";
 export * as vaultMethods from "./methods/vaultMethods.js";
+export { VaultCacheService } from "./vaultCache/index.js";
