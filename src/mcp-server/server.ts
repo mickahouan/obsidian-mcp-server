@@ -31,6 +31,8 @@ import { registerObsidianListFilesTool } from "./tools/obsidianListFilesTool/ind
 import { registerObsidianReadFileTool } from "./tools/obsidianReadFileTool/index.js";
 import { registerObsidianSearchReplaceTool } from "./tools/obsidianSearchReplaceTool/index.js";
 import { registerObsidianUpdateFileTool } from "./tools/obsidianUpdateFileTool/index.js";
+import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFrontmatterTool/index.js";
+import { registerObsidianManageTagsTool } from "./tools/obsidianManageTagsTool/index.js";
 // Import transport setup functions.
 import { startHttpTransport } from "./transports/httpTransport.js";
 import { connectStdioTransport } from "./transports/stdioTransport.js";
@@ -99,7 +101,7 @@ async function createMcpServerInstance(
       "Registering resources and tools using shared services...",
       context,
     );
-    await registerObsidianDeleteFileTool(server, obsidianService);
+    await registerObsidianDeleteFileTool(server, obsidianService, vaultCacheService);
     await registerObsidianGlobalSearchTool(
       server,
       obsidianService,
@@ -107,8 +109,10 @@ async function createMcpServerInstance(
     );
     await registerObsidianListFilesTool(server, obsidianService);
     await registerObsidianReadFileTool(server, obsidianService);
-    await registerObsidianSearchReplaceTool(server, obsidianService);
-    await registerObsidianUpdateFileTool(server, obsidianService);
+    await registerObsidianSearchReplaceTool(server, obsidianService, vaultCacheService);
+    await registerObsidianUpdateFileTool(server, obsidianService, vaultCacheService);
+    await registerObsidianManageFrontmatterTool(server, obsidianService, vaultCacheService);
+    await registerObsidianManageTagsTool(server, obsidianService, vaultCacheService);
     logger.info("Resources and tools registered successfully", context);
 
     logger.info(
@@ -177,7 +181,10 @@ async function startTransport(
     // It needs a factory function to create new McpServer instances, passing along the shared services.
     const mcpServerFactory = async () =>
       createMcpServerInstance(obsidianService, vaultCacheService);
-    const httpServerInstance = await startHttpTransport(mcpServerFactory, context);
+    const httpServerInstance = await startHttpTransport(
+      mcpServerFactory,
+      context,
+    );
     return httpServerInstance; // Return the http.Server instance.
   }
 
