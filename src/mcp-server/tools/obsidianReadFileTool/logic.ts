@@ -163,7 +163,7 @@ export const processObsidianReadFile = async (
         `Attempting to read file as JSON (case-sensitive): ${originalFilePath}`,
         readContext,
       );
-      noteJson = (await retryWithDelay(
+      noteJson = await retryWithDelay(
         () =>
           obsidianService.getFileContent(
             originalFilePath,
@@ -177,7 +177,7 @@ export const processObsidianReadFile = async (
           delayMs: 300,
           shouldRetry: shouldRetryNotFound,
         },
-      ));
+      );
       effectiveFilePath = originalFilePath; // Confirm exact path worked
       logger.debug(
         `Successfully read file as JSON using exact path: ${originalFilePath}`,
@@ -236,7 +236,7 @@ export const processObsidianReadFile = async (
             );
 
             // Retry reading the file content using the corrected path
-            noteJson = (await retryWithDelay(
+            noteJson = await retryWithDelay(
               () =>
                 obsidianService.getFileContent(
                   effectiveFilePath,
@@ -250,7 +250,7 @@ export const processObsidianReadFile = async (
                 delayMs: 300,
                 shouldRetry: shouldRetryNotFound,
               },
-            ));
+            );
             logger.debug(
               `Successfully read file as JSON using fallback path: ${effectiveFilePath}`,
               fallbackContext,

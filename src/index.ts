@@ -241,7 +241,10 @@ const start = async () => {
 
     if (config.obsidianEnableCache) {
       vaultCacheService = new VaultCacheService(obsidianService); // Instantiate Cache Service, passing Obsidian Service
-      logger.info("Vault cache is enabled and service is instantiated.", startupContext);
+      logger.info(
+        "Vault cache is enabled and service is instantiated.",
+        startupContext,
+      );
     } else {
       logger.info("Vault cache is disabled by configuration.", startupContext);
     }

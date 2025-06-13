@@ -142,7 +142,12 @@ export class VaultCacheService {
     logger.debug(`Proactively updating cache for file: ${filePath}`, opContext);
     try {
       const noteJson = await retryWithDelay(
-        () => this.obsidianService.getFileContent(filePath, "json", opContext) as Promise<NoteJson>,
+        () =>
+          this.obsidianService.getFileContent(
+            filePath,
+            "json",
+            opContext,
+          ) as Promise<NoteJson>,
         {
           operationName: "proactiveCacheUpdate",
           context: opContext,

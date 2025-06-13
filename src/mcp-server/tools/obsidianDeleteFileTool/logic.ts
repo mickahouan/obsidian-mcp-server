@@ -1,8 +1,15 @@
 import path from "node:path"; // node:path provides OS-specific path functions; using path.posix for vault path manipulation.
 import { z } from "zod";
-import { ObsidianRestApiService, VaultCacheService } from "../../../services/obsidianRestAPI/index.js";
+import {
+  ObsidianRestApiService,
+  VaultCacheService,
+} from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import { logger, RequestContext, retryWithDelay } from "../../../utils/index.js";
+import {
+  logger,
+  RequestContext,
+  retryWithDelay,
+} from "../../../utils/index.js";
 
 // ====================================================================================
 // Schema Definitions for Input Validation
@@ -118,7 +125,10 @@ export const processObsidianDeleteFile = async (
       deleteContext,
     );
     if (vaultCacheService) {
-      await vaultCacheService.updateCacheForFile(originalFilePath, deleteContext);
+      await vaultCacheService.updateCacheForFile(
+        originalFilePath,
+        deleteContext,
+      );
     }
     return {
       success: true,
@@ -195,7 +205,10 @@ export const processObsidianDeleteFile = async (
             retryContext,
           );
           if (vaultCacheService) {
-            await vaultCacheService.updateCacheForFile(effectiveFilePath, retryContext);
+            await vaultCacheService.updateCacheForFile(
+              effectiveFilePath,
+              retryContext,
+            );
           }
           return {
             success: true,

@@ -1,9 +1,9 @@
 export {
-    ObsidianManageFrontmatterInputSchemaShape, processObsidianManageFrontmatter
+  ObsidianManageFrontmatterInputSchemaShape,
+  processObsidianManageFrontmatter,
 } from "./logic.js";
 export type {
-    ObsidianManageFrontmatterInput,
-    ObsidianManageFrontmatterResponse
+  ObsidianManageFrontmatterInput,
+  ObsidianManageFrontmatterResponse,
 } from "./logic.js";
 export { registerObsidianManageFrontmatterTool } from "./registration.js";
-

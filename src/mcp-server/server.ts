@@ -116,7 +116,10 @@ async function createMcpServerInstance(
         vaultCacheService,
       );
     } else {
-      logger.warning("Skipping registration of 'obsidian_global_search' because the Vault Cache Service is disabled.", context);
+      logger.warning(
+        "Skipping registration of 'obsidian_global_search' because the Vault Cache Service is disabled.",
+        context,
+      );
     }
     await registerObsidianSearchReplaceTool(
       server,
@@ -157,7 +160,9 @@ async function createMcpServerInstance(
               ? cacheBuildError.message
               : String(cacheBuildError),
           stack:
-            cacheBuildError instanceof Error ? cacheBuildError.stack : undefined,
+            cacheBuildError instanceof Error
+              ? cacheBuildError.stack
+              : undefined,
         });
       });
     }

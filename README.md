@@ -128,7 +128,6 @@ If running directly, they can be set in a `.env` file in the project root or dir
 | `OBSIDIAN_VERIFY_SSL`                 | Set to `false` to disable SSL verification.               | No                | `true`                   |
 | `OBSIDIAN_ENABLE_CACHE`               | Set to `true` to enable the in-memory vault cache.        | No                | `true`                   |
 | `OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN` | Refresh interval for the vault cache in minutes.          | No                | `10`                     |
-| `OBSIDIAN_API_SEARCH_TIMEOUT_MS`      | Timeout for search API calls in milliseconds.             | No                | `30000`                  |
 
 ### Connecting to the Obsidian API
 

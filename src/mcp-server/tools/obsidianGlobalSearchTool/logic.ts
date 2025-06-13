@@ -245,7 +245,10 @@ export const processObsidianGlobalSearch = async (
   let apiFailedOrTimedOut = false;
   try {
     strategyMessage = `Attempting live API search with retries (timeout: ${API_SEARCH_TIMEOUT_MS / 1000}s per attempt). `;
-    const apiSearchContext = { ...opContext, subOperation: "searchApiSimpleWithRetry" };
+    const apiSearchContext = {
+      ...opContext,
+      subOperation: "searchApiSimpleWithRetry",
+    };
 
     const apiResults: SimpleSearchResult[] = await retryWithDelay(
       async () => {
@@ -262,7 +265,12 @@ export const processObsidianGlobalSearch = async (
 
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(
-            () => reject(new Error(`API search timed out after ${API_SEARCH_TIMEOUT_MS}ms`)),
+            () =>
+              reject(
+                new Error(
+                  `API search timed out after ${API_SEARCH_TIMEOUT_MS}ms`,
+                ),
+              ),
             API_SEARCH_TIMEOUT_MS,
           ),
         );
@@ -276,10 +284,13 @@ export const processObsidianGlobalSearch = async (
         delayMs: 500,
         shouldRetry: (err: unknown) => {
           // Retry on any error during the API call phase
-          logger.warning(`API search attempt failed. Retrying...`, { ...apiSearchContext, error: err instanceof Error ? err.message : String(err) });
+          logger.warning(`API search attempt failed. Retrying...`, {
+            ...apiSearchContext,
+            error: err instanceof Error ? err.message : String(err),
+          });
           return true;
         },
-      }
+      },
     );
 
     strategyMessage += `API search successful, returned ${apiResults.length} potential files. `;

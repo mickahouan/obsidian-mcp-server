@@ -720,7 +720,10 @@ export const processObsidianSearchReplace = async (
           writeContext,
         );
         if (vaultCacheService) {
-          await vaultCacheService.updateCacheForFile(effectiveFilePath!, writeContext);
+          await vaultCacheService.updateCacheForFile(
+            effectiveFilePath!,
+            writeContext,
+          );
         }
       } else if (targetType === "activeFile") {
         await obsidianService.updateActiveFile(modifiedContent, writeContext);

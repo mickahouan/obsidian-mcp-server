@@ -245,7 +245,7 @@ export class Sanitization {
   public sanitizeTagName(input: string): string {
     if (!input) return "";
     // Remove leading '#' and replace spaces/invalid characters with nothing
-    return input.replace(/^#/, '').replace(/[\s#,\\?%*:|"<>]/g, '');
+    return input.replace(/^#/, "").replace(/[\s#,\\?%*:|"<>]/g, "");
   }
 
   /**

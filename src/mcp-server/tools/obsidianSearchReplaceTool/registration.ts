@@ -1,5 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ObsidianRestApiService, VaultCacheService } from "../../../services/obsidianRestAPI/index.js";
+import {
+  ObsidianRestApiService,
+  VaultCacheService,
+} from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 import {
   ErrorHandler,
