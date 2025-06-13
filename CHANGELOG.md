@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2025-06-12
+
+### Added
+
+- **Cache Configuration**: Introduced a new environment variable `OBSIDIAN_ENABLE_CACHE` (defaults to `true`) to allow disabling the in-memory vault cache for a lighter server footprint.
+
+### Changed
+
+- **Tool Reliability**: Refactored the `obsidian_manage_frontmatter` and `obsidian_manage_tags` tools to use a more reliable read-modify-write strategy instead of relying on the Obsidian API's patch operations. This provides more robust control over the final state of the file.
+- **API Resilience**: Enhanced the `obsidian_global_search` tool with a retry mechanism to improve resilience against transient network errors or timeouts.
+
+### Fixed
+
+- **SSL Verification**: Fixed a bug where the `OBSIDIAN_VERIFY_SSL` environment variable was not being correctly applied to API requests.
+
+### Chore
+
+- **Dependencies**: Updated `package-lock.json` to reflect the latest dependency versions.
+- **Documentation**: Regenerated `docs/tree.md` and updated `.clinerules` to ensure all documentation is current.
+
 ## [2.0.3] - 2025-06-12
 
 ### Fixed
