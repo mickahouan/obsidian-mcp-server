@@ -340,7 +340,7 @@ export const processObsidianUpdateFile = async (
   params: ObsidianUpdateFileInput, // Use the refined, validated type
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<ObsidianUpdateFileResponse> => {
   logger.debug(`Processing obsidian_update_file request (wholeFile mode)`, {
     ...context,
@@ -589,7 +589,7 @@ export const processObsidianUpdateFile = async (
         `Successfully wrote combined content for ${mode}`,
         writeContext,
       );
-      if (params.targetType === "filePath" && targetId) {
+      if (params.targetType === "filePath" && targetId && vaultCacheService) {
         await vaultCacheService.updateCacheForFile(targetId, writeContext);
       }
     } else {
@@ -619,14 +619,14 @@ export const processObsidianUpdateFile = async (
         `Successfully performed overwrite on target: ${params.targetType} ${targetId ?? "(active)"}`,
         updateContext,
       );
-      if (params.targetType === "filePath" && targetId) {
+      if (params.targetType === "filePath" && targetId && vaultCacheService) {
         await vaultCacheService.updateCacheForFile(targetId, updateContext);
       }
     }
 
     // --- Step 4: Get Final State (Stat and Optional Content) ---
     // Add a small delay before attempting to get the final state, to allow Obsidian API to stabilize after write.
-    const POST_UPDATE_DELAY_MS = 500;
+    const POST_UPDATE_DELAY_MS = 250;
     logger.debug(
       `Waiting ${POST_UPDATE_DELAY_MS}ms before retrieving final state...`,
       { ...context, operation: "postUpdateDelay" },
@@ -649,7 +649,7 @@ export const processObsidianUpdateFile = async (
           operationName: "getFinalStateAfterUpdate",
           context: { ...context, operation: "getFinalStateAfterUpdateAttempt" }, // Use a distinct context for retry logs
           maxRetries: 3, // Total attempts: 1 initial + 2 retries
-          delayMs: 300, // Slightly longer delay for post-write read
+          delayMs: 250, // Shorter delay
           shouldRetry: (error: unknown) => {
             // Retry on common transient issues or if the file might not be immediately available
             const should =

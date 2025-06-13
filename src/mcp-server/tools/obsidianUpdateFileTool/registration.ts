@@ -40,7 +40,7 @@ import {
 export const registerObsidianUpdateFileTool = async (
   server: McpServer,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<void> => {
   const toolName = "obsidian_update_file";
   const toolDescription =

@@ -77,7 +77,7 @@ export const processObsidianDeleteFile = async (
   params: ObsidianDeleteFileInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<ObsidianDeleteFileResponse> => {
   const { filePath: originalFilePath } = params;
   let effectiveFilePath = originalFilePath; // Track the path actually used for deletion
@@ -117,7 +117,9 @@ export const processObsidianDeleteFile = async (
       `Successfully deleted file using exact path: ${originalFilePath}`,
       deleteContext,
     );
-    await vaultCacheService.updateCacheForFile(originalFilePath, deleteContext);
+    if (vaultCacheService) {
+      await vaultCacheService.updateCacheForFile(originalFilePath, deleteContext);
+    }
     return {
       success: true,
       message: `File '${originalFilePath}' deleted successfully.`,
@@ -192,7 +194,9 @@ export const processObsidianDeleteFile = async (
             `Successfully deleted file using fallback path: ${effectiveFilePath}`,
             retryContext,
           );
-          await vaultCacheService.updateCacheForFile(effectiveFilePath, retryContext);
+          if (vaultCacheService) {
+            await vaultCacheService.updateCacheForFile(effectiveFilePath, retryContext);
+          }
           return {
             success: true,
             message: `File '${effectiveFilePath}' (found via case-insensitive match for '${originalFilePath}') deleted successfully.`,

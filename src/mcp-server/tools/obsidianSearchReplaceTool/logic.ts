@@ -322,7 +322,7 @@ export const processObsidianSearchReplace = async (
   params: ObsidianSearchReplaceInput, // Use the refined, validated type
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<ObsidianSearchReplaceResponse> => {
   // Destructure validated parameters for easier access
   const {
@@ -719,7 +719,9 @@ export const processObsidianSearchReplace = async (
           modifiedContent,
           writeContext,
         );
-        await vaultCacheService.updateCacheForFile(effectiveFilePath!, writeContext);
+        if (vaultCacheService) {
+          await vaultCacheService.updateCacheForFile(effectiveFilePath!, writeContext);
+        }
       } else if (targetType === "activeFile") {
         await obsidianService.updateActiveFile(modifiedContent, writeContext);
       } else {

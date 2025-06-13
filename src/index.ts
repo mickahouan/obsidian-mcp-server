@@ -52,7 +52,7 @@ const shutdown = async (signal: string) => {
 
   try {
     // Stop cache refresh timer first
-    if (vaultCacheService) {
+    if (config.obsidianEnableCache && vaultCacheService) {
       vaultCacheService.stopPeriodicRefresh();
     }
 
@@ -239,7 +239,12 @@ const start = async () => {
     }
     // --- End Status Check ---
 
-    vaultCacheService = new VaultCacheService(obsidianService); // Instantiate Cache Service, passing Obsidian Service
+    if (config.obsidianEnableCache) {
+      vaultCacheService = new VaultCacheService(obsidianService); // Instantiate Cache Service, passing Obsidian Service
+      logger.info("Vault cache is enabled and service is instantiated.", startupContext);
+    } else {
+      logger.info("Vault cache is disabled by configuration.", startupContext);
+    }
     logger.info("Shared services instantiated.", startupContext);
     // --- End Service Instantiation ---
 
@@ -293,32 +298,34 @@ const start = async () => {
     );
 
     // --- Trigger Background Cache Build ---
-    // Start building the cache, but don't wait for it to finish.
-    // The server will be operational while the cache builds.
-    // Tools needing the cache should check its readiness state.
-    logger.info("Triggering background vault cache build...", startupContext);
-    // No 'await' here - run in background
-    vaultCacheService
-      .buildVaultCache()
-      .then(() => {
-        // Once the initial build is done, start the periodic refresh
-        vaultCacheService?.startPeriodicRefresh();
-      })
-      .catch((cacheBuildError) => {
-        // Log errors during the background build process
-        logger.error("Error occurred during background vault cache build", {
-          ...startupContext, // Use startup context for correlation
-          operation: "BackgroundCacheBuild",
-          error:
-            cacheBuildError instanceof Error
-              ? cacheBuildError.message
-              : String(cacheBuildError),
-          stack:
-            cacheBuildError instanceof Error
-              ? cacheBuildError.stack
-              : undefined,
+    if (config.obsidianEnableCache && vaultCacheService) {
+      // Start building the cache, but don't wait for it to finish.
+      // The server will be operational while the cache builds.
+      // Tools needing the cache should check its readiness state.
+      logger.info("Triggering background vault cache build...", startupContext);
+      // No 'await' here - run in background
+      vaultCacheService
+        .buildVaultCache()
+        .then(() => {
+          // Once the initial build is done, start the periodic refresh
+          vaultCacheService?.startPeriodicRefresh();
+        })
+        .catch((cacheBuildError) => {
+          // Log errors during the background build process
+          logger.error("Error occurred during background vault cache build", {
+            ...startupContext, // Use startup context for correlation
+            operation: "BackgroundCacheBuild",
+            error:
+              cacheBuildError instanceof Error
+                ? cacheBuildError.message
+                : String(cacheBuildError),
+            stack:
+              cacheBuildError instanceof Error
+                ? cacheBuildError.stack
+                : undefined,
+          });
         });
-      });
+    }
     // --- End Cache Build Trigger ---
 
     // --- Signal and Error Handling Setup ---

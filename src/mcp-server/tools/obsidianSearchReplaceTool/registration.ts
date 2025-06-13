@@ -40,7 +40,7 @@ import {
 export const registerObsidianSearchReplaceTool = async (
   server: McpServer,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<void> => {
   const toolName = "obsidian_search_replace";
   const toolDescription =

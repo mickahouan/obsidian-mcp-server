@@ -53,14 +53,14 @@ import { connectStdioTransport } from "./transports/stdioTransport.js";
  * Design Note: This factory is called once for 'stdio' transport and per session for 'http' transport.
  *
  * @param {ObsidianRestApiService} obsidianService - The shared Obsidian REST API service instance.
- * @param {VaultCacheService} vaultCacheService - The shared Vault Cache service instance.
+ * @param {VaultCacheService | undefined} vaultCacheService - The shared Vault Cache service instance, which may be undefined if disabled.
  * @returns {Promise<McpServer>} A promise resolving with the configured `McpServer` instance.
  * @throws {Error} If any resource or tool registration fails.
  * @private
  */
 async function createMcpServerInstance(
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<McpServer> {
   const context = requestContextService.createRequestContext({
     operation: "createMcpServerInstance",
@@ -101,38 +101,66 @@ async function createMcpServerInstance(
       "Registering resources and tools using shared services...",
       context,
     );
-    await registerObsidianDeleteFileTool(server, obsidianService, vaultCacheService);
-    await registerObsidianGlobalSearchTool(
+    // Register all tools, passing the vaultCacheService which may be undefined
+    await registerObsidianListFilesTool(server, obsidianService);
+    await registerObsidianReadFileTool(server, obsidianService);
+    await registerObsidianDeleteFileTool(
       server,
       obsidianService,
       vaultCacheService,
     );
-    await registerObsidianListFilesTool(server, obsidianService);
-    await registerObsidianReadFileTool(server, obsidianService);
-    await registerObsidianSearchReplaceTool(server, obsidianService, vaultCacheService);
-    await registerObsidianUpdateFileTool(server, obsidianService, vaultCacheService);
-    await registerObsidianManageFrontmatterTool(server, obsidianService, vaultCacheService);
-    await registerObsidianManageTagsTool(server, obsidianService, vaultCacheService);
+    if (vaultCacheService) {
+      await registerObsidianGlobalSearchTool(
+        server,
+        obsidianService,
+        vaultCacheService,
+      );
+    } else {
+      logger.warning("Skipping registration of 'obsidian_global_search' because the Vault Cache Service is disabled.", context);
+    }
+    await registerObsidianSearchReplaceTool(
+      server,
+      obsidianService,
+      vaultCacheService,
+    );
+    await registerObsidianUpdateFileTool(
+      server,
+      obsidianService,
+      vaultCacheService,
+    );
+    await registerObsidianManageFrontmatterTool(
+      server,
+      obsidianService,
+      vaultCacheService,
+    );
+    await registerObsidianManageTagsTool(
+      server,
+      obsidianService,
+      vaultCacheService,
+    );
+
     logger.info("Resources and tools registered successfully", context);
 
-    logger.info(
-      "Triggering background vault cache build (if not already built/building)...",
-      context,
-    );
-    // Intentionally not awaiting this promise to allow server startup to proceed.
-    // Errors are logged within the catch block.
-    vaultCacheService.buildVaultCache().catch((cacheBuildError) => {
-      logger.error("Error occurred during background vault cache build", {
-        ...context, // Use the initial context for correlation
-        subOperation: "BackgroundVaultCacheBuild", // Add sub-operation for clarity
-        error:
-          cacheBuildError instanceof Error
-            ? cacheBuildError.message
-            : String(cacheBuildError),
-        stack:
-          cacheBuildError instanceof Error ? cacheBuildError.stack : undefined,
+    if (vaultCacheService) {
+      logger.info(
+        "Triggering background vault cache build (if not already built/building)...",
+        context,
+      );
+      // Intentionally not awaiting this promise to allow server startup to proceed.
+      // Errors are logged within the catch block.
+      vaultCacheService.buildVaultCache().catch((cacheBuildError) => {
+        logger.error("Error occurred during background vault cache build", {
+          ...context, // Use the initial context for correlation
+          subOperation: "BackgroundVaultCacheBuild", // Add sub-operation for clarity
+          error:
+            cacheBuildError instanceof Error
+              ? cacheBuildError.message
+              : String(cacheBuildError),
+          stack:
+            cacheBuildError instanceof Error ? cacheBuildError.stack : undefined,
+        });
       });
-    });
+    }
   } catch (err) {
     logger.error("Failed to register resources/tools", {
       ...context,
@@ -156,14 +184,14 @@ async function createMcpServerInstance(
  * - Server Instance Lifecycle: Single instance for 'stdio', per-session for 'http'.
  *
  * @param {ObsidianRestApiService} obsidianService - The shared Obsidian REST API service instance.
- * @param {VaultCacheService} vaultCacheService - The shared Vault Cache service instance.
+ * @param {VaultCacheService | undefined} vaultCacheService - The shared Vault Cache service instance.
  * @returns {Promise<McpServer | void>} Resolves with the `McpServer` instance for 'stdio', or `void` for 'http'.
  * @throws {Error} If the configured transport type is unsupported or if transport setup fails.
  * @private
  */
 async function startTransport(
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<McpServer | ServerType | void> {
   const transportType = config.mcpTransportType;
   const context = requestContextService.createRequestContext({
@@ -221,13 +249,13 @@ async function startTransport(
  * - Handles critical startup failures, ensuring appropriate process exit.
  *
  * @param {ObsidianRestApiService} obsidianService - The shared Obsidian REST API service instance, instantiated by the caller (e.g., index.ts).
- * @param {VaultCacheService} vaultCacheService - The shared Vault Cache service instance, instantiated by the caller (e.g., index.ts).
+ * @param {VaultCacheService | undefined} vaultCacheService - The shared Vault Cache service instance, instantiated by the caller (e.g., index.ts).
  * @returns {Promise<void | McpServer>} For 'stdio', resolves with `McpServer`. For 'http', runs indefinitely.
  *   Rejects on critical failure, leading to process exit.
  */
 export async function initializeAndStartServer(
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<void | McpServer | ServerType> {
   const context = requestContextService.createRequestContext({
     operation: "initializeAndStartServer",

@@ -20,7 +20,7 @@ import {
 export const registerObsidianManageFrontmatterTool = async (
   server: McpServer,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<void> => {
   const toolName = "obsidian_manage_frontmatter";
   const toolDescription =

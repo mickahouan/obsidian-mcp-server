@@ -86,12 +86,16 @@ const EnvSchema = z.object({
   // --- Obsidian Specific Config ---
   OBSIDIAN_API_KEY: z.string().min(1, "OBSIDIAN_API_KEY cannot be empty"),
   OBSIDIAN_BASE_URL: z.string().url().default("http://127.0.0.1:27123"),
-  OBSIDIAN_VERIFY_SSL: z.coerce.boolean().default(false),
+  OBSIDIAN_VERIFY_SSL: z.string().default("false"),
   OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN: z.coerce
     .number()
     .int()
     .positive()
     .default(10),
+  OBSIDIAN_ENABLE_CACHE: z
+    .string()
+    .transform((val) => val.toLowerCase() === "true")
+    .default("true"),
 });
 
 const parsedEnv = EnvSchema.safeParse(process.env);
@@ -198,8 +202,9 @@ export const config = {
   oauthJwksUri: env.OAUTH_JWKS_URI,
   obsidianApiKey: env.OBSIDIAN_API_KEY,
   obsidianBaseUrl: env.OBSIDIAN_BASE_URL,
-  obsidianVerifySsl: env.OBSIDIAN_VERIFY_SSL,
+  obsidianVerifySsl: env.OBSIDIAN_VERIFY_SSL.toLowerCase() === "true",
   obsidianCacheRefreshIntervalMin: env.OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN,
+  obsidianEnableCache: env.OBSIDIAN_ENABLE_CACHE,
 };
 
 /**

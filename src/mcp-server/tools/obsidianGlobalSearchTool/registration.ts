@@ -36,13 +36,11 @@ import {
 export async function registerObsidianGlobalSearchTool(
   server: McpServer,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService, // Added vaultCacheService parameter
+  vaultCacheService: VaultCacheService, // Now required
 ): Promise<void> {
   const toolName = "obsidian_global_search";
-  // Updated description to include searchInPath
   const toolDescription = `Performs search across the Obsidian vault using text or regex, primarily relying on the Obsidian REST API's simple search. Supports filtering by modification date, optionally restricting search to a specific directory path (recursively), pagination (page, pageSize), and limiting matches shown per file (maxMatchesPerFile). Returns a JSON object containing success status, a message, pagination details (currentPage, pageSize, totalPages), total file/match counts (before pagination), and an array of results. Each result includes the file path, filename, creation timestamp (ctime), modification timestamp (mtime), and an array of match context snippets (limited by maxMatchesPerFile). If there are multiple pages of results, it also includes an 'alsoFoundInFiles' array listing filenames found on other pages.`;
 
-  // Create a context for the registration process itself.
   const registrationContext: RequestContext =
     requestContextService.createRequestContext({
       operation: "RegisterObsidianGlobalSearchTool",
@@ -52,38 +50,27 @@ export async function registerObsidianGlobalSearchTool(
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
 
-  // Wrap the registration in a tryCatch block for robust error handling.
   await ErrorHandler.tryCatch(
     async () => {
-      // Use the high-level SDK method for tool registration.
       server.tool(
         toolName,
         toolDescription,
-        ObsidianGlobalSearchInputSchemaShape, // Provide the Zod schema shape (already updated in logic.ts)
-        /**
-         * The handler function executed when the 'obsidian_global_search' tool is called.
-         *
-         * @param {ObsidianGlobalSearchInput} params - The validated input parameters.
-         * @param {any} handlerInvocationContext - Context object provided by the SDK.
-         * @returns {Promise<any>} A promise resolving to the result object or an McpError instance.
-         */
+        ObsidianGlobalSearchInputSchemaShape,
         async (
           params: ObsidianGlobalSearchInput,
           handlerInvocationContext: any,
         ): Promise<any> => {
-          // Create a specific RequestContext for logging/error handling.
           const handlerContext: RequestContext =
             requestContextService.createRequestContext({
               operation: "HandleObsidianGlobalSearchRequest",
               toolName: toolName,
-              // Updated paramsSummary for pagination, match limit, and path filter
               paramsSummary: {
                 useRegex: params.useRegex,
                 caseSensitive: params.caseSensitive,
                 pageSize: params.pageSize,
                 page: params.page,
                 maxMatchesPerFile: params.maxMatchesPerFile,
-                searchInPath: params.searchInPath, // Added searchInPath
+                searchInPath: params.searchInPath,
                 hasDateFilter: !!(
                   params.modified_since || params.modified_until
                 ),
@@ -91,56 +78,38 @@ export async function registerObsidianGlobalSearchTool(
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
-          // Use ErrorHandler.tryCatch to wrap the core logic execution.
-          // ErrorHandler.tryCatch will log errors and ensure an McpError is thrown.
-          // The McpServer SDK's server.tool() wrapper will catch this McpError
-          // and format it into the CallToolResult with isError: true.
           return await ErrorHandler.tryCatch(
             async () => {
-              // Delegate the actual search logic to the processing function.
               const response: ObsidianGlobalSearchResponse =
                 await processObsidianGlobalSearch(
                   params,
                   handlerContext,
                   obsidianService,
-                  vaultCacheService, // Pass vaultCacheService here
+                  vaultCacheService,
                 );
               logger.debug(
                 `'${toolName}' processed successfully`,
                 handlerContext,
               );
 
-              // Format the successful response object into the required MCP CallToolResult structure.
               return {
                 content: [
                   {
-                    type: "text", // Use text type for structured JSON data
-                    text: JSON.stringify(response, null, 2), // Pretty-print JSON
+                    type: "text",
+                    text: JSON.stringify(response, null, 2),
                   },
                 ],
-                isError: false, // Indicate successful execution
+                isError: false,
               };
             },
             {
-              // Configuration for the ErrorHandler.tryCatch specific to this tool's execution.
               operation: `executing tool ${toolName}`,
               context: handlerContext,
-              // Default error code if an unexpected error occurs within processObsidianGlobalSearch
-              // that isn't already an McpError.
               errorCode: BaseErrorCode.INTERNAL_ERROR,
-              // Custom error mapping can be added here if specific error transformations are needed,
-              // but often the default behavior of ErrorHandler.tryCatch (re-throwing McpError
-              // or wrapping unknown errors) is sufficient.
-              // For example:
-              // errorMapper: (error: unknown) => new McpError(
-              //   error instanceof McpError ? error.code : BaseErrorCode.TOOL_EXECUTION_ERROR,
-              //   `Error executing ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              //   { ...handlerContext, originalError: error }
-              // ),
             },
           );
         },
-      ); // End of server.tool call
+      );
 
       logger.info(
         `Tool registered successfully: ${toolName}`,
@@ -148,18 +117,16 @@ export async function registerObsidianGlobalSearchTool(
       );
     },
     {
-      // Configuration for the outer error handler (registration process).
       operation: `registering tool ${toolName}`,
       context: registrationContext,
-      errorCode: BaseErrorCode.INTERNAL_ERROR, // Default error code for registration failure.
-      // Custom error mapping for registration failures.
+      errorCode: BaseErrorCode.INTERNAL_ERROR,
       errorMapper: (error: unknown) =>
         new McpError(
           error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
           `Failed to register tool '${toolName}': ${error instanceof Error ? error.message : "Unknown error"}`,
           { ...registrationContext },
         ),
-      critical: true, // Registration failure is critical.
+      critical: true,
     },
-  ); // End of outer ErrorHandler.tryCatch
+  );
 }

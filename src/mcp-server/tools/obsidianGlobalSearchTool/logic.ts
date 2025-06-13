@@ -13,6 +13,7 @@ import {
   formatTimestamp,
   logger,
   RequestContext,
+  retryWithDelay,
   sanitizeInputForLogging,
 } from "../../../utils/index.js";
 
@@ -191,7 +192,7 @@ export const processObsidianGlobalSearch = async (
   params: ObsidianGlobalSearchInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<ObsidianGlobalSearchResponse> => {
   const operation = "processObsidianGlobalSearch";
   const opContext = { ...context, operation };
@@ -239,39 +240,46 @@ export const processObsidianGlobalSearch = async (
     );
   }
 
-  // 2. Attempt API Search with Timeout
+  // 2. Attempt API Search with Retries and Timeout
   let apiFailedOrTimedOut = false;
   try {
-    strategyMessage = `Attempting live API search (timeout: ${API_SEARCH_TIMEOUT_MS / 1000}s). `;
-    const apiSearchContext = { ...opContext, subOperation: "searchApiSimple" };
-    logger.info(
-      `Calling obsidianService.searchSimple for query: "${params.query}"`,
-      apiSearchContext,
-    );
+    strategyMessage = `Attempting live API search with retries (timeout: ${API_SEARCH_TIMEOUT_MS / 1000}s per attempt). `;
+    const apiSearchContext = { ...opContext, subOperation: "searchApiSimpleWithRetry" };
 
-    // Promise for the API call
-    const apiCallPromise = obsidianService.searchSimple(
-      params.query, // Note: API might not support regex/caseSensitive here
-      params.contextLength,
-      apiSearchContext,
-    );
+    const apiResults: SimpleSearchResult[] = await retryWithDelay(
+      async () => {
+        logger.info(
+          `Calling obsidianService.searchSimple for query: "${params.query}"`,
+          apiSearchContext,
+        );
 
-    // Promise for the timeout
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(
-        () =>
-          reject(
-            new Error(`API search timed out after ${API_SEARCH_TIMEOUT_MS}ms`),
+        const apiCallPromise = obsidianService.searchSimple(
+          params.query,
+          params.contextLength,
+          apiSearchContext,
+        );
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`API search timed out after ${API_SEARCH_TIMEOUT_MS}ms`)),
+            API_SEARCH_TIMEOUT_MS,
           ),
-        API_SEARCH_TIMEOUT_MS,
-      ),
-    );
+        );
 
-    // Race the API call against the timeout
-    const apiResults: SimpleSearchResult[] = await Promise.race([
-      apiCallPromise,
-      timeoutPromise,
-    ]);
+        return await Promise.race([apiCallPromise, timeoutPromise]);
+      },
+      {
+        operationName: "obsidianService.searchSimple",
+        context: apiSearchContext,
+        maxRetries: 2, // Total of 3 attempts
+        delayMs: 500,
+        shouldRetry: (err: unknown) => {
+          // Retry on any error during the API call phase
+          logger.warning(`API search attempt failed. Retrying...`, { ...apiSearchContext, error: err instanceof Error ? err.message : String(err) });
+          return true;
+        },
+      }
+    );
 
     strategyMessage += `API search successful, returned ${apiResults.length} potential files. `;
     logger.info(
@@ -365,7 +373,7 @@ export const processObsidianGlobalSearch = async (
 
   // 3. Fallback to Cache if API Failed/Timed Out
   if (apiFailedOrTimedOut) {
-    if (vaultCacheService.isReady()) {
+    if (vaultCacheService && vaultCacheService.isReady()) {
       strategyMessage += "Falling back to in-memory cache. ";
       logger.info(
         "API search failed/timed out. Falling back to in-memory cache.",
@@ -448,14 +456,19 @@ export const processObsidianGlobalSearch = async (
       }
       strategyMessage += `Searched ${cache.size} cached files, processed ${processedCount} matching all filters (including path: '${searchPathPrefix || "entire vault"}'). `;
     } else {
-      strategyMessage += "Cache not ready, unable to fallback. ";
+      // This block now handles both "cache disabled" and "cache not ready"
+      const reason = vaultCacheService ? "is not ready" : "is disabled";
+      strategyMessage += `Cache not available (${reason}), unable to fallback. `;
       logger.error(
-        "API search failed and cache is not ready. Returning empty results.",
+        `API search failed and cache ${reason}. Cannot perform search.`,
         opContext,
       );
-      // Return empty results as neither source is available/working
-      allFilteredResults = [];
-      totalMatchesCount = 0;
+      // Throw a specific error because the tool cannot function without a data source.
+      throw new McpError(
+        BaseErrorCode.SERVICE_UNAVAILABLE,
+        `Live API search failed and the cache is currently ${reason}. Please ensure the Obsidian REST API is running and reachable, and that the cache is enabled and has had time to build.`,
+        opContext,
+      );
     }
   }
 

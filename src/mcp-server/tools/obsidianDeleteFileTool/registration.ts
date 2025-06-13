@@ -36,7 +36,7 @@ import {
 export const registerObsidianDeleteFileTool = async (
   server: McpServer,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<void> => {
   const toolName = "obsidian_delete_file";
   // Updated description to accurately reflect the response (no timestamp)
