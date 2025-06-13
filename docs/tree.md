@@ -1,12 +1,13 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-06-12 21:59:32
+Generated on: 2025-06-13 01:31:14
 
 ```
 obsidian-mcp-server
 ├── .github
-│   └── workflows
-│       └── publish.yml
+│   ├── workflows
+│   │   └── publish.yml
+│   └── FUNDING.yml
 ├── docs
 │   ├── obsidian-api
 │   │   ├── obsidian_rest_api_spec.json
@@ -34,6 +35,14 @@ obsidian-mcp-server
 │   │   │   │   ├── logic.ts
 │   │   │   │   └── registration.ts
 │   │   │   ├── obsidianListFilesTool
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── logic.ts
+│   │   │   │   └── registration.ts
+│   │   │   ├── obsidianManageFrontmatterTool
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── logic.ts
+│   │   │   │   └── registration.ts
+│   │   │   ├── obsidianManageTagsTool
 │   │   │   │   ├── index.ts
 │   │   │   │   ├── logic.ts
 │   │   │   │   └── registration.ts

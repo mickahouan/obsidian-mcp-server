@@ -238,6 +238,18 @@ export class Sanitization {
   }
 
   /**
+   * Sanitizes a tag name by removing the leading '#' and replacing invalid characters.
+   * @param {string} input - The tag string to sanitize.
+   * @returns {string} The sanitized tag name.
+   */
+  public sanitizeTagName(input: string): string {
+    if (!input) return "";
+    // Remove leading '#' and replace spaces/invalid characters with nothing
+    return input.replace(/^#/, '').replace(/[\s#,/\\?%*:|"<>]/g, '');
+  }
+
+  /**
+>>>>>>> REPLACE
    * Sanitizes a string based on its intended usage context (e.g., HTML, URL, plain text).
    *
    * **Security Note:** Using `context: 'javascript'` is explicitly disallowed and will throw an `McpError`.

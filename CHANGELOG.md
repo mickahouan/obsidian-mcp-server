@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2025-06-13
+
+### Added
+
+- **New Tool: `obsidian_manage_frontmatter`**: Added a new tool to atomically get, set, and delete keys in a note's YAML frontmatter without rewriting the entire file.
+- **New Tool: `obsidian_manage_tags`**: Added a new tool to add, remove, and list tags in a note, modifying both the frontmatter `tags` key and inline tags.
+- **Funding File**: Added `.github/FUNDING.yml` to provide options for supporting the project.
+
+### Changed
+
+- **Vault Cache Integration**: Refactored existing tools (`obsidianDeleteFileTool`, `obsidianSearchReplaceTool`, `obsidianUpdateFileTool`) to integrate with the `VaultCacheService`. These tools now proactively update or invalidate the cache after file modifications, ensuring data consistency and improving performance.
+- **Resilient API Calls**: Enhanced file operation tools (`obsidianDeleteFileTool`, `obsidianManageFrontmatterTool`, `obsidianManageTagsTool`) with a `retryWithDelay` mechanism. This makes API calls to the Obsidian vault more resilient to transient errors, especially `NOT_FOUND` errors that can occur briefly after file operations.
+- **Obsidian Service Enhancements**:
+  - The `getFileMetadata` method in `vaultMethods.ts` now gracefully handles cases where a file is not found by returning `null` instead of throwing an error.
+  - The main `ObsidianRestApiService` now correctly handles `HEAD` requests to return the full response object, which is necessary for metadata extraction.
+  - Improved network error logging to be more descriptive.
+- **CI Workflow**: Updated `.github/workflows/publish.yml` to use Node.js v20.x and streamlined the build and publish steps.
+- **Sanitization Utility**: Added a `sanitizeTagName` method to `sanitization.ts` to clean tag inputs.
+
 ## [2.0.1] - 2025-06-12
 
 ### Added
