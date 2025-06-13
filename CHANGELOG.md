@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.2] - 2025-06-13
+## [2.0.3] - 2025-06-12
+
+### Fixed
+
+- **Frontmatter Deletion**: The `obsidianManageFrontmatterTool` now correctly deletes keys by setting their value to `null` via the Obsidian API, ensuring complete removal from the note's frontmatter.
+- **Startup Stability**: The server now performs a mandatory status check on startup and will exit if it cannot connect to the Obsidian REST API, preventing it from running in a non-functional state.
+
+### Changed
+
+- **Code Consistency**: Standardized the module export pattern for all tools to use explicit, named exports, improving code clarity and maintainability.
+- **Configuration Schema**: Refined the Zod schema in the configuration to use `z.coerce.boolean()` for the `OBSIDIAN_VERIFY_SSL` environment variable, making type validation more robust.
+
+## [2.0.2] - 2025-06-12
 
 ### Added
 
