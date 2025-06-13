@@ -1,159 +1,303 @@
 # Obsidian MCP Server
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
-[![Model Context Protocol](https://img.shields.io/badge/MCP-1.10.2-green.svg)](https://modelcontextprotocol.io/)
-[![Version](https://img.shields.io/badge/Version-1.5.8-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Status](https://img.shields.io/badge/Status-Stable-green.svg)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-^5.8.3-blue.svg)](https://www.typescriptlang.org/)
+[![Model Context Protocol](https://img.shields.io/badge/MCP%20SDK-^1.12.1-green.svg)](https://modelcontextprotocol.io/)
+[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](./CHANGELOG.md)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Status](https://img.shields.io/badge/Status-Production-brightgreen.svg)](https://github.com/cyanheads/obsidian-mcp-server/issues)
 [![GitHub](https://img.shields.io/github/stars/cyanheads/obsidian-mcp-server?style=social)](https://github.com/cyanheads/obsidian-mcp-server)
 
-A Model Context Protocol server designed for LLMs to interact with Obsidian vaults. Built with TypeScript and featuring secure API communication, efficient file operations, and comprehensive search capabilities, it enables AI assistants to seamlessly manage knowledge bases through a clean, flexible tool interface.
+**Empower your AI agents and development tools with seamless Obsidian integration!**
 
-The Model Context Protocol (MCP) enables AI models to interact with external tools and resources through a standardized interface.
+An MCP (Model Context Protocol) server providing comprehensive access to your Obsidian vault. Enables LLMs and AI agents to read, write, search, and manage your notes and files through the [Obsidian Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api).
 
-Requires the [Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) in Obsidian.
+Built on the [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template), this server follows a modular architecture with robust error handling, logging, and security features.
 
-## 📋 Table of Contents
+## 🚀 Core Capabilities: Obsidian Tools 🛠️
 
-[Features](#-features) | [Installation](#-installation) | [Configuration](#-configuration) |
-[Tools](#-tools) | [Resources](#-resources) | [Project Structure](#-project-structure) |
-[Contributing](#-contributing) | [Publishing](#-publishing) | [License](#-license)
+This server equips your AI with specialized tools to interact with your Obsidian vault:
 
-## ✨ Features
+| Tool Name                                                                              | Description                                                     | Key Features                                                                                                                                           |
+| :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`obsidian_read_file`](./src/mcp-server/tools/obsidianReadFileTool/)                   | Retrieves the content and metadata of a specified file.         | - Read in `markdown` or `json` format.<br/>- Case-insensitive path fallback.<br/>- Includes file stats (creation/modification time).                   |
+| [`obsidian_update_file`](./src/mcp-server/tools/obsidianUpdateFileTool/)               | Modifies notes using whole-file operations.                     | - `append`, `prepend`, or `overwrite` content.<br/>- Can create files if they don't exist.<br/>- Targets files by path, active note, or periodic note. |
+| [`obsidian_search_replace`](./src/mcp-server/tools/obsidianSearchReplaceTool/)         | Performs search-and-replace operations within a target note.    | - Supports string or regex search.<br/>- Options for case sensitivity, whole word, and replacing all occurrences.                                      |
+| [`obsidian_global_search`](./src/mcp-server/tools/obsidianGlobalSearchTool/)           | Performs a search across the entire vault.                      | - Text or regex search.<br/>- Filter by path and modification date.<br/>- Paginated results.                                                           |
+| [`obsidian_list_files`](./src/mcp-server/tools/obsidianListFilesTool/)                 | Lists files and subdirectories within a specified vault folder. | - Filter by file extension or name regex.<br/>- Provides a formatted tree view of the directory.                                                       |
+| [`obsidian_manage_frontmatter`](./src/mcp-server/tools/obsidianManageFrontmatterTool/) | Atomically manages a note's YAML frontmatter.                   | - `get`, `set`, or `delete` frontmatter keys.<br/>- Avoids rewriting the entire file for metadata changes.                                             |
+| [`obsidian_manage_tags`](./src/mcp-server/tools/obsidianManageTagsTool/)               | Adds, removes, or lists tags for a note.                        | - Manages tags in both YAML frontmatter and inline content.                                                                                            |
+| [`obsidian_delete_file`](./src/mcp-server/tools/obsidianDeleteFileTool/)               | Permanently deletes a specified file from the vault.            | - Case-insensitive path fallback for safety.                                                                                                           |
 
-- **File Operations**: Atomic file/directory operations with validation, resource monitoring, and error handling.
-- **Search System**: Full-text search with configurable context, advanced JsonLogic queries, glob patterns, and frontmatter field support.
-- **Property Management**: YAML frontmatter parsing, intelligent merging, automatic timestamps, and custom field support.
-- **Security & Performance**: API key authentication, rate limiting, SSL options, resource monitoring, and graceful shutdown.
+---
 
-## 🚀 Installation
+## Table of Contents
 
-Note: Requires Node.js and the [Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) enabled in Obsidian.
+| [Overview](#overview) | [Features](#features) | [Installation](#installation) |
+| [Configuration](#configuration) | [Project Structure](#project-structure) | [Vault Cache Service](#vault-cache-service) |
+| [Tools](#tools) | [Resources](#resources) | [Development](#development) | [License](#license) |
 
-### Option 1: Clone and Build (for development or direct use)
+## Overview
 
-1.  Enable the Local REST API plugin in Obsidian.
-2.  Clone the repository, install dependencies, and build the project:
+The Obsidian MCP Server acts as a bridge, allowing applications (MCP Clients) that understand the Model Context Protocol (MCP) – like advanced AI assistants (LLMs), IDE extensions, or custom scripts – to interact directly and safely with your Obsidian vault.
+
+Instead of complex scripting or manual interaction, your tools can leverage this server to:
+
+- **Automate vault management**: Read notes, update content, manage frontmatter and tags, search across files, list directories, and delete files programmatically.
+- **Integrate Obsidian into AI workflows**: Enable LLMs to access and modify your knowledge base as part of their research, writing, or coding tasks.
+- **Build custom Obsidian tools**: Create external applications that interact with your vault data in novel ways.
+
+Built on the robust `mcp-ts-template`, this server provides a standardized, secure, and efficient way to expose Obsidian functionality via the MCP standard. It achieves this by communicating with the powerful [Obsidian Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) running inside your vault.
+
+> **Developer Note**: This repository includes a [.clinerules](.clinerules) file that serves as a developer cheat sheet for your LLM coding agent with quick reference for the codebase patterns, file locations, and code snippets.
+
+## Features
+
+### Core Utilities
+
+Leverages the robust utilities provided by the `mcp-ts-template`:
+
+- **Logging**: Structured, configurable logging (file rotation, console, MCP notifications) with sensitive data redaction.
+- **Error Handling**: Centralized error processing, standardized error types (`McpError`), and automatic logging.
+- **Configuration**: Environment variable loading (`dotenv`) with comprehensive validation.
+- **Input Validation/Sanitization**: Uses `zod` for schema validation and custom sanitization logic.
+- **Request Context**: Tracking and correlation of operations via unique request IDs.
+- **Type Safety**: Strong typing enforced by TypeScript and Zod schemas.
+- **HTTP Transport Option**: Built-in Hono server with SSE, session management, CORS support, and JWT authentication.
+
+### Obsidian Integration
+
+- **Obsidian Local REST API Integration**: Communicates directly with the Obsidian Local REST API plugin via HTTP requests managed by the `ObsidianRestApiService`.
+- **Comprehensive Command Coverage**: Exposes key vault operations as MCP tools (see [Tools](#tools) section).
+- **Vault Interaction**: Supports reading, updating (append, prepend, overwrite), searching (global text/regex, search/replace), listing, deleting, and managing frontmatter and tags.
+- **Targeting Flexibility**: Tools can target files by path, the currently active file in Obsidian, or periodic notes (daily, weekly, etc.).
+- **Vault Cache Service**: An intelligent in-memory cache that improves performance and resilience. It caches vault content, provides a fallback for the global search tool if the live API fails, and periodically refreshes to stay in sync.
+- **Safety Features**: Case-insensitive path fallbacks for file operations, clear distinction between modification types (append, overwrite, etc.).
+
+## Installation
+
+### Prerequisites
+
+1.  **Obsidian**: You need Obsidian installed.
+2.  **Obsidian Local REST API Plugin**: Install and enable the [Obsidian Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) within your Obsidian vault.
+3.  **API Key**: Configure an API key within the Local REST API plugin settings in Obsidian. You will need this key to configure the server.
+4.  **Node.js & npm**: Ensure you have Node.js (v18 or later recommended) and npm installed.
+
+### Install via npm (Recommended)
+
+```bash
+npm install obsidian-mcp-server
+```
+
+### Install from Source
+
+1.  Clone the repository:
     ```bash
-    git clone git@github.com:cyanheads/obsidian-mcp-server.git
+    git clone https://github.com/cyanheads/obsidian-mcp-server.git
     cd obsidian-mcp-server
+    ```
+2.  Install dependencies:
+    ```bash
     npm install
+    ```
+3.  Build the project:
+    ```bash
     npm run build
     ```
-3.  Configure the server using environment variables (see Configuration section below).
+    This compiles the TypeScript code to JavaScript in the `dist/` directory and makes the entry point executable.
 
-4.  Configure your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mcp_settings.json`) to include the server. See the Configuration section for details.
+## Configuration
 
-### Option 2: Install via npm (as a dependency or globally)
+### Environment Variables
 
-1.  Enable the Local REST API plugin in Obsidian.
-2.  Install the package using npm:
+Configure the server using environment variables.
 
-    ```bash
-    # Install locally (e.g., within another project)
-    npm install obsidian-mcp-server
+These variables must be set in the MCP client configuration (e.g., `cline_mcp_settings.json`) or in your environment before starting the server (if running directly).
 
-    # Or install globally
-    npm install -g obsidian-mcp-server
-    ```
+If running directly, they can be set in a `.env` file in the project root or directly in your environment.
 
-3.  Configure your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mcp_settings.json`) to include the server. See the Configuration section for details.
+| Variable                              | Description                                               | Required          | Default                  |
+| :------------------------------------ | :-------------------------------------------------------- | :---------------- | :----------------------- |
+| **`OBSIDIAN_API_KEY`**                | API Key from the Obsidian Local REST API plugin.          | **Yes**           | `undefined`              |
+| **`OBSIDIAN_BASE_URL`**               | Base URL of your Obsidian Local REST API.                 | **Yes**           | `http://127.0.0.1:27123` |
+| `MCP_TRANSPORT_TYPE`                  | Server transport: `stdio` or `http`.                      | No                | `stdio`                  |
+| `MCP_HTTP_PORT`                       | Port for the HTTP server.                                 | No                | `3010`                   |
+| `MCP_HTTP_HOST`                       | Host for the HTTP server.                                 | No                | `127.0.0.1`              |
+| `MCP_ALLOWED_ORIGINS`                 | Comma-separated origins for CORS. **Set for production.** | No                | (none)                   |
+| **`MCP_AUTH_SECRET_KEY`**             | 32+ char secret for JWT auth. **Required for HTTP.**      | **Yes (if HTTP)** | `undefined`              |
+| `MCP_LOG_LEVEL`                       | Logging level (`debug`, `info`, `error`, etc.).           | No                | `info`                   |
+| `OBSIDIAN_VERIFY_SSL`                 | Set to `false` to disable SSL verification.               | No                | `true`                   |
+| `OBSIDIAN_ENABLE_CACHE`               | Set to `true` to enable the in-memory vault cache.        | No                | `true`                   |
+| `OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN` | Refresh interval for the vault cache in minutes.          | No                | `10`                     |
 
-## ⚙️ Configuration
+### Connecting to the Obsidian API
 
-Add to your MCP client settings (e.g., `claude_desktop_config.json` or `cline_mcp_settings.json`):
+To connect the MCP server to your Obsidian vault, you need to configure the base URL (`OBSIDIAN_BASE_URL`) and API key (`OBSIDIAN_API_KEY`). The Obsidian Local REST API plugin offers two ways to connect:
+
+1.  **Encrypted (HTTPS) - Default**:
+
+    - The plugin provides a secure `https://` endpoint (e.g., `https://127.0.0.1:27124`).
+    - This uses a self-signed certificate, which will cause connection errors by default.
+    - **To fix this**, you must set the `OBSIDIAN_VERIFY_SSL` environment variable to `"false"`. This tells the server to trust the self-signed certificate.
+
+2.  **Non-encrypted (HTTP) - Recommended for Simplicity**:
+    - In the plugin's settings within Obsidian, you can enable the "Non-encrypted (HTTP) Server".
+    - This provides a simpler `http://` endpoint (e.g., `http://127.0.0.1:27123`).
+    - When using this URL, you do not need to worry about SSL verification.
+
+**Example `env` configuration for your MCP client:**
+
+_Using the non-encrypted HTTP URL (recommended):_
+
+```json
+"env": {
+  "OBSIDIAN_API_KEY": "YOUR_API_KEY_FROM_OBSIDIAN_PLUGIN",
+  "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123"
+}
+```
+
+_Using the encrypted HTTPS URL:_
+
+```json
+"env": {
+  "OBSIDIAN_API_KEY": "YOUR_API_KEY_FROM_OBSIDIAN_PLUGIN",
+  "OBSIDIAN_BASE_URL": "https://127.0.0.1:27124",
+  "OBSIDIAN_VERIFY_SSL": "false"
+}
+```
+
+### MCP Client Settings
+
+Add to your MCP client settings (e.g., `cline_mcp_settings.json`):
 
 ```json
 {
   "mcpServers": {
     "obsidian-mcp-server": {
       "command": "node",
-      "args": ["/path/to/obsidian-mcp-server/dist/index.js"],
+      "args": ["/path/to/your/obsidian-mcp-server/dist/index.js"],
       "env": {
-        "OBSIDIAN_API_KEY": "your_api_key_here",
-        "VERIFY_SSL": "false",
-        "OBSIDIAN_PROTOCOL": "https",
-        "OBSIDIAN_HOST": "127.0.0.1",
-        "OBSIDIAN_PORT": "27124",
-        "REQUEST_TIMEOUT": "5000",
-        "MAX_CONTENT_LENGTH": "52428800",
-        "MAX_BODY_LENGTH": "52428800",
-        "RATE_LIMIT_WINDOW_MS": "900000",
-        "RATE_LIMIT_MAX_REQUESTS": "200",
-        "TOOL_TIMEOUT_MS": "60000"
+        "OBSIDIAN_API_KEY": "YOUR_OBSIDIAN_API_KEY",
+        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
+        "OBSIDIAN_VERIFY_SSL": "false",
+        "OBSIDIAN_ENABLE_CACHE": "true"
       }
     }
   }
 }
 ```
 
-**Environment Variables:**
+## Project Structure
 
-- `OBSIDIAN_API_KEY` (Required): Your API key from Obsidian's Local REST API plugin settings.
-- `VERIFY_SSL` (Default: `false`): Enable SSL verification. Set to `false` for self-signed certificates or local use.
-- `OBSIDIAN_PROTOCOL` (Default: `"https"`): Protocol (`http` or `https`).
-- `OBSIDIAN_HOST` (Default: `"127.0.0.1"`): Host address.
-- `OBSIDIAN_PORT` (Default: `27124`): Port number.
-- `REQUEST_TIMEOUT` (Default: `5000`): Request timeout (ms).
-- `MAX_CONTENT_LENGTH` (Default: `52428800` [50MB]): Max response content length (bytes).
-- `MAX_BODY_LENGTH` (Default: `52428800` [50MB]): Max request body length (bytes).
-- `RATE_LIMIT_WINDOW_MS` (Default: `900000` [15 min]): Rate limit window (ms).
-- `RATE_LIMIT_MAX_REQUESTS` (Default: `200`): Max requests per window.
-- `TOOL_TIMEOUT_MS` (Default: `60000` [1 min]): Tool execution timeout (ms).
-
-## 🛠️ Tools
-
-| Tool                             | Description                                                                                                                                                                                                                                                                                                                                   | Parameters                                                                                                                                                                                                                                                                                   |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **obsidian_list_files_in_vault** | Lists all files and directories within the root of your Obsidian vault. Returns a hierarchical structure detailing files, folders, and their types.                                                                                                                                                                                           | None                                                                                                                                                                                                                                                                                         |
-| **obsidian_list_files_in_dir**   | Lists files and directories within a specific folder in your Obsidian vault. Returns a hierarchical structure. Note: Empty directories may not be included in the results. Useful for exploring vault organization.                                                                                                                           | `dirpath*`: Path to list files from (relative to vault root). Note that empty directories will not be returned.                                                                                                                                                                              |
-| **obsidian_get_file_contents**   | Retrieves the full content of a specified file within your Obsidian vault. Supports various readable file formats.                                                                                                                                                                                                                            | `filepath*`: Path to the relevant file (relative to your vault root).                                                                                                                                                                                                                        |
-| **obsidian_append_content**      | Appends the provided content to the end of a specified file in the vault. If the file does not exist, it will be created.                                                                                                                                                                                                                     | `filepath*`: Path to the file (relative to vault root)<br>`content*`: Content to append to the file                                                                                                                                                                                          |
-| **obsidian_update_content**      | Overwrites the entire content of a specified file in the vault with the provided content. If the file does not exist, it will be created.                                                                                                                                                                                                     | `filepath*`: Path to the file (relative to vault root)<br>`content*`: The new, complete content for the file (overwrites existing content).                                                                                                                                                  |
-| **obsidian_find_in_file**        | Performs a full-text search across all files in your Obsidian vault. Returns matching files with context around each match. If more than 5 files match, only filenames and match counts are returned to avoid excessive output. Ideal for locating specific text, tags, or patterns.                                                          | `query*`: Text pattern to search for. Can include tags, keywords, or phrases.<br>`contextLength`: Number of characters surrounding each match to provide context (default: 10).                                                                                                              |
-| **obsidian_complex_search**      | Finds files based on path patterns using JsonLogic queries. Primarily supports `glob` for pattern matching (e.g., '\*.md') and `var` for accessing the 'path' variable. Note: For content-based searches (full-text, tags within content, dates), use `obsidian_find_in_file`.                                                                | `query*`: A JsonLogic query object targeting file paths. Example: `{"glob": ["*.md", {"var": "path"}]}` matches all markdown files.                                                                                                                                                          |
-| **obsidian_get_tags**            | Retrieves all tags defined in the YAML frontmatter of markdown files within your Obsidian vault, along with their usage counts and associated file paths. Optionally, limit the search to a specific folder.                                                                                                                                  | `path`: Optional folder path (relative to vault root) to restrict the tag search.                                                                                                                                                                                                            |
-| **obsidian_get_properties**      | Retrieves properties (like title, tags, status) from the YAML frontmatter of a specified Obsidian note. Returns all defined properties, including any custom fields.                                                                                                                                                                          | `filepath*`: Path to the note file (relative to vault root)                                                                                                                                                                                                                                  |
-| **obsidian_update_properties**   | Updates properties within the YAML frontmatter of a specified Obsidian note. By default, array properties (like tags, type, status) are merged; use the 'replace' option to overwrite them instead. Handles custom fields and manages timestamps automatically. See schema for supported standard fields (title, author, tags, status, etc.). | `filepath*`: Path to the note file (relative to vault root)<br>`properties*`: Properties to update<br>`replace`: If true, array properties (like tags, status) will be completely replaced with the provided values instead of being merged with existing values. Defaults to false (merge). |
-
-## 🔗 Resources
-
-| Resource            | Description                                                             | Returns          |
-| ------------------- | ----------------------------------------------------------------------- | ---------------- |
-| **obsidian://tags** | List of all tags used across the Obsidian vault with their usage counts | application/json |
-
-## 📁 Project Structure
-
-The project follows a modular architecture with clear separation of concerns:
+The codebase follows a modular structure within the `src/` directory:
 
 ```
 src/
-  ├── index.ts          # Main entry point
-  ├── mcp/              # MCP server implementation
-  ├── obsidian/         # Obsidian API client and types
-  ├── resources/        # MCP resource implementations
-  ├── tools/            # MCP tool implementations
-  │   ├── files/        # File operations tools
-  │   ├── search/       # Search tools
-  │   └── properties/   # Property management tools
-  └── utils/            # Shared utilities
+├── index.ts           # Entry point: Initializes and starts the server
+├── config/            # Configuration loading (env vars, package info)
+│   └── index.ts
+├── mcp-server/        # Core MCP server logic and capability registration
+│   ├── server.ts      # Server setup, transport handling, tool/resource registration
+│   ├── resources/     # MCP Resource implementations (currently none)
+│   ├── tools/         # MCP Tool implementations (subdirs per tool)
+│   └── transports/    # Stdio and HTTP transport logic, auth middleware
+├── services/          # Abstractions for external APIs or internal caching
+│   └── obsidianRestAPI/ # Typed client for Obsidian Local REST API
+├── types-global/      # Shared TypeScript type definitions (errors, etc.)
+└── utils/             # Common utility functions (logger, error handler, security, etc.)
 ```
 
-## 👥 Contributing
+For a detailed file tree, run `npm run tree` or see [docs/tree.md](docs/tree.md).
 
-1. Fork the repository
-2. Create a feature branch
-3. Submit a Pull Request
+## Vault Cache Service
 
-For bugs and features, create an issue at [https://github.com/cyanheads/obsidian-mcp-server/issues](https://github.com/cyanheads/obsidian-mcp-server/issues).
+This server includes an intelligent **in-memory cache** designed to enhance performance and resilience when interacting with your vault.
 
-## 📄 License
+### Purpose and Benefits
 
-[![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+- **Performance**: By caching file content and metadata, the server can perform search operations much faster, especially in large vaults. This reduces the number of direct requests to the Obsidian Local REST API, resulting in a snappier experience.
+- **Resilience**: The cache acts as a fallback for the `obsidian_global_search` tool. If the live API search fails or times out, the server seamlessly uses the cache to provide results, ensuring that search functionality remains available even if the Obsidian API is temporarily unresponsive.
+- **Efficiency**: The cache is designed to be efficient. It performs an initial build on startup and then periodically refreshes in the background by checking for file modifications, ensuring it stays reasonably up-to-date without constant, heavy API polling.
 
-Apache License 2.0
+### How It Works
+
+1.  **Initialization**: When enabled, the `VaultCacheService` builds an in-memory map of all `.md` files in your vault, storing their content and modification times.
+2.  **Periodic Refresh**: The cache automatically refreshes at a configurable interval (defaulting to 10 minutes). During a refresh, it only fetches content for files that are new or have been modified since the last check.
+3.  **Proactive Updates**: After a file is modified through a tool like `obsidian_update_file`, the service proactively updates the cache for that specific file, ensuring immediate consistency.
+4.  **Search Fallback**: The `obsidian_global_search` tool first attempts a live API search. If this fails, it automatically falls back to searching the in-memory cache.
+
+### Configuration
+
+The cache is enabled by default but can be configured via environment variables:
+
+- **`OBSIDIAN_ENABLE_CACHE`**: Set to `true` (default) or `false` to enable or disable the cache service.
+- **`OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN`**: Defines the interval in minutes for the periodic background refresh. Defaults to `10`.
+
+## Tools
+
+The Obsidian MCP Server provides a suite of tools for interacting with your vault, callable via the Model Context Protocol.
+
+| Tool Name                     | Description                                               | Key Arguments                                                 |
+| :---------------------------- | :-------------------------------------------------------- | :------------------------------------------------------------ |
+| `obsidian_read_file`          | Retrieves the content and metadata of a file.             | `filePath`, `format?`, `includeStat?`                         |
+| `obsidian_update_file`        | Modifies a file by appending, prepending, or overwriting. | `targetType`, `content`, `targetIdentifier?`, `wholeFileMode` |
+| `obsidian_search_replace`     | Performs search-and-replace operations in a note.         | `targetType`, `replacements`, `useRegex?`, `replaceAll?`      |
+| `obsidian_global_search`      | Searches the entire vault for content.                    | `query`, `searchInPath?`, `useRegex?`, `page?`, `pageSize?`   |
+| `obsidian_list_files`         | Lists files and subdirectories in a folder.               | `dirPath`, `fileExtensionFilter?`, `nameRegexFilter?`         |
+| `obsidian_manage_frontmatter` | Gets, sets, or deletes keys in a note's frontmatter.      | `filePath`, `operation`, `key`, `value?`                      |
+| `obsidian_manage_tags`        | Adds, removes, or lists tags in a note.                   | `filePath`, `operation`, `tags`                               |
+| `obsidian_delete_file`        | Permanently deletes a file from the vault.                | `filePath`                                                    |
+
+_Note: All tools support comprehensive error handling and return structured JSON responses._
+
+## Resources
+
+**MCP Resources are not implemented in this version.**
+
+This server currently focuses on providing interactive tools for vault manipulation. Future development may introduce resource capabilities (e.g., exposing notes or search results as readable resources).
+
+## Development
+
+### Build and Test
+
+```bash
+# Build the project (compile TS to JS in dist/ and make executable)
+npm run build
+
+# Format code using Prettier
+npm run format
+
+# Test the server locally using stdio transport
+npm start
+# or specifically:
+npm run start:stdio
+
+# Test the server locally using http transport
+npm run start:http
+
+# Generate a file tree representation for documentation (runs scripts/tree.ts)
+npm run tree
+
+# Clean build artifacts and then rebuild the project
+npm run rebuild
+
+# Fetch the Obsidian API spec (requires Obsidian running with Local REST API)
+npm run fetch:spec http://127.0.0.1:27123/ docs/obsidian-api/obsidian_rest_api_spec
+
+# Generate API documentation using TypeDoc
+npm run docs:generate
+
+# Inspect the server's capabilities using the MCP Inspector tool
+npm run inspect:stdio
+# or for the http transport:
+npm run inspect:http
+```
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
-Built with the Model Context Protocol
+Built with the <a href="https://modelcontextprotocol.io/">Model Context Protocol</a>
 </div>
