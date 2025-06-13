@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Registers the 'obsidian_list_files' tool with the MCP server.
+ * This file defines the tool's metadata and sets up the handler that links
+ * the tool call to its core processing logic.
+ * @module src/mcp-server/tools/obsidianListFilesTool/registration
+ */
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
@@ -21,11 +28,9 @@ import {
  * Registers the 'obsidian_list_files' tool with the MCP server.
  *
  * This tool lists the files and subdirectories within a specified directory
- * in the user's Obsidian vault. It supports optional filtering by file extension
- * or by a regular expression matching the entry name.
- *
- * The response includes the path of the listed directory, a formatted tree string
- * representing the contents, and the total count of entries listed after filtering.
+ * in the user's Obsidian vault. It supports optional filtering by file extension,
+ * by a regular expression matching the entry name, and recursive listing up to a
+ * specified depth.
  *
  * @param {McpServer} server - The MCP server instance to register the tool with.
  * @param {ObsidianRestApiService} obsidianService - An instance of the Obsidian REST API service
@@ -38,9 +43,8 @@ export const registerObsidianListFilesTool = async (
   obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
 ): Promise<void> => {
   const toolName = "obsidian_list_files";
-  // Updated description to reflect the simplified response (path, tree, count)
   const toolDescription =
-    "Lists files and subdirectories within a specified Obsidian vault folder. Supports optional filtering by extension or name regex. Returns an object containing the listed directory path, a formatted tree string of its contents, and the total entry count. Use an empty string or '/' for dirPath to list the vault root.";
+    "Lists files and subdirectories within a specified Obsidian vault folder. Supports optional filtering by extension or name regex, and recursive listing to a specified depth (-1 for infinite). Returns an object containing the listed directory path, a formatted tree string of its contents, and the total entry count. Use an empty string or '/' for dirPath to list the vault root.";
 
   // Create a context specifically for the registration process.
   const registrationContext: RequestContext =
@@ -81,6 +85,7 @@ export const registerObsidianListFilesTool = async (
                 dirPath: params.dirPath,
                 fileExtensionFilter: params.fileExtensionFilter,
                 nameRegexFilter: params.nameRegexFilter,
+                recursionDepth: params.recursionDepth,
               },
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
@@ -89,7 +94,6 @@ export const registerObsidianListFilesTool = async (
           return await ErrorHandler.tryCatch(
             async () => {
               // Delegate the actual file listing and filtering logic to the processing function.
-              // Note: The input schema and shape are identical here, so no separate refinement parse is needed.
               const response: ObsidianListFilesResponse =
                 await processObsidianListFiles(
                   params,
@@ -102,7 +106,6 @@ export const registerObsidianListFilesTool = async (
               );
 
               // Format the successful response object from the logic function into the required MCP CallToolResult structure.
-              // The entire response object (directoryPath, tree, totalEntries) is serialized to JSON.
               return {
                 content: [
                   {

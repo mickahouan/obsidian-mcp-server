@@ -1,4 +1,11 @@
-import path from "node:path"; // Using POSIX path functions for vault path manipulation
+/**
+ * @fileoverview Core logic for the 'obsidian_list_files' tool.
+ * This module defines the input schema, response types, and processing logic for
+ * recursively listing files and directories in an Obsidian vault with filtering.
+ * @module src/mcp-server/tools/obsidianListFilesTool/logic
+ */
+
+import path from "node:path";
 import { z } from "zod";
 import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
@@ -19,7 +26,6 @@ export const ObsidianListFilesInputSchema = z
   .object({
     /**
      * The vault-relative path to the directory whose contents should be listed.
-     * Examples: "Attachments/Images", "Projects", "" (for vault root), "/" (for vault root).
      * The path is treated as case-sensitive by the underlying Obsidian API.
      */
     dirPath: z
@@ -29,54 +35,69 @@ export const ObsidianListFilesInputSchema = z
       ),
     /**
      * Optional array of file extensions (including the leading dot) to filter the results.
-     * Only files matching one of these extensions will be included. Directories are always included regardless of this filter.
-     * Example: [".md", ".png"]
+     * Only files matching one of these extensions will be included. Directories are always included.
      */
     fileExtensionFilter: z
       .array(z.string().startsWith(".", "Extension must start with a dot '.'"))
       .optional()
       .describe(
-        'Optional array of file extensions (e.g., [".md") to filter files. Directories are always included.',
+        'Optional array of file extensions (e.g., [".md"]) to filter files. Directories are always included.',
       ),
     /**
      * Optional JavaScript-compatible regular expression pattern string to filter results by name.
      * Only files and directories whose names match the regex will be included.
-     * Example: "^\\d{4}-\\d{2}-\\d{2}" (matches names starting with YYYY-MM-DD)
      */
     nameRegexFilter: z
       .string()
       .nullable()
-      .optional() // Allow null in addition to string/undefined
+      .optional()
       .describe(
         "Optional regex pattern (JavaScript syntax) to filter results by name.",
       ),
+    /**
+     * The maximum depth of subdirectories to list recursively.
+     * - A value of `0` lists only the files and directories in the specified `dirPath`.
+     * - A value of `1` lists the contents of `dirPath` and the contents of its immediate subdirectories.
+     * - A value of `-1` (the default) indicates infinite recursion, listing all subdirectories.
+     */
+    recursionDepth: z
+      .number()
+      .int()
+      .default(-1)
+      .describe(
+        "Maximum recursion depth. 0 for no recursion, -1 for infinite (default).",
+      ),
   })
   .describe(
-    "Input parameters for listing files and subdirectories within a specified Obsidian vault directory, with optional filtering.",
+    "Input parameters for listing files and subdirectories within a specified Obsidian vault directory, with optional filtering and recursion.",
   );
 
 /**
  * TypeScript type inferred from the input schema (`ObsidianListFilesInputSchema`).
- * Represents the validated input parameters used within the core processing logic.
  */
 export type ObsidianListFilesInput = z.infer<
   typeof ObsidianListFilesInputSchema
 >;
 
 // ====================================================================================
-// Response Type Definition
+// Response & Internal Type Definitions
 // ====================================================================================
 
 /**
- * Defines the structure of the successful response returned by the `processObsidianListFiles` function.
- * This object is typically serialized to JSON and sent back to the client.
+ * Defines the structure of a node in the file tree.
+ */
+interface FileTreeNode {
+  name: string;
+  type: "file" | "directory";
+  children: FileTreeNode[];
+}
+
+/**
+ * Defines the structure of the successful response returned by the core logic function.
  */
 export interface ObsidianListFilesResponse {
-  /** The vault-relative path of the directory whose contents were listed (normalized, e.g., "/" for root). */
   directoryPath: string;
-  /** A string representation of the directory contents formatted as a simple tree structure. */
   tree: string;
-  /** The total number of files and directories included in the formatted tree after filtering. */
   totalEntries: number;
 }
 
@@ -85,44 +106,129 @@ export interface ObsidianListFilesResponse {
 // ====================================================================================
 
 /**
- * Formats a list of file and directory names into a simple tree-like string representation.
- * Directories (indicated by a trailing '/') are listed first, then files, both sorted alphabetically.
+ * Recursively builds a formatted tree string from a nested array of FileTreeNode objects.
  *
- * @param {string[]} fileNames - An array of file and directory names (directories should end with '/').
- * @returns {string} A formatted string representing the directory tree, or "(empty directory)" if the input array is empty.
+ * @param {FileTreeNode[]} nodes - The array of nodes to format.
+ * @param {string} [indent=""] - The indentation prefix for the current level.
+ * @returns {{ tree: string, count: number }} An object containing the formatted tree string and the total count of entries.
  */
-function formatAsTree(fileNames: string[]): string {
-  if (!fileNames || fileNames.length === 0) {
-    return "(empty directory)";
+function formatTree(
+  nodes: FileTreeNode[],
+  indent = "",
+): { tree: string; count: number } {
+  let treeString = "";
+  let count = nodes.length;
+
+  nodes.forEach((node, index) => {
+    const isLast = index === nodes.length - 1;
+    const prefix = isLast ? "└── " : "├── ";
+    const childIndent = isLast ? "    " : "│   ";
+
+    treeString += `${indent}${prefix}${node.name}\n`;
+
+    if (node.children && node.children.length > 0) {
+      const result = formatTree(node.children, indent + childIndent);
+      treeString += result.tree;
+      count += result.count;
+    }
+  });
+
+  return { tree: treeString, count };
+}
+
+/**
+ * Recursively builds a file tree by fetching directory contents from the Obsidian API.
+ *
+ * @param {string} dirPath - The path of the directory to process.
+ * @param {number} currentDepth - The current recursion depth.
+ * @param {ObsidianListFilesInput} params - The original validated input parameters, including filters and max depth.
+ * @param {RequestContext} context - The request context for logging.
+ * @param {ObsidianRestApiService} obsidianService - The Obsidian API service instance.
+ * @returns {Promise<FileTreeNode[]>} A promise that resolves to an array of file tree nodes.
+ */
+async function buildFileTree(
+  dirPath: string,
+  currentDepth: number,
+  params: ObsidianListFilesInput,
+  context: RequestContext,
+  obsidianService: ObsidianRestApiService,
+): Promise<FileTreeNode[]> {
+  const { recursionDepth, fileExtensionFilter, nameRegexFilter } = params;
+
+  // Stop recursion if max depth is reached (and it's not infinite)
+  if (recursionDepth !== -1 && currentDepth > recursionDepth) {
+    return [];
   }
 
-  // Sort entries: directories first, then files, alphabetically within each group.
-  fileNames.sort((a, b) => {
-    const aIsDir = a.endsWith("/");
-    const bIsDir = b.endsWith("/");
+  let fileNames;
+  try {
+    fileNames = await obsidianService.listFiles(dirPath, context);
+  } catch (error) {
+    if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
+      logger.warning(
+        `Directory not found during recursive list: ${dirPath}. Skipping.`,
+        context,
+      );
+      return []; // Return empty array if a subdirectory is not found
+    }
+    throw error; // Re-throw other errors
+  }
 
-    // Group directories before files
-    if (aIsDir && !bIsDir) return -1; // a (dir) comes before b (file)
-    if (!aIsDir && bIsDir) return 1; // b (dir) comes before a (file)
+  const regex =
+    nameRegexFilter && nameRegexFilter.trim() !== ""
+      ? new RegExp(nameRegexFilter)
+      : null;
 
-    // Within the same type (both dirs or both files), sort alphabetically.
-    // Remove trailing slash for comparison if it's a directory.
-    const nameA = aIsDir ? a.slice(0, -1) : a;
-    const nameB = bIsDir ? b.slice(0, -1) : b;
-    return nameA.localeCompare(nameB);
+  const treeNodes: FileTreeNode[] = [];
+
+  for (const name of fileNames) {
+    const fullPath = path.posix.join(dirPath, name);
+    const isDirectory = name.endsWith("/");
+    const cleanName = isDirectory ? name.slice(0, -1) : name;
+
+    // Apply filters
+    if (regex && !regex.test(cleanName)) {
+      continue;
+    }
+    if (
+      !isDirectory &&
+      fileExtensionFilter &&
+      fileExtensionFilter.length > 0
+    ) {
+      const extension = path.posix.extname(name);
+      if (!fileExtensionFilter.includes(extension)) {
+        continue;
+      }
+    }
+
+    const node: FileTreeNode = {
+      name: cleanName,
+      type: isDirectory ? "directory" : "file",
+      children: [],
+    };
+
+    if (isDirectory) {
+      node.name += "/"; // Add trailing slash back for display
+      node.children = await buildFileTree(
+        fullPath,
+        currentDepth + 1,
+        params,
+        context,
+        obsidianService,
+      );
+    }
+
+    treeNodes.push(node);
+  }
+
+  // Sort entries: directories first, then files, alphabetically
+  treeNodes.sort((a, b) => {
+    if (a.type === "directory" && b.type === "file") return -1;
+    if (a.type === "file" && b.type === "directory") return 1;
+    return a.name.localeCompare(b.name);
   });
 
-  // Build the tree string with prefixes
-  let treeString = "";
-  const lastIndex = fileNames.length - 1;
-
-  fileNames.forEach((name, index) => {
-    const isLast = index === lastIndex;
-    const prefix = isLast ? "└── " : "├── "; // Use different connectors for the last item
-    treeString += prefix + name + (isLast ? "" : "\n"); // Add newline except for the last item
-  });
-
-  return treeString;
+  return treeNodes;
 }
 
 // ====================================================================================
@@ -130,161 +236,107 @@ function formatAsTree(fileNames: string[]): string {
 // ====================================================================================
 
 /**
- * Processes the core logic for listing files and directories within a specified
- * directory in the Obsidian vault. Applies optional filters and formats the output.
+ * Processes the core logic for listing files and directories recursively within the Obsidian vault.
  *
  * @param {ObsidianListFilesInput} params - The validated input parameters.
  * @param {RequestContext} context - The request context for logging and correlation.
  * @param {ObsidianRestApiService} obsidianService - An instance of the Obsidian REST API service.
- * @returns {Promise<ObsidianListFilesResponse>} A promise resolving to the structured success response
- *   containing the listed directory path, a formatted tree string, and the total entry count.
- * @throws {McpError} Throws an McpError if the directory cannot be listed (e.g., not found)
- *   or if any other API interaction or validation fails.
+ * @returns {Promise<ObsidianListFilesResponse>} A promise resolving to the structured success response.
+ * @throws {McpError} Throws an McpError if the initial directory is not found or another error occurs.
  */
 export const processObsidianListFiles = async (
   params: ObsidianListFilesInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
 ): Promise<ObsidianListFilesResponse> => {
-  const { dirPath, fileExtensionFilter, nameRegexFilter } = params;
-  // Normalize dirPath for logging and response (use "/" for root)
+  const { dirPath } = params;
   const dirPathForLog = dirPath === "" || dirPath === "/" ? "/" : dirPath;
 
   logger.debug(
     `Processing obsidian_list_files request for path: ${dirPathForLog}`,
-    { ...context, fileExtensionFilter, nameRegexFilter },
+    { ...context, params },
   );
 
   try {
-    // Normalize path for the API call as well
     const effectiveDirPath = dirPath === "" ? "/" : dirPath;
 
-    // --- Step 1: Fetch initial list from Obsidian API ---
-    const listContext = { ...context, operation: "listFilesApiCall" };
-    logger.debug(
-      `Calling Obsidian API to list directory: ${effectiveDirPath}`,
-      listContext,
-    );
+    // --- Step 1: Build the file tree recursively with retry for the initial call ---
+    const buildTreeContext = { ...context, operation: "buildFileTreeWithRetry" };
     const shouldRetryNotFound = (err: unknown) =>
       err instanceof McpError && err.code === BaseErrorCode.NOT_FOUND;
 
-    let fileNames = await retryWithDelay(
-      () => obsidianService.listFiles(effectiveDirPath, listContext),
+    const fileTree = await retryWithDelay(
+      () =>
+        buildFileTree(
+          effectiveDirPath,
+          0, // Start at depth 0
+          params,
+          buildTreeContext,
+          obsidianService,
+        ),
       {
-        operationName: "listFilesWithRetry",
-        context: listContext,
+        operationName: "buildFileTreeWithRetry",
+        context: buildTreeContext,
         maxRetries: 3,
         delayMs: 300,
         shouldRetry: shouldRetryNotFound,
       },
     );
-    logger.debug(
-      `Successfully listed ${fileNames.length} initial items in: ${dirPathForLog}`,
-      listContext,
-    );
 
-    // --- Step 2: Apply Filters ---
-    const filterContext = { ...context, operation: "applyFilters" };
-
-    // Apply extension filter if provided
-    if (fileExtensionFilter && fileExtensionFilter.length > 0) {
-      const initialCount = fileNames.length;
-      fileNames = fileNames.filter((fileName) => {
-        // Always keep directories (identified by trailing '/')
-        if (fileName.endsWith("/")) return true;
-        // Check if the file's extension is in the filter list
-        const extension = path.posix.extname(fileName); // Use path.posix.extname for consistency
-        return fileExtensionFilter.includes(extension);
-      });
-      logger.debug(
-        `Applied extension filter (${fileExtensionFilter.join(", ")}). ${initialCount} -> ${fileNames.length} items remaining.`,
-        filterContext,
-      );
-    }
-
-    // Apply regex name filter if provided and is a non-empty string
-    if (nameRegexFilter && nameRegexFilter.trim() !== "") {
-      const initialCount = fileNames.length;
-      try {
-        const regex = new RegExp(nameRegexFilter); // Compile the regex pattern
-        fileNames = fileNames.filter((fileName) => regex.test(fileName)); // Test each name against the regex
-        logger.debug(
-          `Applied regex filter /${nameRegexFilter}/. ${initialCount} -> ${fileNames.length} items remaining.`,
-          filterContext,
-        );
-      } catch (regexError) {
-        // Handle invalid regex patterns provided by the user
-        logger.error(
-          `Invalid regex pattern provided: ${nameRegexFilter}`,
-          regexError instanceof Error ? regexError : undefined,
-          filterContext,
-        );
-        throw new McpError(
-          BaseErrorCode.VALIDATION_ERROR, // It's an input validation issue
-          `Invalid regex pattern provided for nameRegexFilter: ${nameRegexFilter}. Error: ${regexError instanceof Error ? regexError.message : "Unknown regex error"}`,
-          filterContext,
-        );
-      }
-    }
-
-    // --- Step 3: Format Output and Return ---
+    // --- Step 2: Format the tree and count entries ---
     const formatContext = { ...context, operation: "formatResponse" };
-    const totalEntries = fileNames.length;
-    logger.debug(
-      `Formatting final list of ${totalEntries} entries as tree.`,
-      formatContext,
-    );
+    if (fileTree.length === 0) {
+      logger.debug(
+        "Directory is empty or all items were filtered out.",
+        formatContext,
+      );
+      return {
+        directoryPath: dirPathForLog,
+        tree: "(empty or all items filtered)",
+        totalEntries: 0,
+      };
+    }
 
-    // Format the potentially filtered list into a tree string
-    const treeString = formatAsTree(fileNames);
+    const { tree, count } = formatTree(fileTree);
 
-    // Construct the final response object
+    // --- Step 3: Construct and return the response ---
     const response: ObsidianListFilesResponse = {
-      directoryPath: dirPathForLog, // Return the normalized path
-      tree: treeString,
-      totalEntries: totalEntries,
+      directoryPath: dirPathForLog,
+      tree: tree.trimEnd(), // Remove trailing newline
+      totalEntries: count,
     };
 
     logger.debug(
-      `Successfully processed list request for ${dirPathForLog}.`,
+      `Successfully processed list request for ${dirPathForLog}. Found ${count} entries.`,
       context,
     );
     return response;
   } catch (error) {
-    // Handle errors, ensuring they are McpError instances before re-throwing.
     if (error instanceof McpError) {
-      // Provide a more specific message if the directory wasn't found
+      // Provide a more specific message if the directory wasn't found after retries
       if (error.code === BaseErrorCode.NOT_FOUND) {
-        logger.error(
-          `Directory not found for listing: ${dirPathForLog}`,
-          error,
-          context,
-        );
-        throw new McpError(
-          error.code,
-          `Directory not found for listing: ${dirPathForLog}`,
-          context,
-        );
+        const notFoundMsg = `Directory not found after retries: ${dirPathForLog}`;
+        logger.error(notFoundMsg, error, context);
+        throw new McpError(error.code, notFoundMsg, context);
       }
       logger.error(
         `McpError during file listing for ${dirPathForLog}: ${error.message}`,
         error,
         context,
       );
-      throw error; // Re-throw known McpError
-    } else {
-      // Catch and wrap unexpected errors
-      const errorMessage = `Unexpected error listing Obsidian files in ${dirPathForLog}`;
-      logger.error(
-        errorMessage,
-        error instanceof Error ? error : undefined,
-        context,
-      );
-      throw new McpError(
-        BaseErrorCode.INTERNAL_ERROR,
-        `${errorMessage}: ${error instanceof Error ? error.message : String(error)}`,
-        context,
-      );
+      throw error;
     }
+
+    const errorMessage = `Unexpected error listing Obsidian files in ${dirPathForLog}`;
+    logger.error(
+      errorMessage,
+      error instanceof Error ? error : undefined,
+      context,
+    );
+    throw new McpError(
+      BaseErrorCode.INTERNAL_ERROR,
+      `${errorMessage}: ${error instanceof Error ? error.message : String(error)}`,
+      context,
+    );
   }
 };
