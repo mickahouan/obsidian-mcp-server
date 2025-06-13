@@ -5,7 +5,7 @@ import { ServerType } from "@hono/node-server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { config, environment } from "./config/index.js"; // This loads .env via dotenv.config()
 import { initializeAndStartServer } from "./mcp-server/server.js";
-import { requestContextService } from "./utils/index.js";
+import { requestContextService, retryWithDelay } from "./utils/index.js";
 import { logger, McpLogLevel } from "./utils/internal/logger.js"; // Import logger instance early
 // Import Services
 import { ObsidianRestApiService } from "./services/obsidianRestAPI/index.js";
@@ -180,32 +180,51 @@ const start = async () => {
     // --- Perform Initial Obsidian API Status Check ---
     try {
       logger.info(
-        "Performing initial Obsidian API status check...",
+        "Performing initial Obsidian API status check with retries...",
         startupContext,
       );
-      const status = await obsidianService.checkStatus(startupContext);
-      if (
-        status?.service !== "Obsidian Local REST API" ||
-        !status?.authenticated
-      ) {
-        logger.error(
-          "Obsidian API status check failed or indicates authentication issue.",
-          { ...startupContext, status },
-        );
-        // Make this fatal
-        throw new Error(
-          `Obsidian API status check failed or indicates authentication issue. Check plugin status and API key.`,
-        );
-      } else {
-        logger.info("Obsidian API status check successful.", {
-          ...startupContext,
-          obsidianVersion: status.versions.obsidian,
-          pluginVersion: status.versions.self,
-        });
-      }
+
+      const status = await retryWithDelay(
+        async () => {
+          if (!obsidianService) {
+            // This case should not happen in practice, but it satisfies the type checker.
+            throw new Error("Obsidian service not initialized.");
+          }
+          const checkStatusContext = {
+            ...startupContext,
+            operation: "checkStatusAttempt",
+          };
+          const currentStatus =
+            await obsidianService.checkStatus(checkStatusContext);
+          if (
+            currentStatus?.service !== "Obsidian Local REST API" ||
+            !currentStatus?.authenticated
+          ) {
+            // Throw an error to trigger a retry
+            throw new Error(
+              `Obsidian API status check failed or indicates authentication issue. Status: ${JSON.stringify(
+                currentStatus,
+              )}`,
+            );
+          }
+          return currentStatus;
+        },
+        {
+          operationName: "initialObsidianApiCheck",
+          context: startupContext,
+          maxRetries: 5, // Retry up to 5 times
+          delayMs: 3000, // Wait 3 seconds between retries
+        },
+      );
+
+      logger.info("Obsidian API status check successful.", {
+        ...startupContext,
+        obsidianVersion: status.versions.obsidian,
+        pluginVersion: status.versions.self,
+      });
     } catch (statusError) {
       logger.error(
-        "Critical error during initial Obsidian API status check. Check OBSIDIAN_BASE_URL, OBSIDIAN_API_KEY, and plugin status.",
+        "Critical error during initial Obsidian API status check after multiple retries. Check OBSIDIAN_BASE_URL, OBSIDIAN_API_KEY, and plugin status.",
         {
           ...startupContext,
           error:
@@ -215,8 +234,7 @@ const start = async () => {
           stack: statusError instanceof Error ? statusError.stack : undefined,
         },
       );
-      // This block is now the primary failure point for the status check.
-      // The error is re-thrown to be caught by the main startup catch block.
+      // Re-throw the final error to be caught by the main startup catch block, which will exit the process.
       throw statusError;
     }
     // --- End Status Check ---
