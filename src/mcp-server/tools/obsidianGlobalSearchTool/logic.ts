@@ -1,4 +1,4 @@
-import path from "node:path";
+import path from "node:path/posix";
 import { z } from "zod";
 import {
   NoteJson,
@@ -8,6 +8,7 @@ import {
 import { VaultCacheService } from "../../../services/obsidianRestAPI/vaultCache/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 // Import formatTimestamp utility
+import { config } from "../../../config/index.js";
 import {
   dateParser,
   formatTimestamp,
@@ -186,7 +187,7 @@ function findMatchesInContent(
 // ====================================================================================
 // Core Logic Function (API-First with Cache Fallback)
 // ====================================================================================
-const API_SEARCH_TIMEOUT_MS = 30000; // 30 seconds internal timeout for API call
+const API_SEARCH_TIMEOUT_MS = config.obsidianApiSearchTimeoutMs;
 
 export const processObsidianGlobalSearch = async (
   params: ObsidianGlobalSearchInput,

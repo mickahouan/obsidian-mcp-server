@@ -92,28 +92,17 @@ export class ObsidianRestApiService {
       operationContext,
     );
 
-    // Create a new agent on each request to ensure the latest config is used,
-    // overriding the instance-level agent if necessary.
-    const httpsAgent = new https.Agent({
-      rejectUnauthorized: config.obsidianVerifySsl,
-    });
-
-    const finalConfig: AxiosRequestConfig = {
-      ...requestConfig,
-      httpsAgent, // This will override the httpsAgent set on the instance
-    };
-
     return await ErrorHandler.tryCatch(
       async () => {
         try {
-          const response = await this.axiosInstance.request<T>(finalConfig);
+          const response = await this.axiosInstance.request<T>(requestConfig);
           logger.debug(
-            `Obsidian API request successful: ${finalConfig.method} ${finalConfig.url}`,
+            `Obsidian API request successful: ${requestConfig.method} ${requestConfig.url}`,
             { ...operationContext, status: response.status },
           );
           // For HEAD requests, we need the headers, so return the whole response.
           // For other requests, returning response.data is fine.
-          if (finalConfig.method === "HEAD") {
+          if (requestConfig.method === "HEAD") {
             return response as T;
           }
           return response.data;
@@ -122,8 +111,8 @@ export class ObsidianRestApiService {
           let errorCode = BaseErrorCode.INTERNAL_ERROR;
           let errorMessage = `Obsidian API request failed: ${axiosError.message}`;
           const errorDetails: Record<string, any> = {
-            requestUrl: finalConfig.url,
-            requestMethod: finalConfig.method,
+            requestUrl: requestConfig.url,
+            requestMethod: requestConfig.method,
             responseStatus: axiosError.response?.status,
             responseData: axiosError.response?.data,
           };
@@ -145,7 +134,7 @@ export class ObsidianRestApiService {
                 break;
               case 404:
                 errorCode = BaseErrorCode.NOT_FOUND;
-                errorMessage = `Obsidian API Not Found: ${finalConfig.url}`;
+                errorMessage = `Obsidian API Not Found: ${requestConfig.url}`;
                 // Log 404s at debug level, as they might be expected (e.g., checking existence)
                 logger.debug(errorMessage, {
                   ...operationContext,
@@ -155,7 +144,7 @@ export class ObsidianRestApiService {
               // NOTE: We throw immediately after logging debug for 404, skipping the general error log below.
               case 405:
                 errorCode = BaseErrorCode.VALIDATION_ERROR; // Method not allowed often implies incorrect usage
-                errorMessage = `Obsidian API Method Not Allowed: ${finalConfig.method} on ${finalConfig.url}`;
+                errorMessage = `Obsidian API Method Not Allowed: ${requestConfig.method} on ${requestConfig.url}`;
                 break;
               case 503:
                 errorCode = BaseErrorCode.SERVICE_UNAVAILABLE;
@@ -171,7 +160,7 @@ export class ObsidianRestApiService {
           } else if (axiosError.request) {
             // Network error (no response received)
             errorCode = BaseErrorCode.SERVICE_UNAVAILABLE;
-            errorMessage = `Obsidian API Network Error: No response received from ${finalConfig.url}. This may be due to Obsidian not running, the Local REST API plugin being disabled, or a network issue.`;
+            errorMessage = `Obsidian API Network Error: No response received from ${requestConfig.url}. This may be due to Obsidian not running, the Local REST API plugin being disabled, or a network issue.`;
             logger.error(errorMessage, {
               ...operationContext,
               ...errorDetails,
@@ -196,7 +185,7 @@ export class ObsidianRestApiService {
       {
         operation: `ObsidianAPI_${operationName}_Wrapper`,
         context: context,
-        input: finalConfig, // Log request config (sanitized by ErrorHandler)
+        input: requestConfig, // Log request config (sanitized by ErrorHandler)
         errorCode: BaseErrorCode.INTERNAL_ERROR, // Default if wrapper itself fails
       },
     );
