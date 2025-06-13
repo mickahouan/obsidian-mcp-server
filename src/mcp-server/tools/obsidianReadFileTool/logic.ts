@@ -9,6 +9,7 @@ import {
   createFormattedStatWithTokenCount,
   logger,
   RequestContext,
+  retryWithDelay,
 } from "../../../utils/index.js";
 
 // ====================================================================================
@@ -148,6 +149,9 @@ export const processObsidianReadFile = async (
     { ...context, format: requestedFormat, includeStat },
   );
 
+  const shouldRetryNotFound = (err: unknown) =>
+    err instanceof McpError && err.code === BaseErrorCode.NOT_FOUND;
+
   try {
     let noteJson: NoteJson;
 
@@ -159,11 +163,21 @@ export const processObsidianReadFile = async (
         `Attempting to read file as JSON (case-sensitive): ${originalFilePath}`,
         readContext,
       );
-      noteJson = (await obsidianService.getFileContent(
-        originalFilePath,
-        "json",
-        readContext,
-      )) as NoteJson;
+      noteJson = (await retryWithDelay(
+        () =>
+          obsidianService.getFileContent(
+            originalFilePath,
+            "json",
+            readContext,
+          ) as Promise<NoteJson>,
+        {
+          operationName: "readFileWithRetry",
+          context: readContext,
+          maxRetries: 3,
+          delayMs: 300,
+          shouldRetry: shouldRetryNotFound,
+        },
+      ));
       effectiveFilePath = originalFilePath; // Confirm exact path worked
       logger.debug(
         `Successfully read file as JSON using exact path: ${originalFilePath}`,
@@ -194,9 +208,15 @@ export const processObsidianReadFile = async (
             `Listing directory for fallback: ${dirToList}`,
             fallbackContext,
           );
-          const filesInDir = await obsidianService.listFiles(
-            dirToList,
-            fallbackContext,
+          const filesInDir = await retryWithDelay(
+            () => obsidianService.listFiles(dirToList, fallbackContext),
+            {
+              operationName: "listFilesForReadFallback",
+              context: fallbackContext,
+              maxRetries: 3,
+              delayMs: 300,
+              shouldRetry: shouldRetryNotFound,
+            },
           );
 
           // Filter directory listing for files matching the lowercase filename
@@ -216,11 +236,21 @@ export const processObsidianReadFile = async (
             );
 
             // Retry reading the file content using the corrected path
-            noteJson = (await obsidianService.getFileContent(
-              effectiveFilePath,
-              "json",
-              fallbackContext,
-            )) as NoteJson;
+            noteJson = (await retryWithDelay(
+              () =>
+                obsidianService.getFileContent(
+                  effectiveFilePath,
+                  "json",
+                  fallbackContext,
+                ) as Promise<NoteJson>,
+              {
+                operationName: "readFileWithFallbackRetry",
+                context: fallbackContext,
+                maxRetries: 3,
+                delayMs: 300,
+                shouldRetry: shouldRetryNotFound,
+              },
+            ));
             logger.debug(
               `Successfully read file as JSON using fallback path: ${effectiveFilePath}`,
               fallbackContext,

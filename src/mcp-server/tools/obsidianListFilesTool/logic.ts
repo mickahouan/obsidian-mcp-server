@@ -2,7 +2,7 @@ import path from "node:path"; // Using POSIX path functions for vault path manip
 import { z } from "zod";
 import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
-import { logger, RequestContext } from "../../../utils/index.js";
+import { logger, RequestContext, retryWithDelay } from "../../../utils/index.js";
 
 // ====================================================================================
 // Schema Definitions for Input Validation
@@ -161,9 +161,18 @@ export const processObsidianListFiles = async (
       `Calling Obsidian API to list directory: ${effectiveDirPath}`,
       listContext,
     );
-    let fileNames = await obsidianService.listFiles(
-      effectiveDirPath,
-      listContext,
+    const shouldRetryNotFound = (err: unknown) =>
+      err instanceof McpError && err.code === BaseErrorCode.NOT_FOUND;
+
+    let fileNames = await retryWithDelay(
+      () => obsidianService.listFiles(effectiveDirPath, listContext),
+      {
+        operationName: "listFilesWithRetry",
+        context: listContext,
+        maxRetries: 3,
+        delayMs: 300,
+        shouldRetry: shouldRetryNotFound,
+      },
     );
     logger.debug(
       `Successfully listed ${fileNames.length} initial items in: ${dirPathForLog}`,
