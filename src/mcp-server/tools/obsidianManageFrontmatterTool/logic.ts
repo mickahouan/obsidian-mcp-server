@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dump } from "js-yaml";
 import {
   NoteJson,
   ObsidianRestApiService,
@@ -51,7 +52,7 @@ export const processObsidianManageFrontmatter = async (
   params: ObsidianManageFrontmatterInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<ObsidianManageFrontmatterResponse> => {
   logger.debug(`Processing obsidian_manage_frontmatter request`, {
     ...context,
@@ -67,9 +68,10 @@ export const processObsidianManageFrontmatter = async (
 
   const getFileWithRetry = async (
     opContext: RequestContext,
-  ): Promise<NoteJson> => {
+    format: 'json' | 'markdown' = 'json'
+  ): Promise<NoteJson | string> => {
     return await retryWithDelay(
-      () => obsidianService.getFileContent(filePath, "json", opContext) as Promise<NoteJson>,
+      () => obsidianService.getFileContent(filePath, format, opContext),
       {
         operationName: `getFileContentForFrontmatter`,
         context: opContext,
@@ -82,7 +84,7 @@ export const processObsidianManageFrontmatter = async (
 
   switch (operation) {
     case "get": {
-      const note = await getFileWithRetry(context);
+      const note = await getFileWithRetry(context) as NoteJson;
       const frontmatter = note.frontmatter ?? {};
       const retrievedValue = frontmatter[key];
       return {
@@ -115,43 +117,76 @@ export const processObsidianManageFrontmatter = async (
         },
       );
 
-      await vaultCacheService.updateCacheForFile(filePath, context);
-      const note = await getFileWithRetry(context);
+      if (vaultCacheService) {
+        await vaultCacheService.updateCacheForFile(filePath, context);
+      }
       return {
         success: true,
         message: `Successfully set key '${key}' in frontmatter.`,
-        value: note.frontmatter,
+        value: { [key]: value },
       };
     }
 
     case "delete": {
-      const patchOptions: PatchOptions = {
-        operation: "replace",
-        targetType: "frontmatter",
-        target: key,
-        contentType: "application/json", // Important for sending null
-      };
+        const noteJson = await getFileWithRetry(context, 'json') as NoteJson;
+        const frontmatter = noteJson.frontmatter;
 
-      // Send 'null' to indicate deletion. The Obsidian API should interpret this
-      // as a request to remove the key from the YAML frontmatter.
-      await retryWithDelay(
-        () => obsidianService.patchFile(filePath, "null", patchOptions, context),
-        {
-          operationName: `patchFileForFrontmatterDelete`,
-          context,
-          maxRetries: 3,
-          delayMs: 300,
-          shouldRetry: shouldRetryNotFound,
-        },
-      );
+        if (!frontmatter || frontmatter[key] === undefined) {
+            return {
+                success: true,
+                message: `Key '${key}' not found in frontmatter. No action taken.`,
+                value: {},
+            };
+        }
 
-      await vaultCacheService.updateCacheForFile(filePath, context);
-      const note = await getFileWithRetry(context);
-      return {
-        success: true,
-        message: `Successfully deleted key '${key}' from frontmatter.`,
-        value: note.frontmatter,
-      };
+        delete frontmatter[key];
+
+        const noteContent = await getFileWithRetry(context, 'markdown') as string;
+        
+        const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
+        const match = noteContent.match(frontmatterRegex);
+
+        let newContent;
+        const newFrontmatterString = Object.keys(frontmatter).length > 0 ? dump(frontmatter) : '';
+
+        if (match) {
+            // Frontmatter exists, replace it
+            if (newFrontmatterString) {
+                newContent = noteContent.replace(frontmatterRegex, `---\n${newFrontmatterString}---\n`);
+            } else {
+                // If frontmatter is now empty, remove the block entirely
+                newContent = noteContent.replace(frontmatterRegex, '');
+            }
+        } else {
+            // This case should be rare given the initial check, but handle it defensively
+            logger.warning("Frontmatter key existed in JSON but block not found in markdown. No action taken.", context);
+            return {
+                success: false,
+                message: `Could not find frontmatter block to update, though key '${key}' was detected.`,
+                value: {},
+            };
+        }
+
+        await retryWithDelay(
+            () => obsidianService.updateFileContent(filePath, newContent, context),
+            {
+                operationName: `updateFileForFrontmatterDelete`,
+                context,
+                maxRetries: 3,
+                delayMs: 300,
+                shouldRetry: shouldRetryNotFound,
+            },
+        );
+
+        if (vaultCacheService) {
+            await vaultCacheService.updateCacheForFile(filePath, context);
+        }
+
+        return {
+            success: true,
+            message: `Successfully deleted key '${key}' from frontmatter.`,
+            value: {},
+        };
     }
 
     default:

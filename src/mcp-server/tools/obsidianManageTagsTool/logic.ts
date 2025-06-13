@@ -1,8 +1,8 @@
 import { z } from "zod";
+import { dump } from "js-yaml";
 import {
   NoteJson,
   ObsidianRestApiService,
-  PatchOptions,
   VaultCacheService,
 } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
@@ -38,7 +38,7 @@ export const processObsidianManageTags = async (
   params: ObsidianManageTagsInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService,
+  vaultCacheService: VaultCacheService | undefined,
 ): Promise<ObsidianManageTagsResponse> => {
   logger.debug(`Processing obsidian_manage_tags request`, { ...context, ...params });
 
@@ -64,11 +64,8 @@ export const processObsidianManageTags = async (
     );
   };
 
-  // Always get the initial state of the note
   const initialNote = await getFileWithRetry(context, 'json') as NoteJson;
-  let currentTags = initialNote.tags;
-  let frontmatter = initialNote.frontmatter ?? {};
-  let frontmatterTags: string[] = Array.isArray(frontmatter.tags) ? [...frontmatter.tags] : [];
+  const currentTags = initialNote.tags;
 
   switch (operation) {
     case 'list': {
@@ -89,20 +86,27 @@ export const processObsidianManageTags = async (
         };
       }
 
+      const frontmatter = initialNote.frontmatter ?? {};
+      const frontmatterTags: string[] = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
       const newFrontmatterTags = [...new Set([...frontmatterTags, ...tagsToAdd])];
+      frontmatter.tags = newFrontmatterTags;
+
+      const noteContent = await getFileWithRetry(context, 'markdown') as string;
+      const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
+      const match = noteContent.match(frontmatterRegex);
+      const newFrontmatterString = dump(frontmatter);
       
-      const patchOptions: PatchOptions = {
-        operation: 'replace',
-        targetType: 'frontmatter',
-        target: 'tags',
-        createTargetIfMissing: true,
-        contentType: 'application/json',
-      };
+      let newContent;
+      if (match) {
+        newContent = noteContent.replace(frontmatterRegex, `---\n${newFrontmatterString}---\n`);
+      } else {
+        newContent = `---\n${newFrontmatterString}---\n\n${noteContent}`;
+      }
 
       await retryWithDelay(
-        () => obsidianService.patchFile(filePath, newFrontmatterTags, patchOptions, context),
+        () => obsidianService.updateFileContent(filePath, newContent, context),
         {
-          operationName: `patchFileForTagAdd`,
+          operationName: `updateFileForTagAdd`,
           context,
           maxRetries: 3,
           delayMs: 300,
@@ -110,12 +114,15 @@ export const processObsidianManageTags = async (
         },
       );
       
-      await vaultCacheService.updateCacheForFile(filePath, context);
-      const finalNote = await getFileWithRetry(context, 'json') as NoteJson;
+      if (vaultCacheService) {
+        await vaultCacheService.updateCacheForFile(filePath, context);
+      }
+
+      const finalTags = [...new Set([...currentTags, ...tagsToAdd])];
       return {
         success: true,
         message: `Successfully added tags: ${tagsToAdd.join(', ')}.`,
-        currentTags: finalNote.tags,
+        currentTags: finalTags,
       };
     }
 
@@ -129,44 +136,43 @@ export const processObsidianManageTags = async (
         };
       }
 
-      // 1. Remove from frontmatter
+      let noteContent = await getFileWithRetry(context, 'markdown') as string;
+      const frontmatter = initialNote.frontmatter ?? {};
+      let frontmatterTags: string[] = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
       const newFrontmatterTags = frontmatterTags.filter(t => !tagsToRemove.includes(t));
-      if (newFrontmatterTags.length !== frontmatterTags.length) {
-        const patchOptions: PatchOptions = {
-          operation: 'replace',
-          targetType: 'frontmatter',
-          target: 'tags',
-          contentType: 'application/json',
-        };
-        await retryWithDelay(
-          () => obsidianService.patchFile(filePath, newFrontmatterTags, patchOptions, context),
-          {
-            operationName: `patchFileForTagRemove`,
-            context,
-            maxRetries: 3,
-            delayMs: 300,
-            shouldRetry: shouldRetryNotFound,
-          },
-        );
-      }
+      let frontmatterModified = newFrontmatterTags.length !== frontmatterTags.length;
 
-      // 2. Remove from inline content
-      let content = await getFileWithRetry(context, 'markdown') as string;
-      let modified = false;
-      for (const tag of tagsToRemove) {
-        // This regex is designed to avoid matching tags within words (e.g. #tag in some#tagginess)
-        // and to handle various spacings. It looks for a # followed by the tag,
-        // ensuring it's not preceded by a letter/number/dash/underscore.
-        const regex = new RegExp(`(^|[^\\w-#])#${tag}\\b`, 'g');
-        if (regex.test(content)) {
-            content = content.replace(regex, '$1');
-            modified = true;
+      if (frontmatterModified) {
+        frontmatter.tags = newFrontmatterTags;
+        if (newFrontmatterTags.length === 0) {
+            delete frontmatter.tags;
         }
       }
 
-      if (modified) {
+      const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
+      const match = noteContent.match(frontmatterRegex);
+      
+      if (frontmatterModified && match) {
+          const newFrontmatterString = Object.keys(frontmatter).length > 0 ? dump(frontmatter) : '';
+          if (newFrontmatterString) {
+              noteContent = noteContent.replace(frontmatterRegex, `---\n${newFrontmatterString}---\n`);
+          } else {
+              noteContent = noteContent.replace(frontmatterRegex, '');
+          }
+      }
+
+      let inlineModified = false;
+      for (const tag of tagsToRemove) {
+        const regex = new RegExp(`(^|[^\\w-#])#${tag}\\b`, 'g');
+        if (regex.test(noteContent)) {
+            noteContent = noteContent.replace(regex, '$1');
+            inlineModified = true;
+        }
+      }
+
+      if (frontmatterModified || inlineModified) {
         await retryWithDelay(
-          () => obsidianService.updateFileContent(filePath, content, context),
+          () => obsidianService.updateFileContent(filePath, noteContent, context),
           {
             operationName: `updateFileContentForTagRemove`,
             context,
@@ -177,12 +183,15 @@ export const processObsidianManageTags = async (
         );
       }
       
-      await vaultCacheService.updateCacheForFile(filePath, context);
-      const finalNote = await getFileWithRetry(context, 'json') as NoteJson;
+      if (vaultCacheService) {
+        await vaultCacheService.updateCacheForFile(filePath, context);
+      }
+      
+      const finalTags = currentTags.filter(t => !tagsToRemove.includes(t));
       return {
         success: true,
         message: `Successfully removed tags: ${tagsToRemove.join(', ')}.`,
-        currentTags: finalNote.tags,
+        currentTags: finalTags,
       };
     }
 
