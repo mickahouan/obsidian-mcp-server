@@ -129,10 +129,13 @@ export const processObsidianManageFrontmatter = async (
         operation: "replace",
         targetType: "frontmatter",
         target: key,
+        contentType: "application/json", // Important for sending null
       };
 
+      // Send 'null' to indicate deletion. The Obsidian API should interpret this
+      // as a request to remove the key from the YAML frontmatter.
       await retryWithDelay(
-        () => obsidianService.patchFile(filePath, "", patchOptions, context),
+        () => obsidianService.patchFile(filePath, "null", patchOptions, context),
         {
           operationName: `patchFileForFrontmatterDelete`,
           context,
@@ -146,7 +149,7 @@ export const processObsidianManageFrontmatter = async (
       const note = await getFileWithRetry(context);
       return {
         success: true,
-        message: `Successfully deleted key '${key}' from frontmatter by setting it to an empty value.`,
+        message: `Successfully deleted key '${key}' from frontmatter.`,
         value: note.frontmatter,
       };
     }

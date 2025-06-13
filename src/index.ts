@@ -192,9 +192,10 @@ const start = async () => {
           "Obsidian API status check failed or indicates authentication issue.",
           { ...startupContext, status },
         );
-        // Decide if this should be fatal. For now, log error and continue,
-        // but subsequent operations will likely fail.
-        // throw new Error("Obsidian API connection/authentication failed."); // Uncomment to make fatal
+        // Make this fatal
+        throw new Error(
+          `Obsidian API status check failed or indicates authentication issue. Check plugin status and API key.`,
+        );
       } else {
         logger.info("Obsidian API status check successful.", {
           ...startupContext,
@@ -214,10 +215,9 @@ const start = async () => {
           stack: statusError instanceof Error ? statusError.stack : undefined,
         },
       );
-      // Make this fatal, as the server is useless without API connection
-      throw new Error(
-        `Initial Obsidian API connection failed: ${statusError instanceof Error ? statusError.message : String(statusError)}`,
-      );
+      // This block is now the primary failure point for the status check.
+      // The error is re-thrown to be caught by the main startup catch block.
+      throw statusError;
     }
     // --- End Status Check ---
 
