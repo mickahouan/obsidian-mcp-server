@@ -628,20 +628,20 @@ Remember to keep this cheatsheet updated as the codebase evolves!
 
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-06-09 22:22:44
+Generated on: 2025-06-13 02:21:46
 
 ```
 obsidian-mcp-server
 ├── .github
-│   └── workflows
-│       └── publish.yml
+│   ├── workflows
+│   │   └── publish.yml
+│   └── FUNDING.yml
 ├── docs
 │   ├── obsidian-api
 │   │   ├── obsidian_rest_api_spec.json
 │   │   └── obsidian_rest_api_spec.yaml
 │   ├── obsidian_mcp_tools_spec.md
-│   ├── obsidian_tools_phase2.md
-│   └── tree.md
+│   └── obsidian_tools_phase2.md
 ├── examples
 ├── scripts
 │   ├── clean.ts
@@ -665,6 +665,14 @@ obsidian-mcp-server
 │   │   │   │   ├── index.ts
 │   │   │   │   ├── logic.ts
 │   │   │   │   └── registration.ts
+│   │   │   ├── obsidianManageFrontmatterTool
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── logic.ts
+│   │   │   │   └── registration.ts
+│   │   │   ├── obsidianManageTagsTool
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── logic.ts
+│   │   │   │   └── registration.ts
 │   │   │   ├── obsidianReadFileTool
 │   │   │   │   ├── index.ts
 │   │   │   │   ├── logic.ts
@@ -679,7 +687,11 @@ obsidian-mcp-server
 │   │   │       └── registration.ts
 │   │   ├── transports
 │   │   │   ├── authentication
-│   │   │   │   └── authMiddleware.ts
+│   │   │   │   ├── authContext.ts
+│   │   │   │   ├── authMiddleware.ts
+│   │   │   │   ├── authUtils.ts
+│   │   │   │   ├── oauthMiddleware.ts
+│   │   │   │   └── types.ts
 │   │   │   ├── httpTransport.ts
 │   │   │   └── stdioTransport.ts
 │   │   └── server.ts
@@ -713,6 +725,7 @@ obsidian-mcp-server
 │   │   │   └── tokenCounter.ts
 │   │   ├── obsidian
 │   │   │   ├── index.ts
+│   │   │   ├── obsidianApiUtils.ts
 │   │   │   └── obsidianStatUtils.ts
 │   │   ├── parsing
 │   │   │   ├── dateParser.ts

@@ -1,6 +1,6 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-06-13 01:31:14
+Generated on: 2025-06-13 03:51:53
 
 ```
 obsidian-mcp-server
