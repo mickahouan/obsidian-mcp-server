@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-06-12
+
+### Added
+
+- **Enhanced Documentation**:
+  - Added a warning to the `VaultCacheService` documentation about its potential for high memory usage on large vaults.
+  - Added a code comment in `obsidianManageFrontmatterTool` to clarify the regex-based key deletion strategy.
+
+### Changed
+
+- **Improved SSL Handling**: The `OBSIDIAN_VERIFY_SSL` environment variable is now correctly parsed as a boolean, ensuring more reliable SSL verification behavior.
+- **API Service Refactoring**: Simplified the `httpsAgent` handling within the `ObsidianRestApiService` to improve code clarity and remove redundant agent creation on each request.
+
+### Fixed
+
+- **Path Import Correction**: Corrected a path import in the `obsidianGlobalSearchTool` to use `node:path/posix` for better cross-platform compatibility.
+
 ## [2.0.0] - 2025-06-12
 
 Version 2.0.0 is a complete overhaul of the Obsidian MCP Server, migrating it to my [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template). This release introduces a more robust architecture, a streamlined toolset, enhanced security, and significant performance improvements. It is a breaking change from the 1.x series.

@@ -2,7 +2,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-^5.8.3-blue.svg)](https://www.typescriptlang.org/)
 [![Model Context Protocol](https://img.shields.io/badge/MCP%20SDK-^1.12.1-green.svg)](https://modelcontextprotocol.io/)
-[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.0.1-blue.svg)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Status](https://img.shields.io/badge/Status-Production-brightgreen.svg)](https://github.com/cyanheads/obsidian-mcp-server/issues)
 [![GitHub](https://img.shields.io/github/stars/cyanheads/obsidian-mcp-server?style=social)](https://github.com/cyanheads/obsidian-mcp-server)
@@ -128,6 +128,7 @@ If running directly, they can be set in a `.env` file in the project root or dir
 | `OBSIDIAN_VERIFY_SSL`                 | Set to `false` to disable SSL verification.               | No                | `true`                   |
 | `OBSIDIAN_ENABLE_CACHE`               | Set to `true` to enable the in-memory vault cache.        | No                | `true`                   |
 | `OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN` | Refresh interval for the vault cache in minutes.          | No                | `10`                     |
+| `OBSIDIAN_API_SEARCH_TIMEOUT_MS`      | Timeout for search API calls in milliseconds.             | No                | `30000`                  |
 
 ### Connecting to the Obsidian API
 
