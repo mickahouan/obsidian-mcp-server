@@ -48,6 +48,10 @@ export class ObsidianRestApiService {
       );
     }
 
+    const httpsAgent = new https.Agent({
+      rejectUnauthorized: config.obsidianVerifySsl,
+    });
+
     this.axiosInstance = axios.create({
       baseURL: config.obsidianBaseUrl.replace(/\/$/, ""), // Remove trailing slash
       headers: {
@@ -55,6 +59,7 @@ export class ObsidianRestApiService {
         Accept: "application/json", // Default accept type
       },
       timeout: 60000, // Increased timeout to 60 seconds (was 15000)
+      httpsAgent,
     });
 
     logger.info(
@@ -87,14 +92,15 @@ export class ObsidianRestApiService {
       operationContext,
     );
 
-    // Dynamically create the httpsAgent on each request to respect updated config
+    // Create a new agent on each request to ensure the latest config is used,
+    // overriding the instance-level agent if necessary.
     const httpsAgent = new https.Agent({
       rejectUnauthorized: config.obsidianVerifySsl,
     });
 
     const finalConfig: AxiosRequestConfig = {
       ...requestConfig,
-      httpsAgent,
+      httpsAgent, // This will override the httpsAgent set on the instance
     };
 
     return await ErrorHandler.tryCatch(
