@@ -19,14 +19,14 @@ This server equips your AI with specialized tools to interact with your Obsidian
 
 | Tool Name                                                                              | Description                                                     | Key Features                                                                                                                                           |
 | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`obsidian_read_file`](./src/mcp-server/tools/obsidianReadFileTool/)                   | Retrieves the content and metadata of a specified file.         | - Read in `markdown` or `json` format.<br/>- Case-insensitive path fallback.<br/>- Includes file stats (creation/modification time).                   |
+| [`obsidian_read_note`](./src/mcp-server/tools/obsidianReadNoteTool/)                   | Retrieves the content and metadata of a specified note.         | - Read in `markdown` or `json` format.<br/>- Case-insensitive path fallback.<br/>- Includes file stats (creation/modification time).                   |
 | [`obsidian_update_note`](./src/mcp-server/tools/obsidianUpdateNoteTool/)               | Modifies notes using whole-file operations.                     | - `append`, `prepend`, or `overwrite` content.<br/>- Can create files if they don't exist.<br/>- Targets files by path, active note, or periodic note. |
 | [`obsidian_search_replace`](./src/mcp-server/tools/obsidianSearchReplaceTool/)         | Performs search-and-replace operations within a target note.    | - Supports string or regex search.<br/>- Options for case sensitivity, whole word, and replacing all occurrences.                                      |
 | [`obsidian_global_search`](./src/mcp-server/tools/obsidianGlobalSearchTool/)           | Performs a search across the entire vault.                      | - Text or regex search.<br/>- Filter by path and modification date.<br/>- Paginated results.                                                           |
-| [`obsidian_list_files`](./src/mcp-server/tools/obsidianListFilesTool/)                 | Lists files and subdirectories within a specified vault folder. | - Filter by file extension or name regex.<br/>- Provides a formatted tree view of the directory.                                                       |
+| [`obsidian_list_notes`](./src/mcp-server/tools/obsidianListNotesTool/)                 | Lists notes and subdirectories within a specified vault folder. | - Filter by file extension or name regex.<br/>- Provides a formatted tree view of the directory.                                                       |
 | [`obsidian_manage_frontmatter`](./src/mcp-server/tools/obsidianManageFrontmatterTool/) | Atomically manages a note's YAML frontmatter.                   | - `get`, `set`, or `delete` frontmatter keys.<br/>- Avoids rewriting the entire file for metadata changes.                                             |
 | [`obsidian_manage_tags`](./src/mcp-server/tools/obsidianManageTagsTool/)               | Adds, removes, or lists tags for a note.                        | - Manages tags in both YAML frontmatter and inline content.                                                                                            |
-| [`obsidian_delete_file`](./src/mcp-server/tools/obsidianDeleteFileTool/)               | Permanently deletes a specified file from the vault.            | - Case-insensitive path fallback for safety.                                                                                                           |
+| [`obsidian_delete_note`](./src/mcp-server/tools/obsidianDeleteNoteTool/)               | Permanently deletes a specified note from the vault.            | - Case-insensitive path fallback for safety.                                                                                                           |
 
 ---
 
@@ -239,14 +239,14 @@ The Obsidian MCP Server provides a suite of tools for interacting with your vaul
 
 | Tool Name                     | Description                                               | Key Arguments                                                 |
 | :---------------------------- | :-------------------------------------------------------- | :------------------------------------------------------------ |
-| `obsidian_read_file`          | Retrieves the content and metadata of a file.             | `filePath`, `format?`, `includeStat?`                         |
+| `obsidian_read_note`          | Retrieves the content and metadata of a note.             | `filePath`, `format?`, `includeStat?`                         |
 | `obsidian_update_note`        | Modifies a file by appending, prepending, or overwriting. | `targetType`, `content`, `targetIdentifier?`, `wholeFileMode` |
 | `obsidian_search_replace`     | Performs search-and-replace operations in a note.         | `targetType`, `replacements`, `useRegex?`, `replaceAll?`      |
 | `obsidian_global_search`      | Searches the entire vault for content.                    | `query`, `searchInPath?`, `useRegex?`, `page?`, `pageSize?`   |
-| `obsidian_list_files`         | Lists files and subdirectories in a folder.               | `dirPath`, `fileExtensionFilter?`, `nameRegexFilter?`         |
+| `obsidian_list_notes`         | Lists notes and subdirectories in a folder.               | `dirPath`, `fileExtensionFilter?`, `nameRegexFilter?`         |
 | `obsidian_manage_frontmatter` | Gets, sets, or deletes keys in a note's frontmatter.      | `filePath`, `operation`, `key`, `value?`                      |
 | `obsidian_manage_tags`        | Adds, removes, or lists tags in a note.                   | `filePath`, `operation`, `tags`                               |
-| `obsidian_delete_file`        | Permanently deletes a file from the vault.                | `filePath`                                                    |
+| `obsidian_delete_note`        | Permanently deletes a note from the vault.                | `filePath`                                                    |
 
 _Note: All tools support comprehensive error handling and return structured JSON responses._
 
