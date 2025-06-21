@@ -30,7 +30,7 @@ import { registerObsidianGlobalSearchTool } from "./tools/obsidianGlobalSearchTo
 import { registerObsidianListFilesTool } from "./tools/obsidianListFilesTool/index.js";
 import { registerObsidianReadFileTool } from "./tools/obsidianReadFileTool/index.js";
 import { registerObsidianSearchReplaceTool } from "./tools/obsidianSearchReplaceTool/index.js";
-import { registerObsidianUpdateFileTool } from "./tools/obsidianUpdateFileTool/index.js";
+import { registerObsidianUpdateNoteTool } from "./tools/obsidianUpdateNoteTool/index.js";
 import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFrontmatterTool/index.js";
 import { registerObsidianManageTagsTool } from "./tools/obsidianManageTagsTool/index.js";
 // Import transport setup functions.
@@ -126,7 +126,7 @@ async function createMcpServerInstance(
       obsidianService,
       vaultCacheService,
     );
-    await registerObsidianUpdateFileTool(
+    await registerObsidianUpdateNoteTool(
       server,
       obsidianService,
       vaultCacheService,
