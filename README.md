@@ -132,23 +132,23 @@ If you installed from source, change `command` and `args` to point to your local
 
 Configure the server using environment variables. These environmental variables are set within your MCP client config/settings (e.g. `cline_mcp_settings.json` for Cline, `claude_desktop_config.json` for Claude Desktop).
 
-| Variable                              | Description                                               | Required          | Default                  |
-| :------------------------------------ | :-------------------------------------------------------- | :---------------- | :----------------------- |
-| **`OBSIDIAN_API_KEY`**                | API Key from the Obsidian Local REST API plugin.          | **Yes**           | `undefined`              |
-| **`OBSIDIAN_BASE_URL`**               | Base URL of your Obsidian Local REST API.                 | **Yes**           | `http://127.0.0.1:27123` |
-| `MCP_TRANSPORT_TYPE`                  | Server transport: `stdio` or `http`.                      | No                | `stdio`                  |
-| `MCP_HTTP_PORT`                       | Port for the HTTP server.                                 | No                | `3010`                   |
-| `MCP_HTTP_HOST`                       | Host for the HTTP server.                                 | No                | `127.0.0.1`              |
-| `MCP_ALLOWED_ORIGINS`                 | Comma-separated origins for CORS. **Set for production.** | No                | (none)                   |
-| `MCP_AUTH_MODE`                       | Authentication strategy: `jwt` or `oauth`.                | No                | (none)                   |
-| **`MCP_AUTH_SECRET_KEY`**             | 32+ char secret for JWT. **Required for `jwt` mode.**     | **Yes (if `jwt`)** | `undefined`              |
-| `OAUTH_ISSUER_URL`                    | URL of the OAuth 2.1 issuer.                              | **Yes (if `oauth`)** | `undefined`              |
-| `OAUTH_AUDIENCE`                      | Audience claim for OAuth tokens.                          | **Yes (if `oauth`)** | `undefined`              |
-| `OAUTH_JWKS_URI`                      | URI for the JSON Web Key Set (optional, derived from issuer if omitted). | No                | (derived)                |
-| `MCP_LOG_LEVEL`                       | Logging level (`debug`, `info`, `error`, etc.).           | No                | `info`                   |
-| `OBSIDIAN_VERIFY_SSL`                 | Set to `false` to disable SSL verification.               | No                | `true`                   |
-| `OBSIDIAN_ENABLE_CACHE`               | Set to `true` to enable the in-memory vault cache.        | No                | `true`                   |
-| `OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN` | Refresh interval for the vault cache in minutes.          | No                | `10`                     |
+| Variable                              | Description                                                              | Required             | Default                  |
+| :------------------------------------ | :----------------------------------------------------------------------- | :------------------- | :----------------------- |
+| **`OBSIDIAN_API_KEY`**                | API Key from the Obsidian Local REST API plugin.                         | **Yes**              | `undefined`              |
+| **`OBSIDIAN_BASE_URL`**               | Base URL of your Obsidian Local REST API.                                | **Yes**              | `http://127.0.0.1:27123` |
+| `MCP_TRANSPORT_TYPE`                  | Server transport: `stdio` or `http`.                                     | No                   | `stdio`                  |
+| `MCP_HTTP_PORT`                       | Port for the HTTP server.                                                | No                   | `3010`                   |
+| `MCP_HTTP_HOST`                       | Host for the HTTP server.                                                | No                   | `127.0.0.1`              |
+| `MCP_ALLOWED_ORIGINS`                 | Comma-separated origins for CORS. **Set for production.**                | No                   | (none)                   |
+| `MCP_AUTH_MODE`                       | Authentication strategy: `jwt` or `oauth`.                               | No                   | (none)                   |
+| **`MCP_AUTH_SECRET_KEY`**             | 32+ char secret for JWT. **Required for `jwt` mode.**                    | **Yes (if `jwt`)**   | `undefined`              |
+| `OAUTH_ISSUER_URL`                    | URL of the OAuth 2.1 issuer.                                             | **Yes (if `oauth`)** | `undefined`              |
+| `OAUTH_AUDIENCE`                      | Audience claim for OAuth tokens.                                         | **Yes (if `oauth`)** | `undefined`              |
+| `OAUTH_JWKS_URI`                      | URI for the JSON Web Key Set (optional, derived from issuer if omitted). | No                   | (derived)                |
+| `MCP_LOG_LEVEL`                       | Logging level (`debug`, `info`, `error`, etc.).                          | No                   | `info`                   |
+| `OBSIDIAN_VERIFY_SSL`                 | Set to `false` to disable SSL verification.                              | No                   | `true`                   |
+| `OBSIDIAN_ENABLE_CACHE`               | Set to `true` to enable the in-memory vault cache.                       | No                   | `true`                   |
+| `OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN` | Refresh interval for the vault cache in minutes.                         | No                   | `10`                     |
 
 ### Connecting to the Obsidian API
 

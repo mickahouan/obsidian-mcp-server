@@ -190,11 +190,7 @@ async function buildFileTree(
     if (regex && !regex.test(cleanName)) {
       continue;
     }
-    if (
-      !isDirectory &&
-      fileExtensionFilter &&
-      fileExtensionFilter.length > 0
-    ) {
+    if (!isDirectory && fileExtensionFilter && fileExtensionFilter.length > 0) {
       const extension = path.posix.extname(name);
       if (!fileExtensionFilter.includes(extension)) {
         continue;
@@ -261,7 +257,10 @@ export const processObsidianListFiles = async (
     const effectiveDirPath = dirPath === "" ? "/" : dirPath;
 
     // --- Step 1: Build the file tree recursively with retry for the initial call ---
-    const buildTreeContext = { ...context, operation: "buildFileTreeWithRetry" };
+    const buildTreeContext = {
+      ...context,
+      operation: "buildFileTreeWithRetry",
+    };
     const shouldRetryNotFound = (err: unknown) =>
       err instanceof McpError && err.code === BaseErrorCode.NOT_FOUND;
 

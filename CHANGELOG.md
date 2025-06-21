@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tool Renaming**: Renamed the `obsidian_update_file` tool to `obsidian_update_note` to avoid conflicts and better reflect its function. During agentic use, LLMs confused this tool with filesystem operations, leading to errors. The new name clarifies that it operates on Obsidian notes specifically.
 - **HTTP Transport Refactor**: Restructured the HTTP transport layer for improved clarity and robustness. Authentication logic is now more modular, and a centralized error handler has been implemented.
 - **Dependency Updates**: Updated all dependencies to their latest versions.
+- **Documentation Improvements**: Enhanced the documentation around installation & MCP Client configuration. Suggested by [@bgheneti](https://github.com/bgheneti) in [PR #14](https://github.com/cyanheads/obsidian-mcp-server/pull/14). Thanks!
 
 ## [2.0.4] - 2025-06-13
 
