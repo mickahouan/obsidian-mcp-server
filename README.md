@@ -20,7 +20,7 @@ This server equips your AI with specialized tools to interact with your Obsidian
 | Tool Name                                                                              | Description                                                     | Key Features                                                                                                                                           |
 | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`obsidian_read_file`](./src/mcp-server/tools/obsidianReadFileTool/)                   | Retrieves the content and metadata of a specified file.         | - Read in `markdown` or `json` format.<br/>- Case-insensitive path fallback.<br/>- Includes file stats (creation/modification time).                   |
-| [`obsidian_update_file`](./src/mcp-server/tools/obsidianUpdateFileTool/)               | Modifies notes using whole-file operations.                     | - `append`, `prepend`, or `overwrite` content.<br/>- Can create files if they don't exist.<br/>- Targets files by path, active note, or periodic note. |
+| [`obsidian_update_note`](./src/mcp-server/tools/obsidianUpdateNoteTool/)               | Modifies notes using whole-file operations.                     | - `append`, `prepend`, or `overwrite` content.<br/>- Can create files if they don't exist.<br/>- Targets files by path, active note, or periodic note. |
 | [`obsidian_search_replace`](./src/mcp-server/tools/obsidianSearchReplaceTool/)         | Performs search-and-replace operations within a target note.    | - Supports string or regex search.<br/>- Options for case sensitivity, whole word, and replacing all occurrences.                                      |
 | [`obsidian_global_search`](./src/mcp-server/tools/obsidianGlobalSearchTool/)           | Performs a search across the entire vault.                      | - Text or regex search.<br/>- Filter by path and modification date.<br/>- Paginated results.                                                           |
 | [`obsidian_list_files`](./src/mcp-server/tools/obsidianListFilesTool/)                 | Lists files and subdirectories within a specified vault folder. | - Filter by file extension or name regex.<br/>- Provides a formatted tree view of the directory.                                                       |
@@ -62,7 +62,7 @@ Leverages the robust utilities provided by `cyanheads/mcp-ts-template`:
 - **Input Validation/Sanitization**: Uses `zod` for schema validation and custom sanitization logic.
 - **Request Context**: Tracking and correlation of operations via unique request IDs.
 - **Type Safety**: Strong typing enforced by TypeScript and Zod schemas.
-- **HTTP Transport Option**: Built-in Hono server with SSE, session management, CORS support, and JWT authentication.
+- **HTTP Transport Option**: Built-in Hono server with SSE, session management, CORS support, and pluggable authentication strategies (JWT and OAuth 2.1).
 
 ### Obsidian Integration
 
@@ -140,7 +140,11 @@ Configure the server using environment variables. These environmental variables 
 | `MCP_HTTP_PORT`                       | Port for the HTTP server.                                 | No                | `3010`                   |
 | `MCP_HTTP_HOST`                       | Host for the HTTP server.                                 | No                | `127.0.0.1`              |
 | `MCP_ALLOWED_ORIGINS`                 | Comma-separated origins for CORS. **Set for production.** | No                | (none)                   |
-| **`MCP_AUTH_SECRET_KEY`**             | 32+ char secret for JWT auth. **Required for HTTP.**      | **Yes (if HTTP)** | `undefined`              |
+| `MCP_AUTH_MODE`                       | Authentication strategy: `jwt` or `oauth`.                | No                | (none)                   |
+| **`MCP_AUTH_SECRET_KEY`**             | 32+ char secret for JWT. **Required for `jwt` mode.**     | **Yes (if `jwt`)** | `undefined`              |
+| `OAUTH_ISSUER_URL`                    | URL of the OAuth 2.1 issuer.                              | **Yes (if `oauth`)** | `undefined`              |
+| `OAUTH_AUDIENCE`                      | Audience claim for OAuth tokens.                          | **Yes (if `oauth`)** | `undefined`              |
+| `OAUTH_JWKS_URI`                      | URI for the JSON Web Key Set (optional, derived from issuer if omitted). | No                | (derived)                |
 | `MCP_LOG_LEVEL`                       | Logging level (`debug`, `info`, `error`, etc.).           | No                | `info`                   |
 | `OBSIDIAN_VERIFY_SSL`                 | Set to `false` to disable SSL verification.               | No                | `true`                   |
 | `OBSIDIAN_ENABLE_CACHE`               | Set to `true` to enable the in-memory vault cache.        | No                | `true`                   |
@@ -195,7 +199,8 @@ src/
 │   ├── server.ts      # Server setup, transport handling, tool/resource registration
 │   ├── resources/     # MCP Resource implementations (currently none)
 │   ├── tools/         # MCP Tool implementations (subdirs per tool)
-│   └── transports/    # Stdio and HTTP transport logic, auth middleware
+│   └── transports/    # Stdio and HTTP transport logic
+│       └── auth/      # Authentication strategies (JWT, OAuth)
 ├── services/          # Abstractions for external APIs or internal caching
 │   └── obsidianRestAPI/ # Typed client for Obsidian Local REST API
 ├── types-global/      # Shared TypeScript type definitions (errors, etc.)
@@ -235,7 +240,7 @@ The Obsidian MCP Server provides a suite of tools for interacting with your vaul
 | Tool Name                     | Description                                               | Key Arguments                                                 |
 | :---------------------------- | :-------------------------------------------------------- | :------------------------------------------------------------ |
 | `obsidian_read_file`          | Retrieves the content and metadata of a file.             | `filePath`, `format?`, `includeStat?`                         |
-| `obsidian_update_file`        | Modifies a file by appending, prepending, or overwriting. | `targetType`, `content`, `targetIdentifier?`, `wholeFileMode` |
+| `obsidian_update_note`        | Modifies a file by appending, prepending, or overwriting. | `targetType`, `content`, `targetIdentifier?`, `wholeFileMode` |
 | `obsidian_search_replace`     | Performs search-and-replace operations in a note.         | `targetType`, `replacements`, `useRegex?`, `replaceAll?`      |
 | `obsidian_global_search`      | Searches the entire vault for content.                    | `query`, `searchInPath?`, `useRegex?`, `page?`, `pageSize?`   |
 | `obsidian_list_files`         | Lists files and subdirectories in a folder.               | `dirPath`, `fileExtensionFilter?`, `nameRegexFilter?`         |

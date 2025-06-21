@@ -7,7 +7,7 @@ This cheatsheet provides quick references for common patterns, utilities, server
 1.  Carefully review this file line by line to understand this repo and Model Context Protocol (MCP).
 2.  If you are creating new MCP Server tools, review the files:
 
-    - `src/mcp-server/tools/obsidianUpdateFileTool` (all files)
+    - `src/mcp-server/tools/obsidianUpdateNoteTool` (all files)
     - `src/mcp-server/tools/obsidianGlobalSearchTool` (all files)
     - `src/services/obsidianRestAPI` (Any files relevant to the tool you are creating)
     - `src/services/obsidianRestAPI/vaultCache` (If the tool needs vault structure/metadata caching)
@@ -25,7 +25,11 @@ The server can run using different communication transports, configured via envi
 - **`MCP_HTTP_HOST`**: Host address for the HTTP server (Default: `127.0.0.1`). Used only if `MCP_TRANSPORT_TYPE=http`.
 - **`MCP_ALLOWED_ORIGINS`**: Comma-separated list of allowed origins for HTTP requests (e.g., `http://localhost:8080,https://my-frontend.com`). Used only if `MCP_TRANSPORT_TYPE=http`.
 - **`MCP_LOG_LEVEL`**: Minimum logging level for the server (e.g., "debug", "info", "warning", "error", "notice", "crit", "alert", "emerg"). Defaults to "info". Affects both file logging and MCP notifications.
-- **`MCP_AUTH_SECRET_KEY`**: **Required for HTTP transport.** Secret key (min 32 chars) for signing/verifying auth tokens (JWT). Defaults to `undefined`. **MUST be set in production.**
+- **`MCP_AUTH_MODE`**: Authentication strategy to use for the HTTP transport. Can be `jwt` or `oauth`.
+- **`MCP_AUTH_SECRET_KEY`**: **Required if `MCP_AUTH_MODE=jwt`**. Secret key (min 32 chars) for signing/verifying JWTs. **MUST be set in production for JWT mode.**
+- **`OAUTH_ISSUER_URL`**: **Required if `MCP_AUTH_MODE=oauth`**. The URL of the OAuth 2.1 token issuer.
+- **`OAUTH_AUDIENCE`**: **Required if `MCP_AUTH_MODE=oauth`**. The audience claim for the OAuth tokens.
+- **`OAUTH_JWKS_URI`**: Optional URI for the JSON Web Key Set. If omitted, it will be derived from the `OAUTH_ISSUER_URL`.
 - **`OBSIDIAN_API_KEY`**: **Required.** API key for the Obsidian Local REST API plugin.
 - **`OBSIDIAN_BASE_URL`**: **Required.** Base URL for the Obsidian Local REST API (e.g., `http://127.0.0.1:27123`).
 - **`OBSIDIAN_VERIFY_SSL`**: Set to `false` to disable SSL certificate verification for the Obsidian API (e.g., for self-signed certs). Defaults to `true`.
@@ -44,7 +48,7 @@ The server can run using different communication transports, configured via envi
 ### Running the Server
 
 - **Stdio**: `npm run start:stdio`
-- **HTTP**: `npm run start:http` (Ensure `OBSIDIAN_API_KEY`, `OBSIDIAN_BASE_URL`, and `MCP_AUTH_SECRET_KEY` are set. Optionally set `MCP_HTTP_PORT`, `MCP_HTTP_HOST`, `MCP_ALLOWED_ORIGINS`, `MCP_LOG_LEVEL`, `OBSIDIAN_VERIFY_SSL`).
+- **HTTP**: `npm run start:http` (Ensure `OBSIDIAN_API_KEY` and `OBSIDIAN_BASE_URL` are set. Also configure either JWT or OAuth variables as needed. Optionally set `MCP_HTTP_PORT`, `MCP_HTTP_HOST`, `MCP_ALLOWED_ORIGINS`, `MCP_LOG_LEVEL`, `OBSIDIAN_VERIFY_SSL`).
 
 ## Model Context Protocol (MCP) Overview (Spec: 2025-03-26)
 
@@ -156,7 +160,7 @@ Servers expose functionality via:
 - **Input Validation:** Use schemas (Zod), sanitize inputs (paths, HTML, SQL).
 - **Access Control:** Least privilege, respect roots.
 - **Transport Security:**
-  - **HTTP:** Mandatory JWT authentication (`src/mcp-server/transports/authentication/authMiddleware.ts`). **Requires `MCP_AUTH_SECRET_KEY` to be set.** Validate `Origin` header (via CORS middleware). Use HTTPS in production. Bind to `127.0.0.1` for local servers.
+  - **HTTP:** Pluggable authentication (`jwt` or `oauth`) via middleware in `src/mcp-server/transports/auth/`. **Requires appropriate environment variables to be set for the chosen mode.** Validate `Origin` header (via CORS middleware). Use HTTPS in production. Bind to `127.0.0.1` for local servers.
   - **Stdio:** Authentication typically handled by the host process. Best practice is to not apply authentication to MCP Server stdio processes.
 - **Secrets Management:** Use env vars (`MCP_AUTH_SECRET_KEY`, `OBSIDIAN_API_KEY`) or secrets managers, avoid hardcoding/logging.
 - **Dependency Security:** Keep dependencies updated (`npm audit`).
@@ -197,7 +201,7 @@ This service provides a typed interface for interacting with the Obsidian Local 
 ### Usage
 
 - The `ObsidianRestApiService` is typically instantiated within the MCP server logic (e.g., inside tool handlers) where interaction with Obsidian is needed.
-- Tool implementations (like `obsidianReadFileTool`, `obsidianUpdateFileTool`) use this service to perform actions within the user's vault.
+- Tool implementations (like `obsidianReadFileTool`, `obsidianUpdateNoteTool`) use this service to perform actions within the user's vault.
 
 ```typescript
 // Example within an MCP Tool handler
@@ -910,7 +914,7 @@ async function performTask(input: any, parentContext: RequestContext) {
 ### 3. Async Operations (`src/utils/internal/asyncUtils.ts`)
 
 - **Purpose**: Provides utilities for handling asynchronous operations, most notably `retryWithDelay` for retrying failed operations.
-- **Usage**: Wrap an async function call in `retryWithDelay` to automatically retry it on failure, with configurable delays, attempt limits, and retry conditions. This is used in the `obsidianUpdateFileTool` to reliably fetch file state after a write operation.
+- **Usage**: Wrap an async function call in `retryWithDelay` to automatically retry it on failure, with configurable delays, attempt limits, and retry conditions. This is used in the `obsidianUpdateNoteTool` to reliably fetch file state after a write operation.
 
 ```typescript
 // Example assuming import from a file within src/
@@ -1183,7 +1187,7 @@ This project includes several utility scripts located in the `scripts/` director
 
 - **Main Entry**: `src/index.ts` (Initializes server, handles startup/shutdown)
 - **Server Setup**: `src/mcp-server/server.ts` (Handles transport logic, session management, instantiates services, registers tools/resources)
-- **HTTP Auth Middleware**: `src/mcp-server/transports/authentication/authMiddleware.ts`
+- **HTTP Auth Middleware**: `src/mcp-server/transports/auth/` (contains strategies for JWT and OAuth)
 - **Configuration**: `src/config/index.ts` (Loads env vars, package info, initializes logger, Obsidian API config)
 - **Obsidian Service**: `src/services/obsidianRestAPI/` (Service, methods, types for Obsidian API)
 - **Vault Cache Service**: `src/services/obsidianRestAPI/vaultCache/` (Service for caching vault structure)
@@ -1250,17 +1254,23 @@ obsidian-mcp-server
 │   │   │   │   ├── index.ts
 │   │   │   │   ├── logic.ts
 │   │   │   │   └── registration.ts
-│   │   │   └── obsidianUpdateFileTool
+│   │   │   └── obsidianUpdateNoteTool
 │   │   │       ├── index.ts
 │   │   │       ├── logic.ts
 │   │   │       └── registration.ts
 │   │   ├── transports
-│   │   │   ├── authentication
-│   │   │   │   ├── authContext.ts
-│   │   │   │   ├── authMiddleware.ts
-│   │   │   │   ├── authUtils.ts
-│   │   │   │   ├── oauthMiddleware.ts
-│   │   │   │   └── types.ts
+│   │   │   ├── auth
+│   │   │   │   ├── core
+│   │   │   │   │   ├── authContext.ts
+│   │   │   │   │   ├── authTypes.ts
+│   │   │   │   │   └── authUtils.ts
+│   │   │   │   ├── strategies
+│   │   │   │   │   ├── jwt
+│   │   │   │   │   │   └── jwtMiddleware.ts
+│   │   │   │   │   └── oauth
+│   │   │   │   │       └── oauthMiddleware.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── httpErrorHandler.ts
 │   │   │   ├── httpTransport.ts
 │   │   │   └── stdioTransport.ts
 │   │   └── server.ts

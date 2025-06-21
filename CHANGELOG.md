@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2025-06-20
+
+### Changed
+
+- **Tool Renaming**: Renamed the `obsidian_update_file` tool to `obsidian_update_note` to avoid conflicts and better reflect its function. During agentic use, LLMs confused this tool with filesystem operations, leading to errors. The new name clarifies that it operates on Obsidian notes specifically.
+- **HTTP Transport Refactor**: Restructured the HTTP transport layer for improved clarity and robustness. Authentication logic is now more modular, and a centralized error handler has been implemented.
+- **Dependency Updates**: Updated all dependencies to their latest versions.
+
 ## [2.0.4] - 2025-06-13
 
 ### Added
