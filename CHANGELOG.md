@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.6] - 2025-06-20
+
+### Changed
+
+- **Tool Renaming**: Renamed `obsidian_read_file`, `obsidian_delete_file`, and `obsidian_list_files` to `obsidian_read_note`, `obsidian_delete_note`, and `obsidian_list_notes` respectively. This change improves semantic clarity and aligns the tool names more closely with Obsidian's terminology, reducing ambiguity for AI agents.
+- **Dependency Updates**: Updated all dependencies to their latest versions.
+- **Documentation Improvements**: Updated `.clinerules` to reflect the new tool names and ensure all documentation is current.
+
 ## [2.0.5] - 2025-06-20
 
 ### Changed
