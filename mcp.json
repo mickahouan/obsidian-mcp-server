@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "obsidian-mcp-server-stdio": {
-      "command": "node",
-      "args": ["dist/index.js"],
+      "command": "npx",
+      "args": ["obsidian-mcp-server"],
       "env": {
         "OBSIDIAN_API_KEY": "YOUR_OBSIDIAN_API_KEY_HERE",
         "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
@@ -11,8 +11,8 @@
       }
     },
     "obsidian-mcp-server-http": {
-      "command": "node",
-      "args": ["dist/index.js"],
+      "command": "npx",
+      "args": ["obsidian-mcp-server"],
       "env": {
         "OBSIDIAN_API_KEY": "YOUR_OBSIDIAN_API_KEY_HERE",
         "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
