@@ -1,8 +1,8 @@
 /**
- * @fileoverview Core logic for the 'obsidian_list_files' tool.
+ * @fileoverview Core logic for the 'obsidian_list_notes' tool.
  * This module defines the input schema, response types, and processing logic for
  * recursively listing files and directories in an Obsidian vault with filtering.
- * @module src/mcp-server/tools/obsidianListFilesTool/logic
+ * @module src/mcp-server/tools/obsidianListNotesTool/logic
  */
 
 import path from "node:path";
@@ -20,9 +20,9 @@ import {
 // ====================================================================================
 
 /**
- * Zod schema for validating the input parameters of the 'obsidian_list_files' tool.
+ * Zod schema for validating the input parameters of the 'obsidian_list_notes' tool.
  */
-export const ObsidianListFilesInputSchema = z
+export const ObsidianListNotesInputSchema = z
   .object({
     /**
      * The vault-relative path to the directory whose contents should be listed.
@@ -73,10 +73,10 @@ export const ObsidianListFilesInputSchema = z
   );
 
 /**
- * TypeScript type inferred from the input schema (`ObsidianListFilesInputSchema`).
+ * TypeScript type inferred from the input schema (`ObsidianListNotesInputSchema`).
  */
-export type ObsidianListFilesInput = z.infer<
-  typeof ObsidianListFilesInputSchema
+export type ObsidianListNotesInput = z.infer<
+  typeof ObsidianListNotesInputSchema
 >;
 
 // ====================================================================================
@@ -95,7 +95,7 @@ interface FileTreeNode {
 /**
  * Defines the structure of the successful response returned by the core logic function.
  */
-export interface ObsidianListFilesResponse {
+export interface ObsidianListNotesResponse {
   directoryPath: string;
   tree: string;
   totalEntries: number;
@@ -141,7 +141,7 @@ function formatTree(
  *
  * @param {string} dirPath - The path of the directory to process.
  * @param {number} currentDepth - The current recursion depth.
- * @param {ObsidianListFilesInput} params - The original validated input parameters, including filters and max depth.
+ * @param {ObsidianListNotesInput} params - The original validated input parameters, including filters and max depth.
  * @param {RequestContext} context - The request context for logging.
  * @param {ObsidianRestApiService} obsidianService - The Obsidian API service instance.
  * @returns {Promise<FileTreeNode[]>} A promise that resolves to an array of file tree nodes.
@@ -149,7 +149,7 @@ function formatTree(
 async function buildFileTree(
   dirPath: string,
   currentDepth: number,
-  params: ObsidianListFilesInput,
+  params: ObsidianListNotesInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
 ): Promise<FileTreeNode[]> {
@@ -234,22 +234,22 @@ async function buildFileTree(
 /**
  * Processes the core logic for listing files and directories recursively within the Obsidian vault.
  *
- * @param {ObsidianListFilesInput} params - The validated input parameters.
+ * @param {ObsidianListNotesInput} params - The validated input parameters.
  * @param {RequestContext} context - The request context for logging and correlation.
  * @param {ObsidianRestApiService} obsidianService - An instance of the Obsidian REST API service.
- * @returns {Promise<ObsidianListFilesResponse>} A promise resolving to the structured success response.
+ * @returns {Promise<ObsidianListNotesResponse>} A promise resolving to the structured success response.
  * @throws {McpError} Throws an McpError if the initial directory is not found or another error occurs.
  */
-export const processObsidianListFiles = async (
-  params: ObsidianListFilesInput,
+export const processObsidianListNotes = async (
+  params: ObsidianListNotesInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-): Promise<ObsidianListFilesResponse> => {
+): Promise<ObsidianListNotesResponse> => {
   const { dirPath } = params;
   const dirPathForLog = dirPath === "" || dirPath === "/" ? "/" : dirPath;
 
   logger.debug(
-    `Processing obsidian_list_files request for path: ${dirPathForLog}`,
+    `Processing obsidian_list_notes request for path: ${dirPathForLog}`,
     { ...context, params },
   );
 
@@ -299,7 +299,7 @@ export const processObsidianListFiles = async (
     const { tree, count } = formatTree(fileTree);
 
     // --- Step 3: Construct and return the response ---
-    const response: ObsidianListFilesResponse = {
+    const response: ObsidianListNotesResponse = {
       directoryPath: dirPathForLog,
       tree: tree.trimEnd(), // Remove trailing newline
       totalEntries: count,

@@ -9,16 +9,16 @@ import {
 } from "../../../utils/index.js";
 // Import necessary types, schema, and logic function from the logic file
 import type {
-  ObsidianReadFileInput,
-  ObsidianReadFileResponse,
+  ObsidianReadNoteInput,
+  ObsidianReadNoteResponse,
 } from "./logic.js";
 import {
-  ObsidianReadFileInputSchema,
-  processObsidianReadFile,
+  ObsidianReadNoteInputSchema,
+  processObsidianReadNote,
 } from "./logic.js";
 
 /**
- * Registers the 'obsidian_read_file' tool with the MCP server.
+ * Registers the 'obsidian_read_note' tool with the MCP server.
  *
  * This tool retrieves the content and optionally metadata of a specified file
  * within the user's Obsidian vault. It supports specifying the output format
@@ -34,20 +34,20 @@ import {
  * @returns {Promise<void>} A promise that resolves when the tool registration is complete or rejects on error.
  * @throws {McpError} Throws an McpError if registration fails critically.
  */
-export const registerObsidianReadFileTool = async (
+export const registerObsidianReadNoteTool = async (
   server: McpServer,
   obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
 ): Promise<void> => {
-  const toolName = "obsidian_read_file";
+  const toolName = "obsidian_read_note";
   const toolDescription =
     "Retrieves the content and metadata of a specified file within the Obsidian vault. Tries the exact path first, then attempts a case-insensitive fallback. Returns an object containing the content (markdown string or full NoteJson object based on 'format'), and optionally formatted file stats ('stats' object with creationTime, modifiedTime, tokenCountEstimate). Use 'includeStat: true' with 'format: markdown' to include stats; stats are always included with 'format: json'.";
 
   // Create a context specifically for the registration process.
   const registrationContext: RequestContext =
     requestContextService.createRequestContext({
-      operation: "RegisterObsidianReadFileTool",
+      operation: "RegisterObsidianReadNoteTool",
       toolName: toolName,
-      module: "ObsidianReadFileRegistration", // Identify the module
+      module: "ObsidianReadNoteRegistration", // Identify the module
     });
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
@@ -60,24 +60,24 @@ export const registerObsidianReadFileTool = async (
       server.tool(
         toolName,
         toolDescription,
-        ObsidianReadFileInputSchema.shape, // Provide the Zod schema shape for input definition.
+        ObsidianReadNoteInputSchema.shape, // Provide the Zod schema shape for input definition.
         /**
-         * The handler function executed when the 'obsidian_read_file' tool is called by the client.
+         * The handler function executed when the 'obsidian_read_note' tool is called by the client.
          *
-         * @param {ObsidianReadFileInput} params - The input parameters received from the client,
-         *   validated against the ObsidianReadFileInputSchema shape. Note: The handler receives the raw input;
+         * @param {ObsidianReadNoteInput} params - The input parameters received from the client,
+         *   validated against the ObsidianReadNoteInputSchema shape. Note: The handler receives the raw input;
          *   stricter validation against the full schema should happen inside if needed, though in this case,
          *   the shape and the full schema are identical.
          * @returns {Promise<CallToolResult>} A promise resolving to the structured result for the MCP client,
          *   containing either the successful response data (serialized JSON) or an error indication.
          */
-        async (params: ObsidianReadFileInput) => {
+        async (params: ObsidianReadNoteInput) => {
           // Type matches the inferred input schema
           // Create a specific context for this handler invocation.
           const handlerContext: RequestContext =
             requestContextService.createRequestContext({
               parentContext: registrationContext, // Link to registration context
-              operation: "HandleObsidianReadFileRequest",
+              operation: "HandleObsidianReadNoteRequest",
               toolName: toolName,
               params: {
                 // Log key parameters for debugging
@@ -94,8 +94,8 @@ export const registerObsidianReadFileTool = async (
               // Delegate the actual file reading logic to the dedicated processing function.
               // Pass the (already shape-validated) parameters, context, and the Obsidian service.
               // The process function handles the refined validation internally if needed, but here shape = refined.
-              const response: ObsidianReadFileResponse =
-                await processObsidianReadFile(
+              const response: ObsidianReadNoteResponse =
+                await processObsidianReadNote(
                   params, // Pass params directly as shape matches refined schema
                   handlerContext,
                   obsidianService,

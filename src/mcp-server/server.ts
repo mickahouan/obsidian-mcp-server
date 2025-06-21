@@ -25,10 +25,10 @@ import { ObsidianRestApiService } from "../services/obsidianRestAPI/index.js";
 // Import the Vault Cache service
 import { VaultCacheService } from "../services/obsidianRestAPI/vaultCache/index.js";
 // Import registration functions for specific resources and tools.
-import { registerObsidianDeleteFileTool } from "./tools/obsidianDeleteFileTool/index.js";
+import { registerObsidianDeleteNoteTool } from "./tools/obsidianDeleteNoteTool/index.js";
 import { registerObsidianGlobalSearchTool } from "./tools/obsidianGlobalSearchTool/index.js";
-import { registerObsidianListFilesTool } from "./tools/obsidianListFilesTool/index.js";
-import { registerObsidianReadFileTool } from "./tools/obsidianReadFileTool/index.js";
+import { registerObsidianListNotesTool } from "./tools/obsidianListNotesTool/index.js";
+import { registerObsidianReadNoteTool } from "./tools/obsidianReadNoteTool/index.js";
 import { registerObsidianSearchReplaceTool } from "./tools/obsidianSearchReplaceTool/index.js";
 import { registerObsidianUpdateNoteTool } from "./tools/obsidianUpdateNoteTool/index.js";
 import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFrontmatterTool/index.js";
@@ -102,9 +102,9 @@ async function createMcpServerInstance(
       context,
     );
     // Register all tools, passing the vaultCacheService which may be undefined
-    await registerObsidianListFilesTool(server, obsidianService);
-    await registerObsidianReadFileTool(server, obsidianService);
-    await registerObsidianDeleteFileTool(
+    await registerObsidianListNotesTool(server, obsidianService);
+    await registerObsidianReadNoteTool(server, obsidianService);
+    await registerObsidianDeleteNoteTool(
       server,
       obsidianService,
       vaultCacheService,

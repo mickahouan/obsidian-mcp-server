@@ -16,9 +16,9 @@ import {
 // ====================================================================================
 
 /**
- * Zod schema for validating the input parameters of the 'obsidian_delete_file' tool.
+ * Zod schema for validating the input parameters of the 'obsidian_delete_note' tool.
  */
-export const ObsidianDeleteFileInputSchema = z
+export const ObsidianDeleteNoteInputSchema = z
   .object({
     /**
      * The vault-relative path to the file to be permanently deleted.
@@ -38,11 +38,11 @@ export const ObsidianDeleteFileInputSchema = z
   );
 
 /**
- * TypeScript type inferred from the input schema (`ObsidianDeleteFileInputSchema`).
+ * TypeScript type inferred from the input schema (`ObsidianDeleteNoteInputSchema`).
  * Represents the validated input parameters used within the core processing logic.
  */
-export type ObsidianDeleteFileInput = z.infer<
-  typeof ObsidianDeleteFileInputSchema
+export type ObsidianDeleteNoteInput = z.infer<
+  typeof ObsidianDeleteNoteInputSchema
 >;
 
 // ====================================================================================
@@ -50,10 +50,10 @@ export type ObsidianDeleteFileInput = z.infer<
 // ====================================================================================
 
 /**
- * Defines the structure of the successful response returned by the `processObsidianDeleteFile` function.
+ * Defines the structure of the successful response returned by the `processObsidianDeleteNote` function.
  * This object is typically serialized to JSON and sent back to the client.
  */
-export interface ObsidianDeleteFileResponse {
+export interface ObsidianDeleteNoteResponse {
   /** Indicates whether the deletion operation was successful. */
   success: boolean;
   /** A human-readable message confirming the deletion and specifying the path used. */
@@ -72,25 +72,25 @@ export interface ObsidianDeleteFileResponse {
  * it lists the directory, finds a unique case-insensitive match for the filename,
  * and retries the deletion with the corrected path.
  *
- * @param {ObsidianDeleteFileInput} params - The validated input parameters.
+ * @param {ObsidianDeleteNoteInput} params - The validated input parameters.
  * @param {RequestContext} context - The request context for logging and correlation.
  * @param {ObsidianRestApiService} obsidianService - An instance of the Obsidian REST API service.
- * @returns {Promise<ObsidianDeleteFileResponse>} A promise resolving to the structured success response
+ * @returns {Promise<ObsidianDeleteNoteResponse>} A promise resolving to the structured success response
  *   containing a confirmation message.
  * @throws {McpError} Throws an McpError if the file cannot be found (even with fallback),
  *   if there's an ambiguous fallback match, or if any other API interaction fails.
  */
-export const processObsidianDeleteFile = async (
-  params: ObsidianDeleteFileInput,
+export const processObsidianDeleteNote = async (
+  params: ObsidianDeleteNoteInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
   vaultCacheService: VaultCacheService | undefined,
-): Promise<ObsidianDeleteFileResponse> => {
+): Promise<ObsidianDeleteNoteResponse> => {
   const { filePath: originalFilePath } = params;
   let effectiveFilePath = originalFilePath; // Track the path actually used for deletion
 
   logger.debug(
-    `Processing obsidian_delete_file request for path: ${originalFilePath}`,
+    `Processing obsidian_delete_note request for path: ${originalFilePath}`,
     context,
   );
 

@@ -21,7 +21,7 @@ import {
  * - 'markdown': Returns the raw Markdown content as a string.
  * - 'json': Returns a structured NoteJson object including content, frontmatter, tags, and stats.
  */
-const ReadFileFormatSchema = z
+const ReadNoteFormatSchema = z
   .enum(["markdown", "json"])
   .default("markdown")
   .describe(
@@ -29,9 +29,9 @@ const ReadFileFormatSchema = z
   );
 
 /**
- * Zod schema for validating the input parameters of the 'obsidian_read_file' tool.
+ * Zod schema for validating the input parameters of the 'obsidian_read_note' tool.
  */
-export const ObsidianReadFileInputSchema = z
+export const ObsidianReadNoteInputSchema = z
   .object({
     /**
      * The vault-relative path to the target file (e.g., "Folder/My Note.md").
@@ -50,7 +50,7 @@ export const ObsidianReadFileInputSchema = z
      * 'json' returns a structured NoteJson object containing content, parsed frontmatter, tags, and file metadata (stat).
      * Defaults to 'markdown'.
      */
-    format: ReadFileFormatSchema.optional() // Optional, defaults to 'markdown' via ReadFileFormatSchema
+    format: ReadNoteFormatSchema.optional() // Optional, defaults to 'markdown' via ReadNoteFormatSchema
       .describe(
         "Format for the returned content ('markdown' or 'json'). Defaults to 'markdown'.",
       ),
@@ -72,10 +72,10 @@ export const ObsidianReadFileInputSchema = z
   );
 
 /**
- * TypeScript type inferred from the input schema (`ObsidianReadFileInputSchema`).
+ * TypeScript type inferred from the input schema (`ObsidianReadNoteInputSchema`).
  * Represents the validated input parameters used within the core processing logic.
  */
-export type ObsidianReadFileInput = z.infer<typeof ObsidianReadFileInputSchema>;
+export type ObsidianReadNoteInput = z.infer<typeof ObsidianReadNoteInputSchema>;
 
 // ====================================================================================
 // Response Type Definition
@@ -95,10 +95,10 @@ type FormattedStat = {
 };
 
 /**
- * Defines the structure of the successful response returned by the `processObsidianReadFile` function.
+ * Defines the structure of the successful response returned by the `processObsidianReadNote` function.
  * This object is typically serialized to JSON and sent back to the client.
  */
-export interface ObsidianReadFileResponse {
+export interface ObsidianReadNoteResponse {
   /**
    * The content of the file in the requested format.
    * If format='markdown', this is a string.
@@ -124,19 +124,19 @@ export interface ObsidianReadFileResponse {
  * internally to access file statistics. Finally, it formats the response
  * according to the requested format ('markdown' or 'json') and the 'includeStat' flag.
  *
- * @param {ObsidianReadFileInput} params - The validated input parameters.
+ * @param {ObsidianReadNoteInput} params - The validated input parameters.
  * @param {RequestContext} context - The request context for logging and correlation.
  * @param {ObsidianRestApiService} obsidianService - An instance of the Obsidian REST API service.
- * @returns {Promise<ObsidianReadFileResponse>} A promise resolving to the structured success response
+ * @returns {Promise<ObsidianReadNoteResponse>} A promise resolving to the structured success response
  *   containing the file content and optionally formatted statistics.
  * @throws {McpError} Throws an McpError if the file cannot be found (even with fallback),
  *   if there's an ambiguous fallback match, or if any other API interaction fails.
  */
-export const processObsidianReadFile = async (
-  params: ObsidianReadFileInput,
+export const processObsidianReadNote = async (
+  params: ObsidianReadNoteInput,
   context: RequestContext,
   obsidianService: ObsidianRestApiService,
-): Promise<ObsidianReadFileResponse> => {
+): Promise<ObsidianReadNoteResponse> => {
   const {
     filePath: originalFilePath,
     format: requestedFormat,
@@ -145,7 +145,7 @@ export const processObsidianReadFile = async (
   let effectiveFilePath = originalFilePath; // Track the actual path used (might change during fallback)
 
   logger.debug(
-    `Processing obsidian_read_file request for path: ${originalFilePath}`,
+    `Processing obsidian_read_note request for path: ${originalFilePath}`,
     { ...context, format: requestedFormat, includeStat },
   );
 
@@ -325,7 +325,7 @@ export const processObsidianReadFile = async (
       formattedStatResult === null ? undefined : formattedStatResult;
 
     // Initialize the response object
-    const response: ObsidianReadFileResponse = {
+    const response: ObsidianReadNoteResponse = {
       content: "", // Placeholder, will be set based on format
       // stat is added conditionally below
     };

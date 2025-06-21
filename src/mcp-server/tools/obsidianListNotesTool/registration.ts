@@ -1,8 +1,12 @@
+/**
+ * @fileoverview Registers the 'obsidian_list_notes' tool with the MCP server.
+ * This file defines the tool's metadata and sets up the handler that links
+ * the tool call to its core processing logic.
+ * @module src/mcp-server/tools/obsidianListNotesTool/registration
+ */
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  ObsidianRestApiService,
-  VaultCacheService,
-} from "../../../services/obsidianRestAPI/index.js";
+import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
 import {
   ErrorHandler,
@@ -12,23 +16,21 @@ import {
 } from "../../../utils/index.js";
 // Import necessary types, schema, and logic function from the logic file
 import type {
-  ObsidianDeleteFileInput,
-  ObsidianDeleteFileResponse,
+  ObsidianListNotesInput,
+  ObsidianListNotesResponse,
 } from "./logic.js";
 import {
-  ObsidianDeleteFileInputSchema,
-  processObsidianDeleteFile,
+  ObsidianListNotesInputSchema,
+  processObsidianListNotes,
 } from "./logic.js";
 
 /**
- * Registers the 'obsidian_delete_file' tool with the MCP server.
+ * Registers the 'obsidian_list_notes' tool with the MCP server.
  *
- * This tool permanently deletes a specified file from the user's Obsidian vault.
- * It requires the vault-relative path, including the file extension. The tool
- * attempts a case-sensitive deletion first, followed by a case-insensitive
- * fallback search and delete if the initial attempt fails with a 'NOT_FOUND' error.
- *
- * The response is a JSON string containing a success status and a confirmation message.
+ * This tool lists the files and subdirectories within a specified directory
+ * in the user's Obsidian vault. It supports optional filtering by file extension,
+ * by a regular expression matching the entry name, and recursive listing up to a
+ * specified depth.
  *
  * @param {McpServer} server - The MCP server instance to register the tool with.
  * @param {ObsidianRestApiService} obsidianService - An instance of the Obsidian REST API service
@@ -36,22 +38,20 @@ import {
  * @returns {Promise<void>} A promise that resolves when the tool registration is complete or rejects on error.
  * @throws {McpError} Throws an McpError if registration fails critically.
  */
-export const registerObsidianDeleteFileTool = async (
+export const registerObsidianListNotesTool = async (
   server: McpServer,
-  obsidianService: ObsidianRestApiService,
-  vaultCacheService: VaultCacheService | undefined,
+  obsidianService: ObsidianRestApiService, // Dependency injection for the Obsidian service
 ): Promise<void> => {
-  const toolName = "obsidian_delete_file";
-  // Updated description to accurately reflect the response (no timestamp)
+  const toolName = "obsidian_list_notes";
   const toolDescription =
-    "Permanently deletes a specified file from the Obsidian vault. Tries the exact path first, then attempts a case-insensitive fallback if the file is not found. Requires the vault-relative path including the file extension. Returns a success message.";
+    "Lists files and subdirectories within a specified Obsidian vault folder. Supports optional filtering by extension or name regex, and recursive listing to a specified depth (-1 for infinite). Returns an object containing the listed directory path, a formatted tree string of its contents, and the total entry count. Use an empty string or '/' for dirPath to list the vault root.";
 
   // Create a context specifically for the registration process.
   const registrationContext: RequestContext =
     requestContextService.createRequestContext({
-      operation: "RegisterObsidianDeleteFileTool",
+      operation: "RegisterObsidianListNotesTool",
       toolName: toolName,
-      module: "ObsidianDeleteFileRegistration", // Identify the module
+      module: "ObsidianListNotesRegistration", // Identify the module
     });
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
@@ -63,38 +63,42 @@ export const registerObsidianDeleteFileTool = async (
       server.tool(
         toolName,
         toolDescription,
-        ObsidianDeleteFileInputSchema.shape, // Provide the Zod schema shape for input definition.
+        ObsidianListNotesInputSchema.shape, // Provide the Zod schema shape for input definition.
         /**
-         * The handler function executed when the 'obsidian_delete_file' tool is called by the client.
+         * The handler function executed when the 'obsidian_list_notes' tool is called by the client.
          *
-         * @param {ObsidianDeleteFileInput} params - The input parameters received from the client,
-         *   validated against the ObsidianDeleteFileInputSchema shape.
+         * @param {ObsidianListNotesInput} params - The input parameters received from the client,
+         *   validated against the ObsidianListNotesInputSchema shape.
          * @returns {Promise<CallToolResult>} A promise resolving to the structured result for the MCP client,
          *   containing either the successful response data (serialized JSON) or an error indication.
          */
-        async (params: ObsidianDeleteFileInput) => {
+        async (params: ObsidianListNotesInput) => {
           // Type matches the inferred input schema
           // Create a specific context for this handler invocation.
           const handlerContext: RequestContext =
             requestContextService.createRequestContext({
               parentContext: registrationContext, // Link to registration context
-              operation: "HandleObsidianDeleteFileRequest",
+              operation: "HandleObsidianListNotesRequest",
               toolName: toolName,
-              params: { filePath: params.filePath }, // Log the file path being targeted
+              params: {
+                // Log all relevant parameters for debugging
+                dirPath: params.dirPath,
+                fileExtensionFilter: params.fileExtensionFilter,
+                nameRegexFilter: params.nameRegexFilter,
+                recursionDepth: params.recursionDepth,
+              },
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           // Wrap the core logic execution in a tryCatch block.
           return await ErrorHandler.tryCatch(
             async () => {
-              // Delegate the actual file deletion logic to the processing function.
-              // Note: Input schema and shape are identical, no separate refinement parse needed here.
-              const response: ObsidianDeleteFileResponse =
-                await processObsidianDeleteFile(
+              // Delegate the actual file listing and filtering logic to the processing function.
+              const response: ObsidianListNotesResponse =
+                await processObsidianListNotes(
                   params,
                   handlerContext,
                   obsidianService,
-                  vaultCacheService,
                 );
               logger.debug(
                 `'${toolName}' processed successfully`,
@@ -102,7 +106,6 @@ export const registerObsidianDeleteFileTool = async (
               );
 
               // Format the successful response object from the logic function into the required MCP CallToolResult structure.
-              // The response object (success, message) is serialized to JSON.
               return {
                 content: [
                   {
