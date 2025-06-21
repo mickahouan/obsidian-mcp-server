@@ -1,8 +1,8 @@
 # Obsidian MCP Server
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-^5.8.3-blue.svg)](https://www.typescriptlang.org/)
-[![Model Context Protocol](https://img.shields.io/badge/MCP%20SDK-^1.12.1-green.svg)](https://modelcontextprotocol.io/)
-[![Version](https://img.shields.io/badge/Version-2.0.3-blue.svg)](./CHANGELOG.md)
+[![Model Context Protocol](https://img.shields.io/badge/MCP%20SDK-^1.13.0-green.svg)](https://modelcontextprotocol.io/)
+[![Version](https://img.shields.io/badge/Version-2.0.5-blue.svg)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Status](https://img.shields.io/badge/Status-Production-brightgreen.svg)](https://github.com/cyanheads/obsidian-mcp-server/issues)
 [![GitHub](https://img.shields.io/github/stars/cyanheads/obsidian-mcp-server?style=social)](https://github.com/cyanheads/obsidian-mcp-server)
@@ -32,8 +32,8 @@ This server equips your AI with specialized tools to interact with your Obsidian
 
 ## Table of Contents
 
-| [Overview](#overview) | [Features](#features) | [Installation](#installation) |
-| [Configuration](#configuration) | [Project Structure](#project-structure) | [Vault Cache Service](#vault-cache-service) |
+| [Overview](#overview) | [Features](#features) | [Configuration](#configuration) |
+| [Project Structure](#project-structure) | [Vault Cache Service](#vault-cache-service) |
 | [Tools](#tools) | [Resources](#resources) | [Development](#development) | [License](#license) |
 
 ## Overview
@@ -54,7 +54,7 @@ Built on the robust `mcp-ts-template`, this server provides a standardized, secu
 
 ### Core Utilities
 
-Leverages the robust utilities provided by the `mcp-ts-template`:
+Leverages the robust utilities provided by `cyanheads/mcp-ts-template`:
 
 - **Logging**: Structured, configurable logging (file rotation, console, MCP notifications) with sensitive data redaction.
 - **Error Handling**: Centralized error processing, standardized error types (`McpError`), and automatic logging.
@@ -82,38 +82,55 @@ Leverages the robust utilities provided by the `mcp-ts-template`:
 3.  **API Key**: Configure an API key within the Local REST API plugin settings in Obsidian. You will need this key to configure the server.
 4.  **Node.js & npm**: Ensure you have Node.js (v18 or later recommended) and npm installed.
 
-### Install via npm (Recommended)
+## Configuration
 
-```bash
-npm install obsidian-mcp-server
+### MCP Client Settings
+
+Add the following to your MCP client's configuration file (e.g., `cline_mcp_settings.json`). This configuration uses `npx` to run the server, which will automatically download & install the package if not already present:
+
+```json
+{
+  "mcpServers": {
+    "obsidian-mcp-server": {
+      "command": "npx",
+      "args": ["obsidian-mcp-server"],
+      "env": {
+        "OBSIDIAN_API_KEY": "YOUR_API_KEY_FROM_OBSIDIAN_PLUGIN",
+        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
+        "OBSIDIAN_VERIFY_SSL": "false",
+        "OBSIDIAN_ENABLE_CACHE": "true"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
 ```
 
-### Install from Source
+**Note**: Verify SSL is set to false here because the Obsidian Local REST API plugin uses a self-signed certificate by default. If you are deploying this in a production environment, consider using the encrypted HTTPS endpoint and set `OBSIDIAN_VERIFY_SSL` to `true` after configuring your server to trust the self-signed certificate.
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/cyanheads/obsidian-mcp-server.git
-    cd obsidian-mcp-server
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Build the project:
-    ```bash
-    npm run build
-    ```
-    This compiles the TypeScript code to JavaScript in the `dist/` directory and makes the entry point executable.
+If you installed from source, change `command` and `args` to point to your local build:
 
-## Configuration
+```json
+{
+  "mcpServers": {
+    "obsidian-mcp-server": {
+      "command": "node",
+      "args": ["/path/to/your/obsidian-mcp-server/dist/index.js"],
+      "env": {
+        "OBSIDIAN_API_KEY": "YOUR_OBSIDIAN_API_KEY",
+        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
+        "OBSIDIAN_VERIFY_SSL": "false",
+        "OBSIDIAN_ENABLE_CACHE": "true"
+      }
+    }
+  }
+}
+```
 
 ### Environment Variables
 
-Configure the server using environment variables.
-
-These variables must be set in the MCP client configuration (e.g., `cline_mcp_settings.json`) or in your environment before starting the server (if running directly).
-
-If running directly, they can be set in a `.env` file in the project root or directly in your environment.
+Configure the server using environment variables. These environmental variables are set within your MCP client config/settings (e.g. `cline_mcp_settings.json` for Cline, `claude_desktop_config.json` for Claude Desktop).
 
 | Variable                              | Description                                               | Required          | Default                  |
 | :------------------------------------ | :-------------------------------------------------------- | :---------------- | :----------------------- |
@@ -162,27 +179,6 @@ _Using the encrypted HTTPS URL:_
   "OBSIDIAN_API_KEY": "YOUR_API_KEY_FROM_OBSIDIAN_PLUGIN",
   "OBSIDIAN_BASE_URL": "https://127.0.0.1:27124",
   "OBSIDIAN_VERIFY_SSL": "false"
-}
-```
-
-### MCP Client Settings
-
-Add to your MCP client settings (e.g., `cline_mcp_settings.json`):
-
-```json
-{
-  "mcpServers": {
-    "obsidian-mcp-server": {
-      "command": "node",
-      "args": ["/path/to/your/obsidian-mcp-server/dist/index.js"],
-      "env": {
-        "OBSIDIAN_API_KEY": "YOUR_OBSIDIAN_API_KEY",
-        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
-        "OBSIDIAN_VERIFY_SSL": "false",
-        "OBSIDIAN_ENABLE_CACHE": "true"
-      }
-    }
-  }
 }
 ```
 
@@ -259,32 +255,23 @@ This server currently focuses on providing interactive tools for vault manipulat
 
 ### Build and Test
 
+To get started with development, clone the repository, install dependencies, and use the following scripts:
+
 ```bash
+# Install dependencies
+npm install
+
 # Build the project (compile TS to JS in dist/ and make executable)
-npm run build
+npm run rebuild
+
+# Start the server locally using stdio transport
+npm start:stdio
+
+# Start the server using http transport
+npm run start:http
 
 # Format code using Prettier
 npm run format
-
-# Test the server locally using stdio transport
-npm start
-# or specifically:
-npm run start:stdio
-
-# Test the server locally using http transport
-npm run start:http
-
-# Generate a file tree representation for documentation (runs scripts/tree.ts)
-npm run tree
-
-# Clean build artifacts and then rebuild the project
-npm run rebuild
-
-# Fetch the Obsidian API spec (requires Obsidian running with Local REST API)
-npm run fetch:spec http://127.0.0.1:27123/ docs/obsidian-api/obsidian_rest_api_spec
-
-# Generate API documentation using TypeDoc
-npm run docs:generate
 
 # Inspect the server's capabilities using the MCP Inspector tool
 npm run inspect:stdio

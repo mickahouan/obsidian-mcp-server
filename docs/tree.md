@@ -1,6 +1,6 @@
 # obsidian-mcp-server - Directory Structure
 
-Generated on: 2025-06-13 07:41:01
+Generated on: 2025-06-21 02:20:52
 
 ```
 obsidian-mcp-server
@@ -13,7 +13,6 @@ obsidian-mcp-server
 │   │   ├── obsidian_rest_api_spec.json
 │   │   └── obsidian_rest_api_spec.yaml
 │   ├── obsidian_mcp_tools_spec.md
-│   ├── obsidian_tools_phase2.md
 │   └── tree.md
 ├── scripts
 │   ├── clean.ts
@@ -53,17 +52,23 @@ obsidian-mcp-server
 │   │   │   │   ├── index.ts
 │   │   │   │   ├── logic.ts
 │   │   │   │   └── registration.ts
-│   │   │   └── obsidianUpdateFileTool
+│   │   │   └── obsidianUpdateNoteTool
 │   │   │       ├── index.ts
 │   │   │       ├── logic.ts
 │   │   │       └── registration.ts
 │   │   ├── transports
-│   │   │   ├── authentication
-│   │   │   │   ├── authContext.ts
-│   │   │   │   ├── authMiddleware.ts
-│   │   │   │   ├── authUtils.ts
-│   │   │   │   ├── oauthMiddleware.ts
-│   │   │   │   └── types.ts
+│   │   │   ├── auth
+│   │   │   │   ├── core
+│   │   │   │   │   ├── authContext.ts
+│   │   │   │   │   ├── authTypes.ts
+│   │   │   │   │   └── authUtils.ts
+│   │   │   │   ├── strategies
+│   │   │   │   │   ├── jwt
+│   │   │   │   │   │   └── jwtMiddleware.ts
+│   │   │   │   │   └── oauth
+│   │   │   │   │       └── oauthMiddleware.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── httpErrorHandler.ts
 │   │   │   ├── httpTransport.ts
 │   │   │   └── stdioTransport.ts
 │   │   └── server.ts
