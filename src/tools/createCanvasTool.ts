@@ -97,12 +97,8 @@ export async function registerCreateCanvasTool(
                 ...(node.type === "file" && node.file
                   ? { file: node.file }
                   : {}),
-                ...(node.type === "text"
-                  ? { text: node.text ?? "" }
-                  : {}),
-                ...(node.type === "link" && node.url
-                  ? { url: node.url }
-                  : {}),
+                ...(node.type === "text" ? { text: node.text ?? "" } : {}),
+                ...(node.type === "link" && node.url ? { url: node.url } : {}),
                 ...(node.type === "group"
                   ? {
                       ...(node.label ? { label: node.label } : {}),

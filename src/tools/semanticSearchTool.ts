@@ -9,7 +9,7 @@ import {
   RequestContext,
   requestContextService,
 } from "../utils/index.js";
-import { BaseErrorCode, McpError } from "../types-global/errors.js";
+import { BaseErrorCode } from "../types-global/errors.js";
 import { config } from "../config/index.js";
 
 const SmartSearchInputSchema = z
@@ -130,9 +130,8 @@ export async function registerSemanticSearchTool(
               }
 
               if (results.length === 0) {
-                throw new McpError(
-                  BaseErrorCode.INTERNAL_ERROR,
-                  "smart-search: no results",
+                logger.debug(
+                  "smart-search returned no results",
                   handlerContext,
                 );
               }
