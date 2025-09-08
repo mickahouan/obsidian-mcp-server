@@ -55,6 +55,47 @@ describe("semanticSearchTool", () => {
     expect(result.path).toBe("A.md");
   });
 
+  test("falls back to tfidf when only fromPath is provided", async () => {
+    process.env.SMART_SEARCH_MODE = "lexical";
+    process.env.OBSIDIAN_BASE_URL = "http://example.com";
+    process.env.OBSIDIAN_API_KEY = "test";
+    const responses = {
+      "http://example.com/vault": {
+        ok: true,
+        json: async () => ({
+          files: [{ path: "A.md" }, { path: "B.md" }, { path: "C.md" }],
+        }),
+      },
+      "http://example.com/vault/A.md": {
+        ok: true,
+        text: async () => "hello world",
+      },
+      "http://example.com/vault/B.md": {
+        ok: true,
+        text: async () => "hello friend",
+      },
+      "http://example.com/vault/C.md": {
+        ok: true,
+        text: async () => "world again",
+      },
+    };
+    global.fetch = jest.fn((url) =>
+      Promise.resolve(responses[url] || { ok: false }),
+    );
+
+    const server = new MockServer();
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
+    await registerSemanticSearchTool(server, {}, {});
+    const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
+    expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
+    expect(result.path).toBe("B.md");
+  });
+
   test("returns neighbors from .smart-env when fromPath provided", async () => {
     process.env.SMART_SEARCH_MODE = "files";
     const dir = await fs.mkdtemp(path.join(process.cwd(), "smartenv-"));

@@ -214,9 +214,16 @@ export async function smartSearch(
   }
 
   // 3) Lexical TF-IDF
-  if (wantQuery) {
+  if (wantQuery || wantNeighbors) {
     const docs = await fetchVaultDocs();
-    const results = rankDocumentsTFIDF(query, docs).slice(0, limit);
+    let lexicalQuery = query;
+    if (!lexicalQuery && wantNeighbors) {
+      lexicalQuery =
+        docs.find((d) => samePathEnd(d.path, fromPath!))?.text || fromPath!;
+    }
+    const results = rankDocumentsTFIDF(lexicalQuery, docs)
+      .filter((r) => !samePathEnd(r.path, fromPath || ""))
+      .slice(0, limit);
     return { method: "lexical", results };
   }
 
