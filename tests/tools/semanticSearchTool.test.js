@@ -22,6 +22,25 @@ describe("semanticSearchTool", () => {
     }
   });
 
+  test("uses vault cache when API config missing", async () => {
+    process.env.SMART_SEARCH_MODE = "lexical";
+    const cache = new Map([
+      ["A.md", { content: "hello world", mtime: 0 }],
+      ["B.md", { content: "another note", mtime: 0 }],
+    ]);
+    const server = new MockServer();
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
+    await registerSemanticSearchTool(server, {}, { getCache: () => cache });
+    const res = await server.handler({ query: "hello", limit: 1 }, {});
+    expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
+    expect(result.path).toBe("A.md");
+  });
+
   test("falls back to tfidf when only query is provided", async () => {
     process.env.SMART_SEARCH_MODE = "lexical";
     process.env.OBSIDIAN_BASE_URL = "http://example.com";
@@ -48,7 +67,7 @@ describe("semanticSearchTool", () => {
     const { registerSemanticSearchTool } = await import(
       "../../dist/tools/semanticSearchTool.js"
     );
-    await registerSemanticSearchTool(server, {}, {});
+    await registerSemanticSearchTool(server, {});
     const res = await server.handler({ query: "hello", limit: 1 }, {});
     expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
     const result = res.results
@@ -89,7 +108,7 @@ describe("semanticSearchTool", () => {
     const { registerSemanticSearchTool } = await import(
       "../../dist/tools/semanticSearchTool.js"
     );
-    await registerSemanticSearchTool(server, {}, {});
+    await registerSemanticSearchTool(server, {});
     const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
     expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
     const result = res.results
@@ -122,7 +141,7 @@ describe("semanticSearchTool", () => {
     const { registerSemanticSearchTool } = await import(
       "../../dist/tools/semanticSearchTool.js"
     );
-    await registerSemanticSearchTool(server, {}, {});
+    await registerSemanticSearchTool(server, {});
     const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
     expect(res.method || res.content?.[0]?.json?.method).toBe("files");
     const result = res.results
@@ -166,7 +185,7 @@ describe("semanticSearchTool", () => {
     const { registerSemanticSearchTool } = await import(
       "../../dist/tools/semanticSearchTool.js"
     );
-    await registerSemanticSearchTool(server, {}, {});
+    await registerSemanticSearchTool(server, {});
     const res = await server.handler({ query: "foo", limit: 1 }, {});
     expect(res.method || res.content?.[0]?.json?.method).toBe("files");
     const result = res.results

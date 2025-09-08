@@ -9,6 +9,7 @@ import {
   samePathEnd,
 } from "../utils/resolveSmartEnvDir.js";
 import { fetch as undiciFetch } from "undici";
+import type { VaultCacheService } from "../services/obsidianRestAPI/vaultCache/index.js";
 
 export type SmartSearchInput = {
   query?: string;
@@ -61,6 +62,23 @@ async function encodeQuery384(q: string): Promise<number[]> {
 
 // ---- fallback lexical (TF‑IDF) ----
 type Doc = { path: string; text: string };
+
+function docsFromCache(vcs?: VaultCacheService): Doc[] {
+  try {
+    if (!vcs) return [];
+    const cache = vcs.getCache?.();
+    if (!cache) return [];
+    const docs: Doc[] = [];
+    for (const [p, entry] of cache.entries()) {
+      if (/\.md$/i.test(p)) {
+        docs.push({ path: toPosix(p), text: entry.content });
+      }
+    }
+    return docs;
+  } catch {
+    return [];
+  }
+}
 
 function tokenize(s: string): string[] {
   return (s || "")
@@ -151,6 +169,7 @@ function findAnchor(pool: NoteVecN[], fromPath: string): NoteVecN | null {
 
 export async function smartSearch(
   input: SmartSearchInput,
+  vaultCacheService?: VaultCacheService,
 ): Promise<SmartSearchOutput> {
   const query = (input.query ?? "").trim();
   const fromPath = input.fromPath?.trim();
@@ -209,7 +228,10 @@ export async function smartSearch(
 
   // 3) fallback lexical TF‑IDF
   if (wantQuery || wantNeighbors) {
-    const docs = await fetchVaultDocs();
+    let docs = docsFromCache(vaultCacheService);
+    if (!docs.length) {
+      docs = await fetchVaultDocs();
+    }
     let lexicalQuery = query;
     if (!lexicalQuery && wantNeighbors) {
       lexicalQuery =
