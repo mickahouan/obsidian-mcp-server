@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -16,8 +16,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
       - run: npm ci
       - run: npm run lint
       - run: npm test
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
       - run: npm run build
