@@ -8,6 +8,7 @@ import {
   toPosix,
   samePathEnd,
 } from "../utils/resolveSmartEnvDir.js";
+import { fetch as undiciFetch } from "undici";
 
 export type SmartSearchInput = {
   query?: string;
@@ -19,54 +20,46 @@ export type SmartSearchOutput = {
   results: { path: string; score: number }[];
 };
 
-// ---- Optional plugin bridge (currently no official API) ----
+// ---- passerelle plugin optionnelle (aucune API officielle pour l’instant) ----
 async function viaPlugin(
   _input: SmartSearchInput,
 ): Promise<SmartSearchOutput | null> {
   return null;
 }
 
-// ---- OPTIONAL: Query encoders (384-d) ----
+// ---- encodage local de requête (xenova) ----
+let _pipePromise: Promise<any> | null = null;
+
 function canEncodeQueryLocally(): boolean {
-  return process.env.ENABLE_QUERY_EMBEDDING === "true";
+  return (
+    process.env.ENABLE_QUERY_EMBEDDING === "true" &&
+    (process.env.QUERY_EMBEDDER ?? "xenova").toLowerCase() === "xenova"
+  );
 }
 
-async function encodeQuery384(q: string): Promise<number[]> {
-  const method = (process.env.QUERY_EMBEDDER || "").toLowerCase();
-  if (!method) throw new Error("No query embedder configured");
-  if (method === "http") {
-    const url = process.env.EMBEDDING_HTTP_URL;
-    if (!url) throw new Error("EMBEDDING_HTTP_URL not set");
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text: q }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const js: any = await res.json();
-    const vec = js?.vector ?? js?.embedding ?? js?.vec;
-    if (!Array.isArray(vec) || vec.length !== 384)
-      throw new Error("Invalid vector length (expect 384)");
-    return vec;
-  }
-  if (method === "xenova") {
-    // @ts-ignore -- optional dependency
-    const t: any = await import("@xenova/transformers").catch(() => null);
-    if (!t) throw new Error("xenova transformers not installed");
+async function getXenovaPipe() {
+  if (_pipePromise) return _pipePromise;
+  _pipePromise = (async () => {
+    const t: any = await import("@xenova/transformers");
     const pipe = await t.pipeline(
       "feature-extraction",
       "TaylorAI/bge-micro-v2",
     );
-    const out = await pipe(q, { pooling: "mean", normalize: true });
-    const arr = Array.from(out?.data ?? out ?? []) as number[];
-    if (!Array.isArray(arr) || arr.length < 384)
-      throw new Error("Bad encoder output");
-    return arr.slice(0, 384);
-  }
-  throw new Error(`Unknown QUERY_EMBEDDER: ${method}`);
+    return pipe;
+  })();
+  return _pipePromise;
 }
 
-// ---- Lexical fallback (TF-IDF) ----
+async function encodeQuery384(q: string): Promise<number[]> {
+  const pipe = await getXenovaPipe();
+  const out = await pipe(q, { pooling: "mean", normalize: true });
+  const vec = Array.from(out?.data ?? out ?? []) as number[];
+  if (!Array.isArray(vec) || vec.length < 384)
+    throw new Error("Bad encoder output");
+  return vec.slice(0, 384);
+}
+
+// ---- fallback lexical (TF‑IDF) ----
 type Doc = { path: string; text: string };
 
 function tokenize(s: string): string[] {
@@ -116,7 +109,8 @@ async function fetchVaultDocs(): Promise<Doc[]> {
   const key = process.env.OBSIDIAN_API_KEY;
   if (!base || !key) return [];
   try {
-    const res = await fetch(joinUrl(base, "/vault"), {
+    const fetchFn: typeof fetch = (globalThis.fetch ?? undiciFetch) as any;
+    const res = await fetchFn(joinUrl(base, "/vault"), {
       headers: { Authorization: `Bearer ${key}` },
     });
     if (!res.ok) return [];
@@ -129,7 +123,7 @@ async function fetchVaultDocs(): Promise<Doc[]> {
     for (const p of md.slice(0, 500)) {
       const enc = encodeURIComponent(p);
       try {
-        const r = await fetch(joinUrl(base, `/vault/${enc}`), {
+        const r = await fetchFn(joinUrl(base, `/vault/${enc}`), {
           headers: { Authorization: `Bearer ${key}` },
         });
         if (!r.ok) continue;
@@ -164,7 +158,7 @@ export async function smartSearch(
   const wantQuery = !!query;
   const wantNeighbors = !!fromPath;
 
-  // 1) Plugin (noop)
+  // 1) mode plugin (noop)
   try {
     if (
       process.env.SMART_SEARCH_MODE === "plugin" &&
@@ -179,10 +173,10 @@ export async function smartSearch(
         return { method: "plugin", results: via.results };
     }
   } catch {
-    // swallow
+    // on avale l’erreur
   }
 
-  // 2) Files (.smart-env)
+  // 2) fichiers (.smart-env)
   try {
     const envRoot = resolveSmartEnvDir();
     if (envRoot) {
@@ -210,10 +204,10 @@ export async function smartSearch(
       }
     }
   } catch {
-    // swallow
+    // on avale l’erreur
   }
 
-  // 3) Lexical TF-IDF
+  // 3) fallback lexical TF‑IDF
   if (wantQuery || wantNeighbors) {
     const docs = await fetchVaultDocs();
     let lexicalQuery = query;

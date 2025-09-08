@@ -14,6 +14,8 @@ describe("semanticSearchTool", () => {
     delete process.env.SMART_SEARCH_MODE;
     delete process.env.OBSIDIAN_BASE_URL;
     delete process.env.OBSIDIAN_API_KEY;
+    delete process.env.ENABLE_QUERY_EMBEDDING;
+    delete process.env.QUERY_EMBEDDER;
     const gf = global.fetch;
     if (gf && typeof gf === "function" && typeof gf.mockReset === "function") {
       gf.mockReset();
@@ -127,5 +129,49 @@ describe("semanticSearchTool", () => {
       ? res.results[0]
       : res.content[0].json.results[0];
     expect(result.path).toBe("B.md");
+  });
+
+  test("encodes query with xenova when enabled", async () => {
+    jest.resetModules();
+    process.env.SMART_SEARCH_MODE = "files";
+    process.env.SMART_ENV_DIR = await fs.mkdtemp(
+      path.join(process.cwd(), "smartenv-"),
+    );
+    await fs.mkdir(path.join(process.env.SMART_ENV_DIR, "multi"));
+    await fs.writeFile(
+      path.join(process.env.SMART_ENV_DIR, "multi", "A_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: [1, 1, 0] } },
+        source: { path: "A.md" },
+      }),
+    );
+    await fs.writeFile(
+      path.join(process.env.SMART_ENV_DIR, "multi", "B_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: [1, 0, 0] } },
+        source: { path: "B.md" },
+      }),
+    );
+    process.env.ENABLE_QUERY_EMBEDDING = "true";
+    process.env.QUERY_EMBEDDER = "xenova";
+
+    const mockPipe = jest.fn(async () => ({
+      data: Array(384).fill(1),
+    }));
+    jest.unstable_mockModule("@xenova/transformers", () => ({
+      pipeline: async () => mockPipe,
+    }));
+
+    const server = new MockServer();
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
+    await registerSemanticSearchTool(server, {}, {});
+    const res = await server.handler({ query: "foo", limit: 1 }, {});
+    expect(res.method || res.content?.[0]?.json?.method).toBe("files");
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
+    expect(result.path).toBe("A.md");
   });
 });
