@@ -104,6 +104,9 @@ const EnvSchema = z.object({
     .int()
     .positive()
     .default(30000),
+  SMART_SEARCH_MODE: z
+    .enum(["auto", "plugin", "local"])
+    .default("auto"),
 });
 
 const parsedEnv = EnvSchema.safeParse(process.env);
@@ -214,6 +217,7 @@ export const config = {
   obsidianCacheRefreshIntervalMin: env.OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN,
   obsidianEnableCache: env.OBSIDIAN_ENABLE_CACHE,
   obsidianApiSearchTimeoutMs: env.OBSIDIAN_API_SEARCH_TIMEOUT_MS,
+  smartSearchMode: env.SMART_SEARCH_MODE,
 };
 
 /**

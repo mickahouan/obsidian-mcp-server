@@ -9,6 +9,8 @@ import {
   SimpleSearchResult,
   ComplexSearchResult,
   RequestFunction,
+  SmartSearchArgs,
+  SmartSearchResponse,
 } from "../types.js";
 
 /**
@@ -61,5 +63,28 @@ export async function searchComplex(
     },
     context,
     "searchComplex",
+  );
+}
+
+/**
+ * Performs a semantic smart search via the Smart Connections plugin.
+ * @param _request - Internal request function from the service instance.
+ * @param args - Search arguments.
+ * @param context - Request context.
+ * @returns Results from the smart search endpoint.
+ */
+export async function searchSmart(
+  _request: RequestFunction,
+  args: SmartSearchArgs,
+  context: RequestContext,
+): Promise<SmartSearchResponse> {
+  return _request<SmartSearchResponse>(
+    {
+      method: "POST",
+      url: "/search/smart/",
+      data: args,
+    },
+    context,
+    "searchSmart",
   );
 }

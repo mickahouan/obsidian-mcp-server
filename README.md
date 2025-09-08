@@ -35,12 +35,16 @@ obsidian-mcp-optimike --port 27123
 - `search <requête>`
 - `smart-search <requête>`
 - `run-template <template> --vars '{"nom":"Bob"}'`
-- `create-base --name Tasks --filter 'tag=task' --columns '["file.name","note.status"]'`
+- `create-base --file Tasks.base --filters '["tag=task"]' --order '["note.status"]'`
 - `create-canvas --name Graph --nodes '[{"type":"file","file":"A.md"},{"type":"file","file":"B.md"}]'`
 
 ## Configuration
-- **Clé API REST Obsidian** : exporter la variable `OBSIDIAN_API_TOKEN` issue du plugin Local REST API.
+ - **Clé API REST Obsidian** : exporter la variable `OBSIDIAN_API_KEY` issue du plugin Local REST API.
 - **Chemin du vault** : détecté automatiquement, peut être surchargé via les paramètres du serveur.
+- **SMART_SEARCH_MODE** : `auto` (défaut), `plugin` ou `local` pour forcer la stratégie de recherche sémantique.
+- L'outil `create-base` produit un YAML minimal centré sur `views:` et peut définir `properties` (objets de configuration comme `displayName`) et `formulas`.
+  Pour les détails complets de la syntaxe Bases, voir la documentation officielle :
+  [views](https://help.obsidian.md/bases/views), [functions](https://help.obsidian.md/bases/functions), [syntax](https://help.obsidian.md/bases/syntax).
 
 ## Sécurité & Confidentialité
 Toutes les opérations se font en local. Aucune donnée n'est envoyée vers l'extérieur. La clé API n'est jamais journalisée.
