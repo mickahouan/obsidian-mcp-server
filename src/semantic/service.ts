@@ -1,5 +1,9 @@
 import OpenAI from "openai";
-import { embeddingSearch, EmbeddedDocument, ScoredEmbedding } from "./embeddingSearch.js";
+import {
+  embeddingSearch,
+  EmbeddedDocument,
+  ScoredEmbedding,
+} from "./embeddingSearch.js";
 
 export interface Result {
   id: string;
@@ -13,7 +17,10 @@ export class SemanticService {
   private documents: EmbeddedDocument[] = [];
   constructor(private embedder: Embedder) {}
 
-  static withOpenAI(apiKey: string, model = "text-embedding-3-small"): SemanticService {
+  static withOpenAI(
+    apiKey: string,
+    model = "text-embedding-3-small",
+  ): SemanticService {
     const client = new OpenAI({ apiKey });
     const embedder: Embedder = async (input: string) => {
       const res = await client.embeddings.create({ model, input });
@@ -37,6 +44,10 @@ export class SemanticService {
       this.documents,
       topK,
     );
-    return scored.map((d) => ({ id: d.id, text: d.text ?? "", score: d.score }));
+    return scored.map((d) => ({
+      id: d.id,
+      text: d.text ?? "",
+      score: d.score,
+    }));
   }
 }

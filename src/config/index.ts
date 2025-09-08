@@ -104,9 +104,7 @@ const EnvSchema = z.object({
     .int()
     .positive()
     .default(30000),
-  SMART_SEARCH_MODE: z
-    .enum(["auto", "plugin", "local"])
-    .default("auto"),
+  SMART_SEARCH_MODE: z.enum(["auto", "plugin", "local"]).default("auto"),
 });
 
 const parsedEnv = EnvSchema.safeParse(process.env);

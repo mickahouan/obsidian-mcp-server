@@ -16,7 +16,10 @@ export function embeddingSearch(
   topK = 5,
 ): ScoredEmbedding[] {
   return docs
-    .map((d) => ({ ...d, score: cosineSimilarity(queryEmbedding, d.embedding) }))
+    .map((d) => ({
+      ...d,
+      score: cosineSimilarity(queryEmbedding, d.embedding),
+    }))
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
 }

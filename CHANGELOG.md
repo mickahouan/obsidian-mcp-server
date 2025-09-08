@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-09-08
 
 ### Ajouté
+
 - Serveur MCP unifié combinant les outils principaux dans un seul paquet.
 - Recherche sémantique `/search/smart` avec intégration des embeddings locaux et fallback TF‑IDF.
 - Outil d’exécution de templates avec substitutions `{{variable}}` et gestion d’erreurs.

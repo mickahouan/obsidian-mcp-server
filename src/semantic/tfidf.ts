@@ -40,9 +40,7 @@ export class TfIdf {
     for (const t of tokens) {
       tf.set(t, (tf.get(t) ?? 0) + 1);
     }
-    return terms.map(
-      (term) => (tf.get(term) ?? 0) * (this.idf.get(term) ?? 0),
-    );
+    return terms.map((term) => (tf.get(term) ?? 0) * (this.idf.get(term) ?? 0));
   }
 
   public search(query: string): ScoredDoc[] {
