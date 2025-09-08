@@ -373,11 +373,7 @@ export class ObsidianRestApiService {
     if (typeof limit === "number") {
       args.limit = limit;
     }
-    return searchMethods.searchSmart(
-      this._request.bind(this),
-      args,
-      context,
-    );
+    return searchMethods.searchSmart(this._request.bind(this), args, context);
   }
 
   // --- Command Methods ---
