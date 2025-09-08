@@ -19,14 +19,14 @@ export type SmartSearchOutput = {
   results: { path: string; score: number }[];
 };
 
-// ---- Optional plugin bridge (currently no official API) ----
+// ---- passerelle plugin (actuellement aucune API officielle) ----
 async function viaPlugin(
   _input: SmartSearchInput,
 ): Promise<SmartSearchOutput | null> {
   return null;
 }
 
-// ---- OPTIONAL: Local query embedding (xenova) ----
+// ---- encodage local de requête (xenova) ----
 let _pipePromise: Promise<any> | null = null;
 
 function canEncodeQueryLocally(): boolean {
@@ -58,7 +58,7 @@ async function encodeQuery384(q: string): Promise<number[]> {
   return vec.slice(0, 384);
 }
 
-// ---- Lexical fallback (TF-IDF) ----
+// ---- fallback lexical (TF‑IDF) ----
 type Doc = { path: string; text: string };
 
 function tokenize(s: string): string[] {
@@ -105,7 +105,7 @@ function rankDocumentsTFIDF(
 
 async function fetchVaultDocs(): Promise<Doc[]> {
   const base = process.env.OBSIDIAN_BASE_URL;
-  const key = process.env.OBSIDIAN_API_KEY;
+  the key = process.env.OBSIDIAN_API_KEY;
   if (!base || !key) return [];
   try {
     const res = await fetch(joinUrl(base, "/vault"), {
@@ -156,7 +156,7 @@ export async function smartSearch(
   const wantQuery = !!query;
   const wantNeighbors = !!fromPath;
 
-  // 1) Plugin (noop)
+  // 1) plugin (noop)
   try {
     if (
       process.env.SMART_SEARCH_MODE === "plugin" &&
@@ -171,10 +171,10 @@ export async function smartSearch(
         return { method: "plugin", results: via.results };
     }
   } catch {
-    // swallow
+    // on avale l’erreur
   }
 
-  // 2) Files (.smart-env)
+  // 2) fichiers (.smart‑env)
   try {
     const envRoot = resolveSmartEnvDir();
     if (envRoot) {
@@ -202,10 +202,10 @@ export async function smartSearch(
       }
     }
   } catch {
-    // swallow
+    // on avale l’erreur
   }
 
-  // 3) Lexical TF-IDF
+  // 3) fallback lexical TF‑IDF
   if (wantQuery || wantNeighbors) {
     const docs = await fetchVaultDocs();
     let lexicalQuery = query;
