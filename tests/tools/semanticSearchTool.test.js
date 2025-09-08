@@ -38,14 +38,20 @@ describe("semanticSearchTool", () => {
         text: async () => "another note",
       },
     };
-    global.fetch = jest.fn((url) => Promise.resolve(responses[url] || { ok: false }));
+    global.fetch = jest.fn((url) =>
+      Promise.resolve(responses[url] || { ok: false }),
+    );
 
     const server = new MockServer();
-    const { registerSemanticSearchTool } = await import("../../dist/tools/semanticSearchTool.js");
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ query: "hello", limit: 1 }, {});
     expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
-    const result = res.results ? res.results[0] : res.content[0].json.results[0];
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
     expect(result.path).toBe("A.md");
   });
 
@@ -55,20 +61,30 @@ describe("semanticSearchTool", () => {
     await fs.mkdir(path.join(dir, "multi"));
     await fs.writeFile(
       path.join(dir, "multi", "A_md.ajson"),
-      JSON.stringify({ embeddings: { m: { vec: [1, 0, 0] } }, source: { path: "A.md" } }),
+      JSON.stringify({
+        embeddings: { m: { vec: [1, 0, 0] } },
+        source: { path: "A.md" },
+      }),
     );
     await fs.writeFile(
       path.join(dir, "multi", "B_md.ajson"),
-      JSON.stringify({ embeddings: { m: { vec: [0.9, 0.1, 0] } }, source: { path: "B.md" } }),
+      JSON.stringify({
+        embeddings: { m: { vec: [0.9, 0.1, 0] } },
+        source: { path: "B.md" },
+      }),
     );
     process.env.SMART_ENV_DIR = dir;
 
     const server = new MockServer();
-    const { registerSemanticSearchTool } = await import("../../dist/tools/semanticSearchTool.js");
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
     expect(res.method || res.content?.[0]?.json?.method).toBe("files");
-    const result = res.results ? res.results[0] : res.content[0].json.results[0];
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
     expect(result.path).toBe("B.md");
   });
 });

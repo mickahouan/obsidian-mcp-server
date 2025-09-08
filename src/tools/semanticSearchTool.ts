@@ -2,7 +2,10 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { smartSearch } from "../search/smartSearch.js";
 
 export type Input = { query?: string; fromPath?: string; limit?: number };
-export type Output = { method: "plugin" | "files" | "lexical"; results: { path: string; score: number }[] };
+export type Output = {
+  method: "plugin" | "files" | "lexical";
+  results: { path: string; score: number }[];
+};
 
 const tool = {
   name: "smart-search",
@@ -39,9 +42,7 @@ export async function registerSemanticSearchTool(
     async (args: any) => {
       const result = await tool.execute(args as Input);
       return {
-        content: [
-          { type: "application/json", json: result } as any,
-        ],
+        content: [{ type: "application/json", json: result } as any],
         isError: false,
       } as any;
     },

@@ -3,16 +3,26 @@ import {
   cosineTopKWithNorm,
   NoteVecN,
 } from "./providers/smartEnvFiles.js";
-import { resolveSmartEnvDir, toPosix, samePathEnd } from "../utils/resolveSmartEnvDir.js";
+import {
+  resolveSmartEnvDir,
+  toPosix,
+  samePathEnd,
+} from "../utils/resolveSmartEnvDir.js";
 
-export type SmartSearchInput = { query?: string; fromPath?: string; limit?: number };
+export type SmartSearchInput = {
+  query?: string;
+  fromPath?: string;
+  limit?: number;
+};
 export type SmartSearchOutput = {
   method: "plugin" | "files" | "lexical";
   results: { path: string; score: number }[];
 };
 
 // ---- Optional plugin bridge (currently no official API) ----
-async function viaPlugin(_input: SmartSearchInput): Promise<SmartSearchOutput | null> {
+async function viaPlugin(
+  _input: SmartSearchInput,
+): Promise<SmartSearchOutput | null> {
   return null;
 }
 
@@ -35,17 +45,22 @@ async function encodeQuery384(q: string): Promise<number[]> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const js: any = await res.json();
     const vec = js?.vector ?? js?.embedding ?? js?.vec;
-    if (!Array.isArray(vec) || vec.length !== 384) throw new Error("Invalid vector length (expect 384)");
+    if (!Array.isArray(vec) || vec.length !== 384)
+      throw new Error("Invalid vector length (expect 384)");
     return vec;
   }
   if (method === "xenova") {
     // @ts-ignore -- optional dependency
     const t: any = await import("@xenova/transformers").catch(() => null);
     if (!t) throw new Error("xenova transformers not installed");
-    const pipe = await t.pipeline("feature-extraction", "TaylorAI/bge-micro-v2");
+    const pipe = await t.pipeline(
+      "feature-extraction",
+      "TaylorAI/bge-micro-v2",
+    );
     const out = await pipe(q, { pooling: "mean", normalize: true });
     const arr = Array.from(out?.data ?? out ?? []) as number[];
-    if (!Array.isArray(arr) || arr.length < 384) throw new Error("Bad encoder output");
+    if (!Array.isArray(arr) || arr.length < 384)
+      throw new Error("Bad encoder output");
     return arr.slice(0, 384);
   }
   throw new Error(`Unknown QUERY_EMBEDDER: ${method}`);
@@ -62,7 +77,10 @@ function tokenize(s: string): string[] {
     .filter(Boolean);
 }
 
-function rankDocumentsTFIDF(query: string, docs: Doc[]): { path: string; score: number }[] {
+function rankDocumentsTFIDF(
+  query: string,
+  docs: Doc[],
+): { path: string; score: number }[] {
   if (!query?.trim() || !docs?.length) return [];
   const qTokens = Array.from(new Set(tokenize(query)));
   const N = docs.length;
@@ -137,7 +155,9 @@ function findAnchor(pool: NoteVecN[], fromPath: string): NoteVecN | null {
   return found ?? null;
 }
 
-export async function smartSearch(input: SmartSearchInput): Promise<SmartSearchOutput> {
+export async function smartSearch(
+  input: SmartSearchInput,
+): Promise<SmartSearchOutput> {
   const query = (input.query ?? "").trim();
   const fromPath = input.fromPath?.trim();
   const limit = Math.max(1, Math.min(100, input.limit ?? 10));
@@ -146,9 +166,17 @@ export async function smartSearch(input: SmartSearchInput): Promise<SmartSearchO
 
   // 1) Plugin (noop)
   try {
-    if (process.env.SMART_SEARCH_MODE === "plugin" && process.env.SMART_CONNECTIONS_API) {
-      const via = await viaPlugin({ query, fromPath: fromPath || undefined, limit });
-      if (via?.results?.length) return { method: "plugin", results: via.results };
+    if (
+      process.env.SMART_SEARCH_MODE === "plugin" &&
+      process.env.SMART_CONNECTIONS_API
+    ) {
+      const via = await viaPlugin({
+        query,
+        fromPath: fromPath || undefined,
+        limit,
+      });
+      if (via?.results?.length)
+        return { method: "plugin", results: via.results };
     }
   } catch {
     // swallow
@@ -164,7 +192,12 @@ export async function smartSearch(input: SmartSearchInput): Promise<SmartSearchO
           const anchor = findAnchor(vecs, fromPath!);
           if (anchor) {
             const pool = vecs.filter((v) => v !== anchor);
-            const results = cosineTopKWithNorm(anchor.vec, anchor.norm, pool, limit);
+            const results = cosineTopKWithNorm(
+              anchor.vec,
+              anchor.norm,
+              pool,
+              limit,
+            );
             return { method: "files", results };
           }
         }

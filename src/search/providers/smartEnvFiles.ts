@@ -5,7 +5,10 @@ import { resolveSmartEnvDir, toPosix } from "../../utils/resolveSmartEnvDir.js";
 export type NoteVec = { path: string; vec: number[] };
 export type NoteVecN = { path: string; vec: number[]; norm: number };
 
-function listFilesRecursive(root: string, accept: (p: string) => boolean): string[] {
+function listFilesRecursive(
+  root: string,
+  accept: (p: string) => boolean,
+): string[] {
   const out: string[] = [];
   const stack = [root];
   while (stack.length) {
