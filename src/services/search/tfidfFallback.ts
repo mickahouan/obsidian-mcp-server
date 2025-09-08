@@ -42,7 +42,8 @@ export function rankDocumentsTFIDF(
   for (const doc of docsTokens) {
     let score = 0;
     for (const term of queryTerms) {
-      const termFreq = doc.tokens.filter((t) => t === term).length / doc.tokens.length;
+      const termFreq =
+        doc.tokens.filter((t) => t === term).length / doc.tokens.length;
       score += termFreq * idf[term];
     }
     scores.push({ path: doc.path, score });
