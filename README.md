@@ -36,7 +36,7 @@ obsidian-mcp-optimike --port 27123
 - `smart-search <requête>`
 - `run-template <template> --vars '{"nom":"Bob"}'`
 - `create-base --file Tasks.base --filters '["tag=task"]' --order '["note.status"]'`
-- `create-canvas --name Graph --nodes '[{"type":"file","file":"A.md"},{"type":"file","file":"B.md"}]'`
+- `create-canvas --name Graph --nodes '[{"type":"file","file":"A.md"},{"type":"file","file":"B.md"}]' --edges '[{"fromNode":"A","toNode":"B"}]'`
 
 ## Configuration
  - **Clé API REST Obsidian** : exporter la variable `OBSIDIAN_API_KEY` issue du plugin Local REST API.

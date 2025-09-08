@@ -17,12 +17,12 @@ describe('createCanvasTool', () => {
     await server.handler({
       name: 'Graph',
       nodes: [{ id: 'A', type: 'file', file: 'A.md' }, { id: 'B', type: 'file', file: 'B.md' }],
-      edges: [{ from: 'A', to: 'B', label: 'relates' }]
+      edges: [{ fromNode: 'A', toNode: 'B', label: 'relates' }]
     }, {});
     const content = await fs.readFile(path.join(dir, 'Graph.canvas'), 'utf8');
     const parsed = JSON.parse(content);
     expect(parsed.nodes).toHaveLength(2);
-    expect(parsed.edges[0].from).toBe('A');
-    expect(parsed.edges[0].to).toBe('B');
+    expect(parsed.edges[0].fromNode).toBe('A');
+    expect(parsed.edges[0].toNode).toBe('B');
   });
 });
