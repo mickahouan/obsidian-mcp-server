@@ -69,7 +69,7 @@ info:
     certificate as a "Trusted Certificate" in your browser or operating system's
     settings.
   title: Local REST API for Obsidian
-  version: '1.0'
+  version: "1.0"
 openapi: 3.0.2
 paths:
   /:
@@ -81,7 +81,7 @@ paths:
 
         This is the only API request that does *not* require authentication.
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -90,10 +90,10 @@ paths:
                     description: Is your current request authenticated?
                     type: boolean
                   ok:
-                    description: '''OK'''
+                    description: "'OK'"
                     type: string
                   service:
-                    description: '''Obsidian Local REST API'''
+                    description: "'Obsidian Local REST API'"
                     type: string
                   versions:
                     properties:
@@ -114,19 +114,19 @@ paths:
     delete:
       parameters: []
       responses:
-        '204':
+        "204":
           description: Success
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: File does not exist.
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -145,11 +145,11 @@ paths:
         for details.
       parameters: []
       responses:
-        '200':
+        "200":
           content:
             application/vnd.olrapi.note+json:
               schema:
-                $ref: '#/components/schemas/NoteJson'
+                $ref: "#/components/schemas/NoteJson"
             text/markdown:
               schema:
                 example: |
@@ -158,7 +158,7 @@ paths:
                   something else here
                 type: string
           description: Success
-        '404':
+        "404":
           description: File does not exist
       summary: |
         Return the content of the active file open in Obsidian.
@@ -427,7 +427,7 @@ paths:
           name: Target-Delimiter
           required: false
           schema:
-            default: '::'
+            default: "::"
             type: string
         - description: |
             Target to patch; this value can be URL-Encoded and *must*
@@ -442,16 +442,16 @@ paths:
           name: Trim-Target-Whitespace
           required: false
           schema:
-            default: 'false'
+            default: "false"
             enum:
-              - 'true'
-              - 'false'
+              - "true"
+              - "false"
             type: string
       requestBody:
         content:
           application/json:
             schema:
-              example: '[''one'', ''two'']'
+              example: "['one', 'two']"
               type: string
           text/markdown:
             schema:
@@ -463,25 +463,25 @@ paths:
         description: Content you would like to insert.
         required: true
       responses:
-        '200':
+        "200":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Bad Request; see response message for details.
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Does not exist
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -510,19 +510,19 @@ paths:
         description: Content you would like to append.
         required: true
       responses:
-        '204':
+        "204":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Bad Request
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -533,7 +533,7 @@ paths:
     put:
       requestBody:
         content:
-          '*/*':
+          "*/*":
             schema:
               type: string
           text/markdown:
@@ -546,23 +546,23 @@ paths:
         description: Content of the file you would like to upload.
         required: true
       responses:
-        '204':
+        "204":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Incoming file could not be processed.  Make sure you have specified
             a reasonable file name, and make sure you have set a reasonable
             'Content-Type' header; if you are uploading a note, 'text/markdown'
             is likely the right choice.
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -573,15 +573,15 @@ paths:
   /commands/:
     get:
       responses:
-        '200':
+        "200":
           content:
             application/json:
               example:
                 commands:
                   - id: global-search:open
-                    name: 'Search: Search in all files'
+                    name: "Search: Search in all files"
                   - id: graph:open
-                    name: 'Graph view: Open graph view'
+                    name: "Graph view: Open graph view"
               schema:
                 properties:
                   commands:
@@ -609,13 +609,13 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Success
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: The command you specified does not exist.
       summary: |
         Execute a command.
@@ -644,7 +644,7 @@ paths:
           schema:
             type: boolean
       responses:
-        '200':
+        "200":
           description: Success
       summary: |
         Open the specified document in Obsidian
@@ -671,19 +671,19 @@ paths:
               - yearly
             type: string
       responses:
-        '204':
+        "204":
           description: Success
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: File does not exist.
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -709,11 +709,11 @@ paths:
               - yearly
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/vnd.olrapi.note+json:
               schema:
-                $ref: '#/components/schemas/NoteJson'
+                $ref: "#/components/schemas/NoteJson"
             text/markdown:
               schema:
                 example: |
@@ -722,7 +722,7 @@ paths:
                   something else here
                 type: string
           description: Success
-        '404':
+        "404":
           description: File does not exist
       summary: |
         Get current periodic note for the specified period.
@@ -991,7 +991,7 @@ paths:
           name: Target-Delimiter
           required: false
           schema:
-            default: '::'
+            default: "::"
             type: string
         - description: |
             Target to patch; this value can be URL-Encoded and *must*
@@ -1006,10 +1006,10 @@ paths:
           name: Trim-Target-Whitespace
           required: false
           schema:
-            default: 'false'
+            default: "false"
             enum:
-              - 'true'
-              - 'false'
+              - "true"
+              - "false"
             type: string
         - description: >-
             The name of the period for which you would like to grab the current
@@ -1030,7 +1030,7 @@ paths:
         content:
           application/json:
             schema:
-              example: '[''one'', ''two'']'
+              example: "['one', 'two']"
               type: string
           text/markdown:
             schema:
@@ -1042,25 +1042,25 @@ paths:
         description: Content you would like to insert.
         required: true
       responses:
-        '200':
+        "200":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Bad Request; see response message for details.
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Does not exist
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -1101,19 +1101,19 @@ paths:
         description: Content you would like to append.
         required: true
       responses:
-        '204':
+        "204":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Bad Request
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -1140,7 +1140,7 @@ paths:
             type: string
       requestBody:
         content:
-          '*/*':
+          "*/*":
             schema:
               type: string
           text/markdown:
@@ -1153,23 +1153,23 @@ paths:
         description: Content of the file you would like to upload.
         required: true
       responses:
-        '204':
+        "204":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Incoming file could not be processed.  Make sure you have specified
             a reasonable file name, and make sure you have set a reasonable
             'Content-Type' header; if you are uploading a note, 'text/markdown'
             is likely the right choice.
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -1252,7 +1252,7 @@ paths:
           application/vnd.olrapi.dataview.dql+txt:
             examples:
               find_fields_by_tag:
-                summary: 'List data from files having the #game tag.'
+                summary: "List data from files having the #game tag."
                 value: |
                   TABLE
                     time-played AS "Time Played",
@@ -1302,7 +1302,7 @@ paths:
               type: object
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1324,11 +1324,11 @@ paths:
                   type: object
                 type: array
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: |
             Bad request.  Make sure you have specified an acceptable
             Content-Type for your search query.
@@ -1353,7 +1353,7 @@ paths:
             default: 100
             type: number
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1401,7 +1401,7 @@ paths:
         files that exist in the specified directory." and exists here only due
         to a quirk of this particular interactive tool.
       responses:
-        '200':
+        "200":
           content:
             application/json:
               example:
@@ -1416,11 +1416,11 @@ paths:
                     type: array
                 type: object
           description: Success
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Directory does not exist
       summary: |
         List files that exist in the root of your vault.
@@ -1438,19 +1438,19 @@ paths:
             format: path
             type: string
       responses:
-        '204':
+        "204":
           description: Success
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: File does not exist.
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -1478,11 +1478,11 @@ paths:
             format: path
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/vnd.olrapi.note+json:
               schema:
-                $ref: '#/components/schemas/NoteJson'
+                $ref: "#/components/schemas/NoteJson"
             text/markdown:
               schema:
                 example: |
@@ -1491,7 +1491,7 @@ paths:
                   something else here
                 type: string
           description: Success
-        '404':
+        "404":
           description: File does not exist
       summary: |
         Return the content of a single file in your vault.
@@ -1760,7 +1760,7 @@ paths:
           name: Target-Delimiter
           required: false
           schema:
-            default: '::'
+            default: "::"
             type: string
         - description: |
             Target to patch; this value can be URL-Encoded and *must*
@@ -1775,10 +1775,10 @@ paths:
           name: Trim-Target-Whitespace
           required: false
           schema:
-            default: 'false'
+            default: "false"
             enum:
-              - 'true'
-              - 'false'
+              - "true"
+              - "false"
             type: string
         - description: |
             Path to the relevant file (relative to your vault root).
@@ -1792,7 +1792,7 @@ paths:
         content:
           application/json:
             schema:
-              example: '[''one'', ''two'']'
+              example: "['one', 'two']"
               type: string
           text/markdown:
             schema:
@@ -1804,25 +1804,25 @@ paths:
         description: Content you would like to insert.
         required: true
       responses:
-        '200':
+        "200":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Bad Request; see response message for details.
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Does not exist
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -1860,19 +1860,19 @@ paths:
         description: Content you would like to append.
         required: true
       responses:
-        '204':
+        "204":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Bad Request
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -1895,7 +1895,7 @@ paths:
             type: string
       requestBody:
         content:
-          '*/*':
+          "*/*":
             schema:
               type: string
           text/markdown:
@@ -1908,23 +1908,23 @@ paths:
         description: Content of the file you would like to upload.
         required: true
       responses:
-        '204':
+        "204":
           description: Success
-        '400':
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Incoming file could not be processed.  Make sure you have specified
             a reasonable file name, and make sure you have set a reasonable
             'Content-Type' header; if you are uploading a note, 'text/markdown'
             is likely the right choice.
-        '405':
+        "405":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: >
             Your path references a directory instead of a file; this request
             method is valid only for updating files.
@@ -1954,7 +1954,7 @@ paths:
             format: path
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               example:
@@ -1969,11 +1969,11 @@ paths:
                     type: array
                 type: object
           description: Success
-        '404':
+        "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
           description: Directory does not exist
       summary: |
         List files that exist in the specified directory.
@@ -1989,7 +1989,7 @@ servers:
         default: 127.0.0.1
         description: Binding host
       port:
-        default: '27124'
+        default: "27124"
         description: HTTPS port
   - description: HTTP (Insecure Mode)
     url: http://{host}:{port}
@@ -1998,5 +1998,5 @@ servers:
         default: 127.0.0.1
         description: Binding host
       port:
-        default: '27123'
+        default: "27123"
         description: HTTP port
