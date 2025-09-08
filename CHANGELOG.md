@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2025-09-08
+
+### Ajouté
+- Serveur MCP unifié combinant les outils principaux dans un seul paquet.
+- Recherche sémantique `/search/smart` avec intégration des embeddings locaux et fallback TF‑IDF.
+- Outil d’exécution de templates avec substitutions `{{variable}}` et gestion d’erreurs.
+- Support de création de fichiers `.base` pour le plugin Bases.
+- Génération de fichiers `.canvas` avec nœuds et arêtes.
+- Transports multiples : STDIO par défaut et HTTP + SSE en option.
+- Améliorations de sécurité via clé API et confirmations d’actions destructrices.
+- Suite de tests Jest et workflow CI GitHub Actions multi‑OS.
+
 ## [2.0.7] - 2025-06-20
 
 ### Changed

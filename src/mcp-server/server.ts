@@ -33,6 +33,12 @@ import { registerObsidianSearchReplaceTool } from "./tools/obsidianSearchReplace
 import { registerObsidianUpdateNoteTool } from "./tools/obsidianUpdateNoteTool/index.js";
 import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFrontmatterTool/index.js";
 import { registerObsidianManageTagsTool } from "./tools/obsidianManageTagsTool/index.js";
+import {
+  registerSemanticSearchTool,
+  registerExecuteTemplateTool,
+  registerCreateBaseTool,
+  registerCreateCanvasTool,
+} from "../tools/index.js";
 // Import transport setup functions.
 import { startHttpTransport } from "./transports/httpTransport.js";
 import { connectStdioTransport } from "./transports/stdioTransport.js";
@@ -141,6 +147,23 @@ async function createMcpServerInstance(
       obsidianService,
       vaultCacheService,
     );
+
+    if (vaultCacheService) {
+      await registerSemanticSearchTool(
+        server,
+        obsidianService,
+        vaultCacheService,
+      );
+    } else {
+      logger.warning(
+        "Skipping registration of 'smart-search' because the Vault Cache Service is disabled.",
+        context,
+      );
+    }
+
+    await registerExecuteTemplateTool(server, obsidianService);
+    await registerCreateBaseTool(server, obsidianService);
+    await registerCreateCanvasTool(server, obsidianService);
 
     logger.info("Resources and tools registered successfully", context);
 
