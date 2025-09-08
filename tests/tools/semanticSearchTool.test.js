@@ -1,5 +1,6 @@
 process.env.OBSIDIAN_API_KEY = "test";
 import { jest } from "@jest/globals";
+import path from "node:path";
 
 class MockServer {
   tool(_n, _d, _s, h) {
@@ -8,6 +9,10 @@ class MockServer {
 }
 
 describe("semanticSearchTool", () => {
+  afterEach(() => {
+    delete process.env.SMART_ENV_DIR;
+    delete process.env.SMART_SEARCH_MODE;
+  });
   test("uses plugin when available", async () => {
     process.env.SMART_SEARCH_MODE = "plugin";
     jest.resetModules();
@@ -23,7 +28,7 @@ describe("semanticSearchTool", () => {
     );
     await registerSemanticSearchTool(server, obsidian, vault);
     const res = await server.handler({ query: "hello", limit: 5 }, {});
-    expect(res.content[0].json.method).toBe("semantic");
+    expect(res.content[0].json.method).toBe("plugin");
     expect(res.content[0].json.results[0].path).toBe("A.md");
   });
 
@@ -53,5 +58,25 @@ describe("semanticSearchTool", () => {
     expect(called).toBe(1);
     expect(res.content[0].json.method).toBe("lexical");
     expect(res.content[0].json.results[0].path).toBe("A.md");
+  });
+
+  test("uses smart-env files when mode is files", async () => {
+    process.env.SMART_SEARCH_MODE = "files";
+    process.env.SMART_ENV_DIR = path.join(
+      process.cwd(),
+      "tests/fixtures/.smart-env",
+    );
+    jest.resetModules();
+    const obsidian = { smartSearch: jest.fn() };
+    const vault = { getCache: () => new Map() };
+    const server = new MockServer();
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
+    await registerSemanticSearchTool(server, obsidian, vault);
+    const res = await server.handler({ fromPath: "A.md", limit: 5 }, {});
+    expect(obsidian.smartSearch).not.toHaveBeenCalled();
+    expect(res.content[0].json.method).toBe("files");
+    expect(res.content[0].json.results[0].path).toBe("B.md");
   });
 });
