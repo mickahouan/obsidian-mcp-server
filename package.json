@@ -23,7 +23,8 @@
   "homepage": "https://github.com/cyanheads/obsidian-mcp-server#readme",
   "scripts": {
     "build": "tsc && node --loader ts-node/esm scripts/make-executable.ts dist/index.js",
-    "test": "echo \"No tests specified\" && exit 0",
+    "test": "npm run build && NODE_OPTIONS=--experimental-vm-modules jest",
+    "lint": "prettier --check \"**/*.{ts,js,json,md,html,css}\"",
     "start": "node dist/index.js",
     "start:stdio": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=stdio node dist/index.js",
     "start:http": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=http node dist/index.js",
@@ -34,7 +35,8 @@
     "format": "prettier --write \"**/*.{ts,js,json,md,html,css}\"",
     "inspect": "mcp-inspector --config mcp.json",
     "inspect:stdio": "mcp-inspector --config mcp.json --server obsidian-mcp-server-stdio",
-    "inspect:http": "mcp-inspector --config mcp.json --server obsidian-mcp-server-http"
+    "inspect:http": "mcp-inspector --config mcp.json --server obsidian-mcp-server-http",
+    "pkg:all": "pkg dist/index.js --targets node20-linux-x64,node20-win-x64,node20-macos-x64 --out-path release"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.4",
@@ -88,6 +90,10 @@
     "@types/node": "^24.0.3",
     "prettier": "^3.5.3",
     "typedoc": "^0.28.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "pkg": "^5.8.1"
   }
 }
