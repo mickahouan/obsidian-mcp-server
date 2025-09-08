@@ -12,15 +12,42 @@ import { BaseErrorCode } from "../types-global/errors.js";
 
 const CreateBaseInputSchema = z
   .object({
-    name: z.string().min(1).describe("Name of the base."),
-    filters: z.record(z.any()).default({}).describe("Filter criteria."),
-    columns: z
+    filePath: z
+      .string()
+      .min(1)
+      .describe("Path of the .base file to create."),
+    name: z
+      .string()
+      .default("View")
+      .describe("Name of the view."),
+    filters: z
       .array(z.string())
-      .nonempty()
-      .describe("Properties to display as columns."),
-    sort: z.string().optional().describe("Field to sort by."),
+      .default([])
+      .describe("Filter expressions."),
+    order: z
+      .array(z.string())
+      .default([])
+      .describe("Order directives."),
+    viewType: z
+      .enum(["table", "cards"])
+      .default("table")
+      .describe("Type de vue."),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Nombre maximal d'entrées."),
+    properties: z
+      .record(z.record(z.any()))
+      .optional()
+      .describe("Configuration des propriétés de la base (ex. displayName)."),
+    formulas: z
+      .record(z.string())
+      .optional()
+      .describe("Formules calculées."),
   })
-  .describe("Creates an Obsidian Base (.base) file with given filters and columns.");
+  .describe("Creates an Obsidian Base (.base) file with a minimal YAML structure.");
 
 export const CreateBaseInputSchemaShape = CreateBaseInputSchema.shape;
 export type CreateBaseInput = z.infer<typeof CreateBaseInputSchema>;
@@ -31,7 +58,7 @@ export async function registerCreateBaseTool(
 ): Promise<void> {
   const toolName = "create-base";
   const toolDescription =
-    "Generates an Obsidian Base (.base) file with specified filters and columns.";
+    "Generates an Obsidian Base (.base) file with specified view and filters.";
 
   const registrationContext: RequestContext =
     requestContextService.createRequestContext({
@@ -52,31 +79,42 @@ export async function registerCreateBaseTool(
           params: CreateBaseInput,
           handlerInvocationContext: any,
         ): Promise<any> => {
+          const args = CreateBaseInputSchema.parse(params);
           const handlerContext: RequestContext =
             requestContextService.createRequestContext({
               operation: "HandleCreateBaseRequest",
               toolName,
-              baseName: params.name,
+              baseName: args.name,
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           return await ErrorHandler.tryCatch(
             async () => {
-              const yamlContent = dump({
-                filters: params.filters,
-                columns: params.columns,
-                ...(params.sort ? { sort: params.sort } : {}),
+              const filtersExpr =
+                args.filters.length === 0
+                  ? undefined
+                  : args.filters.length === 1
+                    ? args.filters[0]
+                    : { and: args.filters };
+
+              const doc: any = {
+                ...(args.properties ? { properties: args.properties } : {}),
+                ...(args.formulas ? { formulas: args.formulas } : {}),
                 views: [
                   {
-                    type: "table",
-                    name: params.name,
+                    type: args.viewType,
+                    name: args.name,
+                    ...(args.limit ? { limit: args.limit } : {}),
+                    ...(filtersExpr ? { filters: filtersExpr } : {}),
+                    ...(args.order.length ? { order: args.order } : {}),
                   },
                 ],
-              });
+              };
 
-              const filePath = `${params.name}.base`;
+              const yamlContent = dump(doc);
+
               await obsidianService.updateFileContent(
-                filePath,
+                args.filePath,
                 yamlContent,
                 handlerContext,
               );
@@ -85,7 +123,7 @@ export async function registerCreateBaseTool(
                 content: [
                   {
                     type: "application/json",
-                    json: { path: filePath },
+                    json: { path: args.filePath },
                   },
                 ],
                 isError: false,

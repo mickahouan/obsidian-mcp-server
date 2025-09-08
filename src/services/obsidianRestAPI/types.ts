@@ -87,6 +87,31 @@ export interface ComplexSearchResult {
 }
 
 /**
+ * Arguments for semantic smart search.
+ */
+export interface SmartSearchArgs {
+  query: string;
+  limit?: number;
+}
+
+/**
+ * A single result from semantic smart search.
+ */
+export interface SmartSearchHit {
+  filePath: string;
+  score: number;
+  snippet?: string;
+  title?: string;
+}
+
+/**
+ * Response payload returned by the smart search endpoint.
+ */
+export interface SmartSearchResponse {
+  results: SmartSearchHit[];
+}
+
+/**
  * Structure for an available Obsidian command.
  */
 export interface ObsidianCommand {
