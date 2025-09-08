@@ -31,6 +31,8 @@ import {
   PatchOptions,
   Period,
   SimpleSearchResult,
+  SmartSearchArgs,
+  SmartSearchResponse,
 } from "./types.js"; // Import types from the new file
 
 export class ObsidianRestApiService {
@@ -351,6 +353,29 @@ export class ObsidianRestApiService {
       this._request.bind(this),
       query,
       contentType,
+      context,
+    );
+  }
+
+  /**
+   * Performs a semantic smart search using the Smart Connections plugin.
+   * @param query - Search query string.
+   * @param limit - Maximum number of results to return.
+   * @param context - Request context.
+   * @returns Smart search results.
+   */
+  async smartSearch(
+    query: string,
+    limit: number | undefined,
+    context: RequestContext,
+  ): Promise<SmartSearchResponse> {
+    const args: SmartSearchArgs = { query };
+    if (typeof limit === "number") {
+      args.limit = limit;
+    }
+    return searchMethods.searchSmart(
+      this._request.bind(this),
+      args,
       context,
     );
   }

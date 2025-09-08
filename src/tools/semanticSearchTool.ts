@@ -9,7 +9,8 @@ import {
   RequestContext,
   requestContextService,
 } from "../utils/index.js";
-import { BaseErrorCode } from "../types-global/errors.js";
+import { BaseErrorCode, McpError } from "../types-global/errors.js";
+import { config } from "../config/index.js";
 
 const SmartSearchInputSchema = z
   .object({
@@ -81,14 +82,43 @@ export async function registerSemanticSearchTool(
 
           return await ErrorHandler.tryCatch(
             async () => {
-              // TODO: Check for Smart Connections plugin and use embedding-based search if available
+              const mode = config.smartSearchMode as
+                | "auto"
+                | "plugin"
+                | "local";
+              const usePlugin = mode === "plugin" || mode === "auto";
+              const useLocal = mode === "local" || mode === "auto";
+
               let method: "semantic" | "lexical" = "lexical";
               let results: SmartSearchResult[] = [];
 
-              if (false) {
-                method = "semantic";
-                // Semantic embedding search placeholder
-              } else {
+              if (usePlugin) {
+                try {
+                  const data = await obsidianService.smartSearch(
+                    params.query,
+                    params.limit,
+                    handlerContext,
+                  );
+                  if (data.results.length > 0) {
+                    method = "semantic";
+                    results = data.results.map((r) => ({
+                      path: r.filePath,
+                      score: r.score,
+                    }));
+                  }
+                } catch (err) {
+                  logger.warning(
+                    "smart-search plugin failed, attempting fallback",
+                    {
+                      ...handlerContext,
+                      error:
+                        err instanceof Error ? err.message : String(err),
+                    },
+                  );
+                }
+              }
+
+              if (results.length === 0 && useLocal) {
                 const cacheEntries = Array.from(
                   vaultCacheService.getCache().entries(),
                 );
@@ -99,6 +129,15 @@ export async function registerSemanticSearchTool(
                 results = rankDocumentsTFIDF(params.query, docs).slice(
                   0,
                   params.limit,
+                );
+                method = "lexical";
+              }
+
+              if (results.length === 0) {
+                throw new McpError(
+                  BaseErrorCode.INTERNAL_ERROR,
+                  "smart-search: no results",
+                  handlerContext,
                 );
               }
 
