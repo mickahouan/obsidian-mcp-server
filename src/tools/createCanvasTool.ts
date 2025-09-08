@@ -82,9 +82,7 @@ export async function registerCreateCanvasTool(
                 ...(node.type === "file" && node.file
                   ? { file: node.file }
                   : {}),
-                ...(node.type === "text"
-                  ? { text: node.text ?? "" }
-                  : {}),
+                ...(node.type === "text" ? { text: node.text ?? "" } : {}),
               }));
 
               const edges = (params.edges ?? []).map((edge) => ({
@@ -135,4 +133,3 @@ export async function registerCreateCanvasTool(
     },
   );
 }
-
