@@ -9,15 +9,12 @@ import {
   RequestContext,
   requestContextService,
 } from "../utils/index.js";
-import { BaseErrorCode, McpError } from "../types-global/errors.js";
+import { BaseErrorCode } from "../types-global/errors.js";
 import { config } from "../config/index.js";
 
 const SmartSearchInputSchema = z
   .object({
-    query: z
-      .string()
-      .min(1)
-      .describe("Search query string."),
+    query: z.string().min(1).describe("Search query string."),
     limit: z
       .number()
       .int()
@@ -111,8 +108,7 @@ export async function registerSemanticSearchTool(
                     "smart-search plugin failed, attempting fallback",
                     {
                       ...handlerContext,
-                      error:
-                        err instanceof Error ? err.message : String(err),
+                      error: err instanceof Error ? err.message : String(err),
                     },
                   );
                 }
@@ -134,9 +130,8 @@ export async function registerSemanticSearchTool(
               }
 
               if (results.length === 0) {
-                throw new McpError(
-                  BaseErrorCode.INTERNAL_ERROR,
-                  "smart-search: no results",
+                logger.debug(
+                  "smart-search returned no results",
                   handlerContext,
                 );
               }
@@ -183,4 +178,3 @@ export async function registerSemanticSearchTool(
     },
   );
 }
-
