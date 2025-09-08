@@ -12,22 +12,10 @@ import { BaseErrorCode } from "../types-global/errors.js";
 
 const CreateBaseInputSchema = z
   .object({
-    filePath: z
-      .string()
-      .min(1)
-      .describe("Path of the .base file to create."),
-    name: z
-      .string()
-      .default("View")
-      .describe("Name of the view."),
-    filters: z
-      .array(z.string())
-      .default([])
-      .describe("Filter expressions."),
-    order: z
-      .array(z.string())
-      .default([])
-      .describe("Order directives."),
+    filePath: z.string().min(1).describe("Path of the .base file to create."),
+    name: z.string().default("View").describe("Name of the view."),
+    filters: z.array(z.string()).default([]).describe("Filter expressions."),
+    order: z.array(z.string()).default([]).describe("Order directives."),
     viewType: z
       .enum(["table", "cards"])
       .default("table")
@@ -42,12 +30,11 @@ const CreateBaseInputSchema = z
       .record(z.record(z.any()))
       .optional()
       .describe("Configuration des propriétés de la base (ex. displayName)."),
-    formulas: z
-      .record(z.string())
-      .optional()
-      .describe("Formules calculées."),
+    formulas: z.record(z.string()).optional().describe("Formules calculées."),
   })
-  .describe("Creates an Obsidian Base (.base) file with a minimal YAML structure.");
+  .describe(
+    "Creates an Obsidian Base (.base) file with a minimal YAML structure.",
+  );
 
 export const CreateBaseInputSchemaShape = CreateBaseInputSchema.shape;
 export type CreateBaseInput = z.infer<typeof CreateBaseInputSchema>;
@@ -151,4 +138,3 @@ export async function registerCreateBaseTool(
     },
   );
 }
-

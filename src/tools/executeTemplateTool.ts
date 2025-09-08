@@ -11,10 +11,7 @@ import { BaseErrorCode, McpError } from "../types-global/errors.js";
 
 const ExecuteTemplateInputSchema = z
   .object({
-    template: z
-      .string()
-      .min(1)
-      .describe("Template name or path."),
+    template: z.string().min(1).describe("Template name or path."),
     variables: z
       .record(z.string())
       .optional()
@@ -107,12 +104,15 @@ export async function registerExecuteTemplateTool(
               }
 
               const vars = params.variables ?? {};
-              const filled = templateContent.replace(/\{\{(.*?)\}\}/g, (_, name) => {
-                const key = name.trim();
-                return Object.prototype.hasOwnProperty.call(vars, key)
-                  ? String(vars[key])
-                  : `{{${key}}}`;
-              });
+              const filled = templateContent.replace(
+                /\{\{(.*?)\}\}/g,
+                (_, name) => {
+                  const key = name.trim();
+                  return Object.prototype.hasOwnProperty.call(vars, key)
+                    ? String(vars[key])
+                    : `{{${key}}}`;
+                },
+              );
 
               if (params.outputPath) {
                 await obsidianService.updateFileContent(
@@ -158,4 +158,3 @@ export async function registerExecuteTemplateTool(
     },
   );
 }
-

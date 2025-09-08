@@ -14,10 +14,7 @@ import { config } from "../config/index.js";
 
 const SmartSearchInputSchema = z
   .object({
-    query: z
-      .string()
-      .min(1)
-      .describe("Search query string."),
+    query: z.string().min(1).describe("Search query string."),
     limit: z
       .number()
       .int()
@@ -111,8 +108,7 @@ export async function registerSemanticSearchTool(
                     "smart-search plugin failed, attempting fallback",
                     {
                       ...handlerContext,
-                      error:
-                        err instanceof Error ? err.message : String(err),
+                      error: err instanceof Error ? err.message : String(err),
                     },
                   );
                 }
@@ -183,4 +179,3 @@ export async function registerSemanticSearchTool(
     },
   );
 }
-
