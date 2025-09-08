@@ -12,17 +12,29 @@ import { BaseErrorCode } from "../types-global/errors.js";
 
 const CanvasNodeSchema = z.object({
   id: z.string().optional(),
-  type: z.enum(["file", "text"]),
+  type: z.enum(["file", "text", "link", "group"]),
   file: z.string().optional(),
   text: z.string().optional(),
+  url: z.string().optional(),
+  label: z.string().optional(),
+  background: z.string().optional(),
+  backgroundStyle: z.enum(["cover", "ratio", "repeat"]).optional(),
   x: z.number().optional(),
   y: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  color: z.string().optional(),
 });
 
 const CanvasEdgeSchema = z.object({
   id: z.string().optional(),
-  from: z.string(),
-  to: z.string(),
+  fromNode: z.string(),
+  toNode: z.string(),
+  fromSide: z.enum(["top", "right", "bottom", "left"]).optional(),
+  toSide: z.enum(["top", "right", "bottom", "left"]).optional(),
+  fromEnd: z.enum(["none", "arrow"]).optional(),
+  toEnd: z.enum(["none", "arrow"]).optional(),
+  color: z.string().optional(),
   label: z.string().optional(),
 });
 
@@ -79,16 +91,34 @@ export async function registerCreateCanvasTool(
                 type: node.type,
                 x: node.x ?? idx * 300,
                 y: node.y ?? 0,
+                width: node.width ?? 200,
+                height: node.height ?? 200,
+                ...(node.color ? { color: node.color } : {}),
                 ...(node.type === "file" && node.file
                   ? { file: node.file }
                   : {}),
                 ...(node.type === "text" ? { text: node.text ?? "" } : {}),
+                ...(node.type === "link" && node.url ? { url: node.url } : {}),
+                ...(node.type === "group"
+                  ? {
+                      ...(node.label ? { label: node.label } : {}),
+                      ...(node.background ? { background: node.background } : {}),
+                      ...(node.backgroundStyle
+                        ? { backgroundStyle: node.backgroundStyle }
+                        : {}),
+                    }
+                  : {}),
               }));
 
               const edges = (params.edges ?? []).map((edge) => ({
                 id: edge.id ?? randomUUID(),
-                from: edge.from,
-                to: edge.to,
+                fromNode: edge.fromNode,
+                toNode: edge.toNode,
+                ...(edge.fromSide ? { fromSide: edge.fromSide } : {}),
+                ...(edge.toSide ? { toSide: edge.toSide } : {}),
+                ...(edge.fromEnd ? { fromEnd: edge.fromEnd } : {}),
+                ...(edge.toEnd ? { toEnd: edge.toEnd } : {}),
+                ...(edge.color ? { color: edge.color } : {}),
                 ...(edge.label ? { label: edge.label } : {}),
               }));
 
