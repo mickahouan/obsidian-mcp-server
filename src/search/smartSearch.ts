@@ -1,6 +1,12 @@
-import type { ObsidianRestApiService, VaultCacheService } from "../services/obsidianRestAPI/index.js";
+import type {
+  ObsidianRestApiService,
+  VaultCacheService,
+} from "../services/obsidianRestAPI/index.js";
 import { rankDocumentsTFIDF } from "../services/search/tfidfFallback.js";
-import { neighborsFromSmartEnv, NeighborResult } from "./providers/smartEnvFiles.js";
+import {
+  neighborsFromSmartEnv,
+  NeighborResult,
+} from "./providers/smartEnvFiles.js";
 import { logger, requestContextService } from "../utils/index.js";
 import { config } from "../config/index.js";
 
@@ -70,7 +76,13 @@ export async function smartSearch(
 
   // 3) lexical fallback
   const cacheEntries = Array.from(vault.getCache().entries());
-  const docs = cacheEntries.map(([p, entry]) => ({ path: p, text: entry.content }));
-  const ranked = rankDocumentsTFIDF(query ?? fromPath ?? "", docs).slice(0, limit);
+  const docs = cacheEntries.map(([p, entry]) => ({
+    path: p,
+    text: entry.content,
+  }));
+  const ranked = rankDocumentsTFIDF(query ?? fromPath ?? "", docs).slice(
+    0,
+    limit,
+  );
   return { method: "lexical", results: ranked };
 }

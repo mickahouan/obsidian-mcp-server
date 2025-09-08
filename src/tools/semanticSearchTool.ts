@@ -12,29 +12,30 @@ import {
 import { BaseErrorCode } from "../types-global/errors.js";
 
 const SmartSearchBaseSchema = z.object({
-    query: z.string().min(1).optional().describe("Search query string."),
-    fromPath: z
-      .string()
-      .min(1)
-      .optional()
-      .describe("Return notes similar to this vault-relative path."),
-    limit: z
-      .number()
-      .int()
-      .positive()
-      .max(50)
-      .optional()
-      .default(5)
-      .describe("Number of top results to return."),
+  query: z.string().min(1).optional().describe("Search query string."),
+  fromPath: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("Return notes similar to this vault-relative path."),
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .max(50)
+    .optional()
+    .default(5)
+    .describe("Number of top results to return."),
 });
 
-const SmartSearchInputSchema = SmartSearchBaseSchema
-  .refine((d) => d.query || d.fromPath, {
+const SmartSearchInputSchema = SmartSearchBaseSchema.refine(
+  (d) => d.query || d.fromPath,
+  {
     message: "Either query or fromPath must be provided",
-  })
-  .describe(
-    "Performs smart search via plugin or smart-env files, with lexical TF-IDF fallback.",
-  );
+  },
+).describe(
+  "Performs smart search via plugin or smart-env files, with lexical TF-IDF fallback.",
+);
 
 export const SmartSearchInputSchemaShape = SmartSearchBaseSchema.shape;
 export type SmartSearchInput = z.infer<typeof SmartSearchInputSchema>;
