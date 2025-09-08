@@ -102,7 +102,9 @@ export async function registerCreateCanvasTool(
                 ...(node.type === "group"
                   ? {
                       ...(node.label ? { label: node.label } : {}),
-                      ...(node.background ? { background: node.background } : {}),
+                      ...(node.background
+                        ? { background: node.background }
+                        : {}),
                       ...(node.backgroundStyle
                         ? { backgroundStyle: node.backgroundStyle }
                         : {}),
