@@ -23,7 +23,7 @@ describe("semanticSearchTool", () => {
     );
     await registerSemanticSearchTool(server, obsidian, vault);
     const res = await server.handler({ query: "hello", limit: 5 }, {});
-    expect(res.content[0].json.method).toBe("semantic");
+    expect(res.content[0].json.method).toBe("plugin");
     expect(res.content[0].json.results[0].path).toBe("A.md");
   });
 
@@ -53,5 +53,28 @@ describe("semanticSearchTool", () => {
     expect(called).toBe(1);
     expect(res.content[0].json.method).toBe("lexical");
     expect(res.content[0].json.results[0].path).toBe("A.md");
+  });
+
+  test("uses smart-env files when mode is files", async () => {
+    process.env.SMART_SEARCH_MODE = "files";
+    jest.resetModules();
+    await jest.unstable_mockModule(
+      "../../dist/search/providers/smartEnvFiles.js",
+      () => ({
+        neighborsFromSmartEnv: jest
+          .fn()
+          .mockResolvedValue([{ path: "B.md", score: 0.5 }]),
+      }),
+    );
+    const obsidian = { smartSearch: jest.fn() };
+    const vault = { getCache: () => new Map() };
+    const server = new MockServer();
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
+    await registerSemanticSearchTool(server, obsidian, vault);
+    const res = await server.handler({ fromPath: "A.md", limit: 5 }, {});
+    expect(res.content[0].json.method).toBe("files");
+    expect(res.content[0].json.results[0].path).toBe("B.md");
   });
 });

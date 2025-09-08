@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ObsidianRestApiService } from "../services/obsidianRestAPI/index.js";
 import type { VaultCacheService } from "../services/obsidianRestAPI/vaultCache/index.js";
-import { rankDocumentsTFIDF } from "../services/search/tfidfFallback.js";
+import { smartSearch } from "../search/index.js";
 import {
   ErrorHandler,
   logger,
@@ -10,11 +10,14 @@ import {
   requestContextService,
 } from "../utils/index.js";
 import { BaseErrorCode } from "../types-global/errors.js";
-import { config } from "../config/index.js";
 
-const SmartSearchInputSchema = z
-  .object({
-    query: z.string().min(1).describe("Search query string."),
+const SmartSearchBaseSchema = z.object({
+    query: z.string().min(1).optional().describe("Search query string."),
+    fromPath: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Return notes similar to this vault-relative path."),
     limit: z
       .number()
       .int()
@@ -23,12 +26,17 @@ const SmartSearchInputSchema = z
       .optional()
       .default(5)
       .describe("Number of top results to return."),
+});
+
+const SmartSearchInputSchema = SmartSearchBaseSchema
+  .refine((d) => d.query || d.fromPath, {
+    message: "Either query or fromPath must be provided",
   })
   .describe(
-    "Performs semantic search using embeddings if available, otherwise TF-IDF fallback.",
+    "Performs smart search via plugin or smart-env files, with lexical TF-IDF fallback.",
   );
 
-export const SmartSearchInputSchemaShape = SmartSearchInputSchema.shape;
+export const SmartSearchInputSchemaShape = SmartSearchBaseSchema.shape;
 export type SmartSearchInput = z.infer<typeof SmartSearchInputSchema>;
 
 interface SmartSearchResult {
@@ -37,7 +45,7 @@ interface SmartSearchResult {
 }
 
 interface SmartSearchResponse {
-  method: "semantic" | "lexical";
+  method: "plugin" | "files" | "lexical";
   results: SmartSearchResult[];
 }
 
@@ -48,7 +56,7 @@ export async function registerSemanticSearchTool(
 ): Promise<void> {
   const toolName = "smart-search";
   const toolDescription =
-    "Semantically searches notes; falls back to lexical TF-IDF if embeddings unavailable.";
+    "Searches notes semantically via plugin or smart-env files with lexical TF-IDF fallback.";
 
   const registrationContext: RequestContext =
     requestContextService.createRequestContext({
@@ -74,60 +82,17 @@ export async function registerSemanticSearchTool(
               operation: "HandleSmartSearchRequest",
               toolName,
               query: params.query,
+              fromPath: params.fromPath,
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           return await ErrorHandler.tryCatch(
             async () => {
-              const mode = config.smartSearchMode as
-                | "auto"
-                | "plugin"
-                | "local";
-              const usePlugin = mode === "plugin" || mode === "auto";
-              const useLocal = mode === "local" || mode === "auto";
-
-              let method: "semantic" | "lexical" = "lexical";
-              let results: SmartSearchResult[] = [];
-
-              if (usePlugin) {
-                try {
-                  const data = await obsidianService.smartSearch(
-                    params.query,
-                    params.limit,
-                    handlerContext,
-                  );
-                  if (data.results.length > 0) {
-                    method = "semantic";
-                    results = data.results.map((r) => ({
-                      path: r.filePath,
-                      score: r.score,
-                    }));
-                  }
-                } catch (err) {
-                  logger.warning(
-                    "smart-search plugin failed, attempting fallback",
-                    {
-                      ...handlerContext,
-                      error: err instanceof Error ? err.message : String(err),
-                    },
-                  );
-                }
-              }
-
-              if (results.length === 0 && useLocal) {
-                const cacheEntries = Array.from(
-                  vaultCacheService.getCache().entries(),
-                );
-                const docs = cacheEntries.map(([path, entry]) => ({
-                  path,
-                  text: entry.content,
-                }));
-                results = rankDocumentsTFIDF(params.query, docs).slice(
-                  0,
-                  params.limit,
-                );
-                method = "lexical";
-              }
+              const { method, results } = await smartSearch(
+                params,
+                obsidianService,
+                vaultCacheService,
+              );
 
               if (results.length === 0) {
                 logger.debug(

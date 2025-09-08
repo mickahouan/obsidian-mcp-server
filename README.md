@@ -43,7 +43,7 @@ obsidian-mcp-optimike --port 27123
 - `read-file <chemin>`
 - `write-file <chemin> --content "..."`
 - `search <requête>`
-- `smart-search <requête>`
+- `smart-search --query <texte>` ou `smart-search --from-path <note.md>`
 - `run-template <template> --vars '{"nom":"Bob"}'`
 - `create-base --file Tasks.base --filters '["tag=task"]' --order '["note.status"]'`
 - `create-canvas --name Graph --nodes '[{"type":"file","file":"A.md"},{"type":"file","file":"B.md"}]' --edges '[{"fromNode":"A","toNode":"B"}]'`
@@ -52,7 +52,10 @@ obsidian-mcp-optimike --port 27123
 
 - **Clé API REST Obsidian** : exporter la variable `OBSIDIAN_API_KEY` issue du plugin Local REST API.
 - **Chemin du vault** : détecté automatiquement, peut être surchargé via les paramètres du serveur.
-- **SMART_SEARCH_MODE** : `auto` (défaut), `plugin` ou `local` pour forcer la stratégie de recherche sémantique.
+- **SMART_SEARCH_MODE** : `auto` (défaut, plugin ➜ files ➜ lexical), `plugin`, `files` ou `lexical`.
+- **SMART_CONNECTIONS_API** : URL du service Smart Connections si disponible.
+- **SMART_ENV_DIR** : chemin vers le dossier `.smart-env` (ex. `F:\\OBSIDIAN\\ÉLYSIA\\.smart-env` sous Windows ou `/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env` sous WSL).
+  En mode `files`, seule la recherche de notes similaires via `fromPath` est possible.
 - L'outil `create-base` produit un YAML minimal centré sur `views:` et peut définir `properties` (objets de configuration comme `displayName`) et `formulas`.
   Pour les détails complets de la syntaxe Bases, voir la documentation officielle :
   [views](https://help.obsidian.md/bases/views), [functions](https://help.obsidian.md/bases/functions), [syntax](https://help.obsidian.md/bases/syntax).
