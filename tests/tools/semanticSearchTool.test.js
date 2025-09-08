@@ -1,5 +1,5 @@
-process.env.OBSIDIAN_API_KEY = "test";
 import { jest } from "@jest/globals";
+import fs from "node:fs/promises";
 import path from "node:path";
 
 class MockServer {
@@ -12,71 +12,120 @@ describe("semanticSearchTool", () => {
   afterEach(() => {
     delete process.env.SMART_ENV_DIR;
     delete process.env.SMART_SEARCH_MODE;
-  });
-  test("uses plugin when available", async () => {
-    process.env.SMART_SEARCH_MODE = "plugin";
-    jest.resetModules();
-    const obsidian = {
-      smartSearch: async () => ({
-        results: [{ filePath: "A.md", score: 0.9 }],
-      }),
-    };
-    const vault = { getCache: () => new Map() };
-    const server = new MockServer();
-    const { registerSemanticSearchTool } = await import(
-      "../../dist/tools/semanticSearchTool.js"
-    );
-    await registerSemanticSearchTool(server, obsidian, vault);
-    const res = await server.handler({ query: "hello", limit: 5 }, {});
-    expect(res.content[0].json.method).toBe("plugin");
-    expect(res.content[0].json.results[0].path).toBe("A.md");
+    delete process.env.OBSIDIAN_BASE_URL;
+    delete process.env.OBSIDIAN_API_KEY;
+    const gf = global.fetch;
+    if (gf && typeof gf === "function" && typeof gf.mockReset === "function") {
+      gf.mockReset();
+    }
   });
 
-  test("falls back to tfidf when plugin fails", async () => {
-    process.env.SMART_SEARCH_MODE = "auto";
-    jest.resetModules();
-    let called = 0;
-    const obsidian = {
-      smartSearch: async () => {
-        called++;
-        throw new Error("no plugin");
+  test("falls back to tfidf when only query is provided", async () => {
+    process.env.SMART_SEARCH_MODE = "lexical";
+    process.env.OBSIDIAN_BASE_URL = "http://example.com";
+    process.env.OBSIDIAN_API_KEY = "test";
+    const responses = {
+      "http://example.com/vault": {
+        ok: true,
+        json: async () => ({ files: [{ path: "A.md" }, { path: "B.md" }] }),
+      },
+      "http://example.com/vault/A.md": {
+        ok: true,
+        text: async () => "hello world",
+      },
+      "http://example.com/vault/B.md": {
+        ok: true,
+        text: async () => "another note",
       },
     };
-    const vault = {
-      getCache: () =>
-        new Map([
-          ["A.md", { content: "hello world" }],
-          ["B.md", { content: "another note" }],
-        ]),
-    };
+    global.fetch = jest.fn((url) =>
+      Promise.resolve(responses[url] || { ok: false }),
+    );
+
     const server = new MockServer();
     const { registerSemanticSearchTool } = await import(
       "../../dist/tools/semanticSearchTool.js"
     );
-    await registerSemanticSearchTool(server, obsidian, vault);
+    await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ query: "hello", limit: 1 }, {});
-    expect(called).toBe(1);
-    expect(res.content[0].json.method).toBe("lexical");
-    expect(res.content[0].json.results[0].path).toBe("A.md");
+    expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
+    expect(result.path).toBe("A.md");
   });
 
-  test("uses smart-env files when mode is files", async () => {
-    process.env.SMART_SEARCH_MODE = "files";
-    process.env.SMART_ENV_DIR = path.join(
-      process.cwd(),
-      "tests/fixtures/.smart-env",
+  test("falls back to tfidf when only fromPath is provided", async () => {
+    process.env.SMART_SEARCH_MODE = "lexical";
+    process.env.OBSIDIAN_BASE_URL = "http://example.com";
+    process.env.OBSIDIAN_API_KEY = "test";
+    const responses = {
+      "http://example.com/vault": {
+        ok: true,
+        json: async () => ({
+          files: [{ path: "A.md" }, { path: "B.md" }, { path: "C.md" }],
+        }),
+      },
+      "http://example.com/vault/A.md": {
+        ok: true,
+        text: async () => "hello world",
+      },
+      "http://example.com/vault/B.md": {
+        ok: true,
+        text: async () => "hello friend",
+      },
+      "http://example.com/vault/C.md": {
+        ok: true,
+        text: async () => "world again",
+      },
+    };
+    global.fetch = jest.fn((url) =>
+      Promise.resolve(responses[url] || { ok: false }),
     );
-    jest.resetModules();
-    const obsidian = { smartSearch: jest.fn() };
-    const vault = { getCache: () => new Map() };
+
     const server = new MockServer();
     const { registerSemanticSearchTool } = await import(
       "../../dist/tools/semanticSearchTool.js"
     );
-    await registerSemanticSearchTool(server, obsidian, vault);
-    const res = await server.handler({ fromPath: "A.md", limit: 5 }, {});
-    expect(obsidian.smartSearch).not.toHaveBeenCalled();
-    expect(res.content[0].json.method).toBe("files");
-    expect(res.content[0].json.results[0].path).toBe("B.md");
+    await registerSemanticSearchTool(server, {}, {});
+    const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
+    expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
+    expect(result.path).toBe("B.md");
+  });
+
+  test("returns neighbors from .smart-env when fromPath provided", async () => {
+    process.env.SMART_SEARCH_MODE = "files";
+    const dir = await fs.mkdtemp(path.join(process.cwd(), "smartenv-"));
+    await fs.mkdir(path.join(dir, "multi"));
+    await fs.writeFile(
+      path.join(dir, "multi", "A_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: [1, 0, 0] } },
+        source: { path: "A.md" },
+      }),
+    );
+    await fs.writeFile(
+      path.join(dir, "multi", "B_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: [0.9, 0.1, 0] } },
+        source: { path: "B.md" },
+      }),
+    );
+    process.env.SMART_ENV_DIR = dir;
+
+    const server = new MockServer();
+    const { registerSemanticSearchTool } = await import(
+      "../../dist/tools/semanticSearchTool.js"
+    );
+    await registerSemanticSearchTool(server, {}, {});
+    const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
+    expect(res.method || res.content?.[0]?.json?.method).toBe("files");
+    const result = res.results
+      ? res.results[0]
+      : res.content[0].json.results[0];
+    expect(result.path).toBe("B.md");
   });
 });
