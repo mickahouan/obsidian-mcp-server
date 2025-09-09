@@ -8,7 +8,6 @@ import {
   toPosix,
   samePathEnd,
 } from "../utils/resolveSmartEnvDir.js";
-import { fetch as undiciFetch } from "undici";
 
 export type SmartSearchInput = {
   query?: string;
@@ -107,9 +106,9 @@ function rankDocumentsTFIDF(
 async function fetchVaultDocs(): Promise<Doc[]> {
   const base = process.env.OBSIDIAN_BASE_URL;
   const key = process.env.OBSIDIAN_API_KEY;
-  if (!base || !key) return [];
+  if (!base || !key || typeof fetch !== "function") return [];
   try {
-    const fetchFn: typeof fetch = (globalThis.fetch ?? undiciFetch) as any;
+    const fetchFn: typeof fetch = fetch;
     const res = await fetchFn(joinUrl(base, "/vault"), {
       headers: { Authorization: `Bearer ${key}` },
     });
