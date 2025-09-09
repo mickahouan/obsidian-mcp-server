@@ -18,7 +18,7 @@ describe("createBaseTool", () => {
     };
     const server = new MockServer();
     const { registerCreateBaseTool } = await import(
-      "../../dist/tools/createBaseTool.js"
+      "../../dist/src/tools/createBaseTool.js"
     );
     await registerCreateBaseTool(server, obsidian);
     await server.handler(
@@ -49,7 +49,7 @@ describe("createBaseTool", () => {
     };
     const server = new MockServer();
     const { registerCreateBaseTool } = await import(
-      "../../dist/tools/createBaseTool.js"
+      "../../dist/src/tools/createBaseTool.js"
     );
     await registerCreateBaseTool(server, obsidian);
     await server.handler({ filePath: "Default.base" }, {});

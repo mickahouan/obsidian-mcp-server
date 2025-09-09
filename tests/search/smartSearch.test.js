@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 test("empty input returns lexical empty", async () => {
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   const res = await smartSearch({});
   expect(res).toEqual({ method: "lexical", results: [] });
 });
@@ -21,7 +21,7 @@ test("empty input returns lexical empty", async () => {
 test("fromPath suffix matches and excludes anchor", async () => {
   jest.resetModules();
   jest.unstable_mockModule(
-    "../../dist/search/providers/smartEnvFiles.js",
+    "../../dist/src/search/providers/smartEnvFiles.js",
     () => ({
       loadSmartEnvVectors: async () => {
         const a = Array(64).fill(0);
@@ -37,7 +37,7 @@ test("fromPath suffix matches and excludes anchor", async () => {
         pool.map((d) => ({ path: d.path, score: 1 })),
     }),
   );
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   process.env.SMART_ENV_DIR = "/tmp";
   const res = await smartSearch({ fromPath: "A.md", limit: 5 });
   expect(res.method).toBe("files");
@@ -55,7 +55,7 @@ test("lexical fallback never throws", async () => {
     }
     return { ok: false };
   });
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   await expect(smartSearch({ query: "foo" })).resolves.toEqual({
     method: "lexical",
     results: [],
