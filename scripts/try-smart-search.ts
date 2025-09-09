@@ -15,4 +15,4 @@ if (!(query || fromPath)) {
   process.exit(2);
 }
 const res = await smartSearch({ query, fromPath, limit });
-console.log(JSON.stringify(res, null, 2));
+process.stdout.write(JSON.stringify(res, null, 2) + "\n");

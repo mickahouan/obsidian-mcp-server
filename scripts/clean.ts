@@ -64,7 +64,7 @@ const clean = async (): Promise<void> => {
       dirsToClean = args;
     }
 
-    console.log(`Attempting to clean directories: ${dirsToClean.join(", ")}`);
+    console.error(`Attempting to clean directories: ${dirsToClean.join(", ")}`);
 
     const results = await Promise.allSettled(
       dirsToClean.map(async (dir): Promise<CleanResult> => {
@@ -90,9 +90,9 @@ const clean = async (): Promise<void> => {
       if (result.status === "fulfilled") {
         const { dir, status, reason } = result.value;
         if (status === "success") {
-          console.log(`Successfully cleaned directory: ${dir}`);
+          console.error(`Successfully cleaned directory: ${dir}`);
         } else {
-          console.log(`Skipped cleaning directory ${dir}: ${reason}.`);
+          console.error(`Skipped cleaning directory ${dir}: ${reason}.`);
         }
       } else {
         // The error here is the actual error object from the rejected promise
