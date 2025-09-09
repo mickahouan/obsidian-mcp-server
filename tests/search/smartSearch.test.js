@@ -15,7 +15,12 @@ afterEach(() => {
 test("empty input returns lexical empty", async () => {
   const { smartSearch } = await import("../../dist/search/smartSearch.js");
   const res = await smartSearch({});
-  expect(res).toEqual({ method: "lexical", results: [] });
+  expect(res.method).toBe("lexical");
+  expect(res.results).toEqual([]);
+  expect(res.encoder).toBe("tfidf");
+  expect(res.dim).toBe(0);
+  expect(res.poolSize).toBe(0);
+  expect(typeof res.tookMs).toBe("number");
 });
 
 test("fromPath suffix matches and excludes anchor", async () => {
@@ -43,6 +48,9 @@ test("fromPath suffix matches and excludes anchor", async () => {
   expect(res.method).toBe("files");
   expect(res.results.some((r) => r.path.endsWith("A.md"))).toBe(false);
   expect(res.results[0].path).toBe("dir/B.md");
+  expect(res.encoder).toBe(".smart-env");
+  expect(res.poolSize).toBe(1);
+  expect(typeof res.tookMs).toBe("number");
 });
 
 test("lexical fallback never throws", async () => {
@@ -56,8 +64,10 @@ test("lexical fallback never throws", async () => {
     return { ok: false };
   });
   const { smartSearch } = await import("../../dist/search/smartSearch.js");
-  await expect(smartSearch({ query: "foo" })).resolves.toEqual({
-    method: "lexical",
-    results: [],
-  });
+  const out = await smartSearch({ query: "foo" });
+  expect(out.method).toBe("lexical");
+  expect(out.results).toEqual([]);
+  expect(out.encoder).toBe("tfidf");
+  expect(out.poolSize).toBe(0);
+  expect(typeof out.tookMs).toBe("number");
 });

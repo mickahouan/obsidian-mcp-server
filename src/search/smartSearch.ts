@@ -8,6 +8,7 @@ import {
   toPosix,
   samePathEnd,
 } from "../utils/resolveSmartEnvDir.js";
+import { obsidianPluginSmart } from "./obsidianPluginSmart.js";
 
 export type SmartSearchInput = {
   query?: string;
@@ -17,14 +18,11 @@ export type SmartSearchInput = {
 export type SmartSearchOutput = {
   method: "plugin" | "files" | "lexical";
   results: { path: string; score: number }[];
+  encoder: string;
+  dim: number;
+  poolSize: number;
+  tookMs: number;
 };
-
-// ---- passerelle plugin optionnelle (aucune API officielle pour l’instant) ----
-async function viaPlugin(
-  _input: SmartSearchInput,
-): Promise<SmartSearchOutput | null> {
-  return null;
-}
 
 // ---- encodage local de requête (xenova) ----
 let _pipePromise: Promise<any> | null = null;
@@ -145,72 +143,105 @@ function joinUrl(base: string, p: string) {
 export async function smartSearch(
   input: SmartSearchInput,
 ): Promise<SmartSearchOutput> {
+  const startAll = Date.now();
   const query = (input.query ?? "").trim();
   const fromPath = input.fromPath?.trim();
   const limit = Math.max(1, Math.min(100, input.limit ?? 10));
-  const wantQuery = !!query;
-  const wantNeighbors = !!fromPath;
+  const mode = (process.env.SMART_SEARCH_MODE ?? "auto").toLowerCase();
 
-  // 1) mode plugin (noop)
-  try {
-    if (
-      process.env.SMART_SEARCH_MODE === "plugin" &&
-      process.env.SMART_CONNECTIONS_API
-    ) {
-      const via = await viaPlugin({
-        query,
+  // 1) plugin
+  if (["plugin", "auto"].includes(mode)) {
+    try {
+      const via = await obsidianPluginSmart({
+        query: query || undefined,
         fromPath: fromPath || undefined,
         limit,
       });
-      if (via?.results?.length)
-        return { method: "plugin", results: via.results };
+      if (via?.results?.length) return via;
+    } catch {
+      /* ignore */
     }
-  } catch {
-    // on avale l’erreur
   }
 
   // 2) fichiers (.smart-env)
-  try {
-    const envRoot = resolveSmartEnvDir();
-    if (envRoot) {
-      const vecs = await loadSmartEnvVectors();
-      if (vecs.length) {
-        if (wantNeighbors) {
-          const target = toPosix(fromPath!);
-          const anchorEntry =
-            vecs.find((v) => samePathEnd(v.path, target)) ??
-            vecs.find((v) => v.path === target);
-          const anchor = anchorEntry?.vec;
-          if (anchor) {
-            const pool = vecs.filter((v: NoteVec) => v !== anchorEntry);
-            const results = cosineTopK(anchor, pool, limit);
-            return { method: "files", results };
+  if (mode !== "lexical") {
+    try {
+      const envRoot = resolveSmartEnvDir();
+      if (envRoot) {
+        const vecs = await loadSmartEnvVectors();
+        if (vecs.length) {
+          if (fromPath) {
+            const t = Date.now();
+            const target = toPosix(fromPath);
+            const anchorEntry =
+              vecs.find((v) => samePathEnd(v.path, target)) ??
+              vecs.find((v) => v.path === target);
+            const anchor = anchorEntry?.vec;
+            if (anchor) {
+              const pool = vecs.filter((v: NoteVec) => v !== anchorEntry);
+              const results = cosineTopK(anchor, pool, limit);
+              return {
+                method: "files",
+                results,
+                encoder: ".smart-env",
+                dim: anchor.length,
+                poolSize: pool.length,
+                tookMs: Date.now() - t,
+              };
+            }
+          }
+          if (query && canEncodeQueryLocally()) {
+            const t = Date.now();
+            const qVec = await encodeQuery384(query);
+            const results = cosineTopK(qVec, vecs, limit);
+            return {
+              method: "files",
+              results,
+              encoder: "xenova",
+              dim: qVec.length,
+              poolSize: vecs.length,
+              tookMs: Date.now() - t,
+            };
           }
         }
-        if (wantQuery && canEncodeQueryLocally()) {
-          const qVec = await encodeQuery384(query);
-          const results = cosineTopK(qVec, vecs, limit);
-          return { method: "files", results };
-        }
       }
+    } catch {
+      /* ignore */
     }
-  } catch {
-    // on avale l’erreur
   }
 
   // 3) fallback lexical TF‑IDF
-  if (wantQuery || wantNeighbors) {
-    const docs = await fetchVaultDocs();
-    let lexicalQuery = query;
-    if (!lexicalQuery && wantNeighbors) {
-      lexicalQuery =
-        docs.find((d) => samePathEnd(d.path, fromPath!))?.text || fromPath!;
+  try {
+    if (query || fromPath) {
+      const t = Date.now();
+      const docs = await fetchVaultDocs();
+      let lexicalQuery = query;
+      if (!lexicalQuery && fromPath) {
+        lexicalQuery =
+          docs.find((d) => samePathEnd(d.path, fromPath))?.text || fromPath;
+      }
+      const results = rankDocumentsTFIDF(lexicalQuery, docs)
+        .filter((r) => !samePathEnd(r.path, fromPath || ""))
+        .slice(0, limit);
+      return {
+        method: "lexical",
+        results,
+        encoder: "tfidf",
+        dim: 0,
+        poolSize: docs.length,
+        tookMs: Date.now() - t,
+      };
     }
-    const results = rankDocumentsTFIDF(lexicalQuery, docs)
-      .filter((r) => !samePathEnd(r.path, fromPath || ""))
-      .slice(0, limit);
-    return { method: "lexical", results };
+  } catch {
+    /* ignore */
   }
 
-  return { method: "lexical", results: [] };
+  return {
+    method: "lexical",
+    results: [],
+    encoder: "tfidf",
+    dim: 0,
+    poolSize: 0,
+    tookMs: Date.now() - startAll,
+  };
 }
