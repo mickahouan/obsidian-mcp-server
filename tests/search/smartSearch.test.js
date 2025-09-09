@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 test("empty input returns lexical empty", async () => {
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   const res = await smartSearch({});
   expect(res.method).toBe("lexical");
   expect(res.results).toEqual([]);
@@ -27,7 +27,7 @@ test("empty input returns lexical empty", async () => {
 test("fromPath suffix matches and excludes anchor", async () => {
   jest.resetModules();
   jest.unstable_mockModule(
-    "../../dist/search/providers/smartEnvFiles.js",
+    "../../dist/src/search/providers/smartEnvFiles.js",
     () => ({
       loadSmartEnvVectors: async () => {
         const a = Array(64).fill(0);
@@ -43,7 +43,7 @@ test("fromPath suffix matches and excludes anchor", async () => {
         pool.map((d) => ({ path: d.path, score: 1 })),
     }),
   );
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   process.env.SMART_ENV_DIR = "/tmp";
   const res = await smartSearch({ fromPath: "A.md", limit: 5 });
   expect(res.method).toBe("files");
@@ -64,7 +64,7 @@ test("lexical fallback never throws", async () => {
     }
     return { ok: false };
   });
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   const out = await smartSearch({ query: "foo" });
   expect(out.method).toBe("lexical");
   expect(out.results).toEqual([]);
@@ -75,11 +75,9 @@ test("lexical fallback never throws", async () => {
 
 test("plugin success returns plugin results", async () => {
   process.env.SMART_SEARCH_MODE = "plugin";
-  process.env.SMART_CONNECTIONS_API = "1";
-  process.env.OBSIDIAN_BASE_URL = "http://x";
-  process.env.OBSIDIAN_API_KEY = "y";
+  process.env.SMART_CONNECTIONS_API = "http://x";
   global.fetch = jest.fn(async (url) => {
-    if (url === "http://x/search/smart") {
+    if (url.startsWith("http://x/search")) {
       return {
         ok: true,
         json: async () => ({ results: [{ path: "Note.md", score: 0.5 }] }),
@@ -87,7 +85,7 @@ test("plugin success returns plugin results", async () => {
     }
     return { ok: true, json: async () => ({ files: [] }) };
   });
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   const res = await smartSearch({ query: "hello" });
   expect(res.method).toBe("plugin");
   expect(res.results).toEqual([{ path: "Note.md", score: 0.5 }]);
@@ -98,14 +96,16 @@ test.each([401, 403, 404])(
   "plugin %s triggers lexical fallback",
   async (status) => {
     process.env.SMART_SEARCH_MODE = "plugin";
-    process.env.SMART_CONNECTIONS_API = "1";
+    process.env.SMART_CONNECTIONS_API = "http://x";
     process.env.OBSIDIAN_BASE_URL = "http://x";
     process.env.OBSIDIAN_API_KEY = "y";
     global.fetch = jest
       .fn()
       .mockResolvedValueOnce({ status })
       .mockResolvedValue({ ok: true, json: async () => ({ files: [] }) });
-    const { smartSearch } = await import("../../dist/search/smartSearch.js");
+    const { smartSearch } = await import(
+      "../../dist/src/search/smartSearch.js"
+    );
     const res = await smartSearch({ query: "hello" });
     expect(res.method).toBe("lexical");
     expect(global.fetch).toHaveBeenCalledTimes(2);
@@ -114,7 +114,7 @@ test.each([401, 403, 404])(
 
 test("plugin 5xx retries then falls back", async () => {
   process.env.SMART_SEARCH_MODE = "plugin";
-  process.env.SMART_CONNECTIONS_API = "1";
+  process.env.SMART_CONNECTIONS_API = "http://x";
   process.env.OBSIDIAN_BASE_URL = "http://x";
   process.env.OBSIDIAN_API_KEY = "y";
   global.fetch = jest
@@ -123,21 +123,21 @@ test("plugin 5xx retries then falls back", async () => {
     .mockResolvedValueOnce({ status: 502 })
     .mockResolvedValueOnce({ status: 503 })
     .mockResolvedValue({ ok: true, json: async () => ({ files: [] }) });
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   const res = await smartSearch({ query: "hello" });
   expect(res.method).toBe("lexical");
-  expect(global.fetch).toHaveBeenCalledTimes(4);
+  expect(global.fetch).toHaveBeenCalledTimes(2);
 });
 
 test("plugin timeout falls back to lexical", async () => {
   jest.useFakeTimers();
   process.env.SMART_SEARCH_MODE = "plugin";
-  process.env.SMART_CONNECTIONS_API = "1";
+  process.env.SMART_CONNECTIONS_API = "http://x";
   process.env.OBSIDIAN_BASE_URL = "http://x";
   process.env.OBSIDIAN_API_KEY = "y";
   let call = 0;
   global.fetch = jest.fn((url, opts) => {
-    if (url === "http://x/search/smart") {
+    if (url.startsWith("http://x/search")) {
       call++;
       return new Promise((_resolve, reject) => {
         opts.signal.addEventListener("abort", () => {
@@ -150,7 +150,7 @@ test("plugin timeout falls back to lexical", async () => {
     }
     return Promise.resolve({ ok: true, json: async () => ({ files: [] }) });
   });
-  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
   const p = smartSearch({ query: "hello" });
   jest.advanceTimersByTime(15000);
   await Promise.resolve();
@@ -159,6 +159,7 @@ test("plugin timeout falls back to lexical", async () => {
   jest.advanceTimersByTime(15000);
   const res = await p;
   expect(res.method).toBe("lexical");
-  expect(global.fetch).toHaveBeenCalledTimes(4);
+  expect(global.fetch).toHaveBeenCalledTimes(2);
+  expect(call).toBe(1);
   jest.useRealTimers();
 });
