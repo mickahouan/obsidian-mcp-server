@@ -76,7 +76,12 @@ function extractFromObject(
       if (!rec || typeof rec !== "object") continue;
       for (const [k, v] of Object.entries(rec)) {
         const key = k.toLowerCase();
-        if (key === "vec" || key === "vector" || key === "embedding") {
+        if (
+          key === "vec" ||
+          key === "vector" ||
+          key === "embedding" ||
+          key === "values"
+        ) {
           if (isNumArray(v)) {
             vec = v;
             break;
@@ -97,7 +102,10 @@ function extractFromObject(
     seen.add(cur);
     for (const [k, v] of Object.entries(cur)) {
       if (typeof v === "object") q.push(v as any);
-      if (!vec && ["vec", "vector", "embedding"].includes(k.toLowerCase())) {
+      if (
+        !vec &&
+        ["vec", "vector", "embedding", "values"].includes(k.toLowerCase())
+      ) {
         if (isNumArray(v)) vec = v as number[];
       }
       if (
