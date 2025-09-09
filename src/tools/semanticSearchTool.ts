@@ -4,7 +4,7 @@ import { smartSearch } from "../search/smartSearch.js";
 export type Input = { query?: string; fromPath?: string; limit?: number };
 export type Output = {
   method: "plugin" | "files" | "lexical";
-  results: { path: string; score: number }[];
+  results: { path: string; score?: number; preview?: string }[];
 };
 
 const tool = {
