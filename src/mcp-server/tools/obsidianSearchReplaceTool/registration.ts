@@ -14,12 +14,12 @@ import {
 import type {
   ObsidianSearchReplaceRegistrationInput,
   ObsidianSearchReplaceResponse,
-} from "./logic.js";
+} from "./logic";
 import {
   ObsidianSearchReplaceInputSchema,
   ObsidianSearchReplaceInputSchemaShape,
   processObsidianSearchReplace,
-} from "./logic.js";
+} from "./logic";
 
 /**
  * Registers the 'obsidian_search_replace' tool with the MCP server.

@@ -1,1 +1,1 @@
-export * from "./tokenCounter.js";
+export * from "./tokenCounter";

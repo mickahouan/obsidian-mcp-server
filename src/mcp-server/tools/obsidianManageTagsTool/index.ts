@@ -1,9 +1,9 @@
 export {
   ObsidianManageTagsInputSchemaShape,
   processObsidianManageTags,
-} from "./logic.js";
+} from "./logic";
 export type {
   ObsidianManageTagsInput,
   ObsidianManageTagsResponse,
-} from "./logic.js";
-export { registerObsidianManageTagsTool } from "./registration.js";
+} from "./logic";
+export { registerObsidianManageTagsTool } from "./registration";

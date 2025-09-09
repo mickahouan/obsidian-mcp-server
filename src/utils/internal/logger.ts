@@ -8,7 +8,7 @@ import path from "path";
 import winston from "winston";
 import TransportStream from "winston-transport";
 import { config } from "../../config/index.js";
-import { RequestContext } from "./requestContext.js";
+import { RequestContext } from "./requestContext";
 
 /**
  * Defines the supported logging levels based on RFC 5424 Syslog severity levels,

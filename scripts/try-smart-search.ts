@@ -1,4 +1,4 @@
-import { smartSearch } from "../src/search/smartSearch.ts";
+import { smartSearch } from "../src/search/smartSearch.js";
 
 const args = process.argv.slice(2);
 function getArg(name: string) {

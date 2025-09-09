@@ -36,8 +36,8 @@ import {
   jwtAuthMiddleware,
   oauthMiddleware,
   type AuthInfo,
-} from "./auth/index.js";
-import { httpErrorHandler } from "./httpErrorHandler.js";
+} from "./auth/index";
+import { httpErrorHandler } from "./httpErrorHandler";
 
 const HTTP_PORT = config.mcpHttpPort;
 const HTTP_HOST = config.mcpHttpHost;

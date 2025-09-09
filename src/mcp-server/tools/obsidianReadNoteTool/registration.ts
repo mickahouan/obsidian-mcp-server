@@ -11,11 +11,11 @@ import {
 import type {
   ObsidianReadNoteInput,
   ObsidianReadNoteResponse,
-} from "./logic.js";
+} from "./logic";
 import {
   ObsidianReadNoteInputSchema,
   processObsidianReadNote,
-} from "./logic.js";
+} from "./logic";
 
 /**
  * Registers the 'obsidian_read_note' tool with the MCP server.

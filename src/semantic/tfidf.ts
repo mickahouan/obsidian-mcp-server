@@ -1,4 +1,4 @@
-import { cosineSimilarity } from "./cosineSimilarity.js";
+import { cosineSimilarity } from "./cosineSimilarity";
 
 export interface TfIdfDoc {
   id: string;

@@ -3,7 +3,7 @@ import {
   embeddingSearch,
   EmbeddedDocument,
   ScoredEmbedding,
-} from "./embeddingSearch.js";
+} from "./embeddingSearch";
 
 export interface Result {
   id: string;

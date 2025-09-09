@@ -4,8 +4,8 @@
  * @module src/utils/internal/asyncUtils
  */
 import { McpError, BaseErrorCode } from "../../types-global/errors.js";
-import { logger } from "./logger.js";
-import { RequestContext } from "./requestContext.js";
+import { logger } from "./logger";
+import { RequestContext } from "./requestContext";
 
 /**
  * Configuration for the {@link retryWithDelay} function, defining how retries are handled.

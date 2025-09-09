@@ -25,14 +25,14 @@ import { ObsidianRestApiService } from "../services/obsidianRestAPI/index.js";
 // Import the Vault Cache service
 import { VaultCacheService } from "../services/obsidianRestAPI/vaultCache/index.js";
 // Import registration functions for specific resources and tools.
-import { registerObsidianDeleteNoteTool } from "./tools/obsidianDeleteNoteTool/index.js";
-import { registerObsidianGlobalSearchTool } from "./tools/obsidianGlobalSearchTool/index.js";
-import { registerObsidianListNotesTool } from "./tools/obsidianListNotesTool/index.js";
-import { registerObsidianReadNoteTool } from "./tools/obsidianReadNoteTool/index.js";
-import { registerObsidianSearchReplaceTool } from "./tools/obsidianSearchReplaceTool/index.js";
-import { registerObsidianUpdateNoteTool } from "./tools/obsidianUpdateNoteTool/index.js";
-import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFrontmatterTool/index.js";
-import { registerObsidianManageTagsTool } from "./tools/obsidianManageTagsTool/index.js";
+import { registerObsidianDeleteNoteTool } from "./tools/obsidianDeleteNoteTool/index";
+import { registerObsidianGlobalSearchTool } from "./tools/obsidianGlobalSearchTool/index";
+import { registerObsidianListNotesTool } from "./tools/obsidianListNotesTool/index";
+import { registerObsidianReadNoteTool } from "./tools/obsidianReadNoteTool/index";
+import { registerObsidianSearchReplaceTool } from "./tools/obsidianSearchReplaceTool/index";
+import { registerObsidianUpdateNoteTool } from "./tools/obsidianUpdateNoteTool/index";
+import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFrontmatterTool/index";
+import { registerObsidianManageTagsTool } from "./tools/obsidianManageTagsTool/index";
 import {
   registerSemanticSearchTool,
   registerExecuteTemplateTool,
@@ -40,8 +40,8 @@ import {
   registerCreateCanvasTool,
 } from "../tools/index.js";
 // Import transport setup functions.
-import { startHttpTransport } from "./transports/httpTransport.js";
-import { connectStdioTransport } from "./transports/stdioTransport.js";
+import { startHttpTransport } from "./transports/httpTransport";
+import { connectStdioTransport } from "./transports/stdioTransport";
 
 /**
  * Creates and configures a new instance of the `McpServer`.

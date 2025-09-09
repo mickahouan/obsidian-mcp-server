@@ -1,4 +1,4 @@
 /**
  * Barrel file for the VaultCacheService.
  */
-export * from "./service.js";
+export * from "./service";

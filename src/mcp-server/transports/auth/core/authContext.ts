@@ -9,7 +9,7 @@
  */
 
 import { AsyncLocalStorage } from "async_hooks";
-import type { AuthInfo } from "./authTypes.js";
+import type { AuthInfo } from "./authTypes";
 
 /**
  * Defines the structure of the store used within the AsyncLocalStorage.

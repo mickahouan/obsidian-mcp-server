@@ -14,13 +14,13 @@ import {
 import type {
   ObsidianUpdateNoteRegistrationInput,
   ObsidianUpdateNoteResponse,
-} from "./logic.js";
+} from "./logic";
 // Import the Zod schema for validation and the core processing logic
 import {
   ObsidianUpdateNoteInputSchema,
   ObsidianUpdateNoteInputSchemaShape,
   processObsidianUpdateNote,
-} from "./logic.js";
+} from "./logic";
 
 /**
  * Registers the 'obsidian_update_note' tool with the MCP server.

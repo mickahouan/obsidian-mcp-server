@@ -13,12 +13,12 @@ import {
 import type {
   ObsidianManageTagsInput,
   ObsidianManageTagsResponse,
-} from "./logic.js";
+} from "./logic";
 import {
   ManageTagsInputSchema,
   ObsidianManageTagsInputSchemaShape,
   processObsidianManageTags,
-} from "./logic.js";
+} from "./logic";
 
 export const registerObsidianManageTagsTool = async (
   server: McpServer,

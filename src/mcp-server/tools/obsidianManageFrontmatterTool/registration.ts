@@ -13,12 +13,12 @@ import {
 import type {
   ObsidianManageFrontmatterInput,
   ObsidianManageFrontmatterResponse,
-} from "./logic.js";
+} from "./logic";
 import {
   ManageFrontmatterInputSchema,
   ObsidianManageFrontmatterInputSchemaShape,
   processObsidianManageFrontmatter,
-} from "./logic.js";
+} from "./logic";
 
 export const registerObsidianManageFrontmatterTool = async (
   server: McpServer,
