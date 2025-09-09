@@ -1,4 +1,4 @@
-import { loadSmartEnvVectors } from "../src/search/providers/smartEnvFiles.ts";
+import { loadSmartEnvVectors } from "../src/search/providers/smartEnvFiles.js";
 
 const vecs = await loadSmartEnvVectors();
 console.log("vecCount =", vecs.length);

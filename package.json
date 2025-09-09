@@ -2,7 +2,7 @@
   "name": "obsidian-mcp-optimike",
   "version": "0.1.0",
   "description": "Obsidian Knowledge-Management MCP (Model Context Protocol) server that enables AI agents and development tools to interact with an Obsidian vault. It provides a comprehensive suite of tools for reading, writing, searching, and managing notes, tags, and frontmatter, acting as a bridge to the Obsidian Local REST API plugin.",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "files": [
     "dist",
     "README.md",
@@ -10,7 +10,7 @@
     "CHANGELOG.md"
   ],
   "bin": {
-    "obsidian-mcp-server": "dist/index.js"
+    "obsidian-mcp-server": "dist/src/index.js"
   },
   "type": "module",
   "repository": {
@@ -22,12 +22,12 @@
   },
   "homepage": "https://github.com/cyanheads/obsidian-mcp-server#readme",
   "scripts": {
-    "build": "tsc && node --loader ts-node/esm scripts/make-executable.ts dist/index.js",
+    "build": "tsc && node --loader ts-node/esm scripts/make-executable.ts dist/src/index.js",
     "test": "npm run build && node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "prettier --check \"**/*.{ts,js,json,md,html,css}\"",
-    "start": "node dist/index.js",
-    "start:stdio": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=stdio node dist/index.js",
-    "start:http": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=http node dist/index.js",
+    "start": "node dist/src/index.js",
+    "start:stdio": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=stdio node dist/src/index.js",
+    "start:http": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=http node dist/src/index.js",
     "rebuild": "npx ts-node --esm scripts/clean.ts && npm run build",
     "fetch:spec": "npx ts-node --esm scripts/fetch-openapi-spec.ts",
     "docs:generate": "typedoc --tsconfig ./tsconfig.typedoc.json",
@@ -36,7 +36,7 @@
     "inspect": "mcp-inspector --config mcp.json",
     "inspect:stdio": "mcp-inspector --config mcp.json --server obsidian-mcp-server-stdio",
     "inspect:http": "mcp-inspector --config mcp.json --server obsidian-mcp-server-http",
-    "pkg:all": "pkg dist/index.js --targets node20-linux-x64,node20-win-x64,node20-macos-x64 --out-path release"
+    "pkg:all": "pkg dist/src/index.js --targets node20-linux-x64,node20-win-x64,node20-macos-x64 --out-path release"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.4",

@@ -23,7 +23,7 @@ describe("executeTemplateTool", () => {
     };
     const server = new MockServer();
     const { registerExecuteTemplateTool } = await import(
-      "../../dist/tools/executeTemplateTool.js"
+      "../../dist/src/tools/executeTemplateTool.js"
     );
     await registerExecuteTemplateTool(server, obsidian);
     const res = await server.handler(
@@ -42,7 +42,7 @@ describe("executeTemplateTool", () => {
     };
     const server = new MockServer();
     const { registerExecuteTemplateTool } = await import(
-      "../../dist/tools/executeTemplateTool.js"
+      "../../dist/src/tools/executeTemplateTool.js"
     );
     await registerExecuteTemplateTool(server, obsidian);
     await expect(server.handler({ template: "missing" }, {})).rejects.toThrow(

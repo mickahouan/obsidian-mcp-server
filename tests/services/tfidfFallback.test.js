@@ -1,4 +1,4 @@
-import { rankDocumentsTFIDF } from "../../dist/services/search/tfidfFallback.js";
+import { rankDocumentsTFIDF } from "../../dist/src/services/search/tfidfFallback.js";
 
 describe("rankDocumentsTFIDF", () => {
   test("returns most relevant doc", () => {
