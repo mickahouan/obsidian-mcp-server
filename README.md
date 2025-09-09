@@ -98,7 +98,7 @@ node --loader ts-node/esm scripts/try-smart-search.ts --fromPath "Chemin/Note.md
 node --loader ts-node/esm scripts/try-smart-search.ts --query "diagnostic mcp obsidian" --limit 10
 
 # 4) Activer encodeur 384‑d (xenova)
-npm i -S @xenova/transformers onnxruntime-node
+npm i -S onnxruntime-node # optionnel, accélère l'encodage
 export ENABLE_QUERY_EMBEDDING=true
 export QUERY_EMBEDDER=xenova
 node --loader ts-node/esm scripts/try-smart-search.ts --query "diagnostic mcp obsidian" --limit 10
