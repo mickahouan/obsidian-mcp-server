@@ -1,41 +1,41 @@
 import { toPosix } from "../../utils/resolveSmartEnvDir.js";
 
-export type PluginSmartInput = {
-  query?: string;
-  fromPath?: string;
-  limit?: number;
-};
 export type PluginSmartResult = {
   path: string;
-  score?: number;
+  score: number;
   preview?: string;
 };
 export type PluginSmartResponse = {
   results: PluginSmartResult[];
 };
 
-const PLUGIN_TIMEOUT_MS = 15000;
-const PLUGIN_RETRIES = 2;
+function timeoutMs(): number {
+  const v = Number(process.env.PLUGIN_TIMEOUT_MS ?? "15000");
+  return isFinite(v) && v > 0 ? Math.floor(v) : 15000;
+}
 
-export async function obsidianPluginSmart(
-  input: PluginSmartInput,
+function retries(): number {
+  const v = Number(process.env.PLUGIN_RETRIES ?? "2");
+  return isFinite(v) && v >= 0 ? Math.floor(v) : 2;
+}
+
+export async function pluginSmartSearch(
+  query: string,
+  limit: number,
 ): Promise<PluginSmartResponse | null> {
   const base = process.env.OBSIDIAN_BASE_URL;
   const key = process.env.OBSIDIAN_API_KEY;
   if (!base || !key || typeof fetch !== "function") return null;
 
   const url = `${base.replace(/\/+$/, "")}/search/smart`;
-  const payload: any = {
-    query: input.query ?? undefined,
-    fromPath: input.fromPath ?? undefined,
-    limit: input.limit ?? undefined,
-  };
+  const payload = { query, limit };
 
   const fetchFn: typeof fetch = fetch;
   let lastErr: any = null;
-  for (let attempt = 0; attempt <= PLUGIN_RETRIES; attempt++) {
+  const maxAttempts = retries();
+  for (let attempt = 0; attempt <= maxAttempts; attempt++) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), PLUGIN_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs());
     try {
       const res = await fetchFn(url, {
         method: "POST",
@@ -52,7 +52,7 @@ export async function obsidianPluginSmart(
         return null;
 
       if (res.status >= 500 && res.status < 600) {
-        if (attempt < PLUGIN_RETRIES) continue;
+        if (attempt < maxAttempts) continue;
         throw new Error(`HTTP ${res.status}`);
       }
 
@@ -67,7 +67,7 @@ export async function obsidianPluginSmart(
       const results = raw
         .map((r: any) => ({
           path: typeof r?.path === "string" ? toPosix(r.path) : null,
-          score: typeof r?.score === "number" ? r.score : undefined,
+          score: typeof r?.score === "number" ? r.score : 0,
           preview: typeof r?.preview === "string" ? r.preview : undefined,
         }))
         .filter((r: any) => r.path);
@@ -75,7 +75,7 @@ export async function obsidianPluginSmart(
     } catch (err) {
       clearTimeout(timer);
       lastErr = err;
-      if (attempt >= PLUGIN_RETRIES) throw err;
+      if (attempt >= maxAttempts) throw err;
     }
   }
   if (lastErr) throw lastErr;

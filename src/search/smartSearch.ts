@@ -1,14 +1,6 @@
-import {
-  loadSmartEnvVectors,
-  cosineTopK,
-  NoteVec,
-} from "./providers/smartEnvFiles.js";
-import {
-  resolveSmartEnvDir,
-  toPosix,
-  samePathEnd,
-} from "../utils/resolveSmartEnvDir.js";
-import { obsidianPluginSmart } from "./obsidianPluginSmart.js";
+import { loadSmartEnvVectors, cosineTopK, NoteVec } from "./providers/smartEnvFiles.js";
+import { resolveSmartEnvDir, toPosix, samePathEnd } from "../utils/resolveSmartEnvDir.js";
+import { pluginSmartSearch } from "./providers/obsidianPluginSmart.js";
 
 export type SmartSearchInput = {
   query?: string;
@@ -17,189 +9,110 @@ export type SmartSearchInput = {
 };
 export type SmartSearchOutput = {
   method: "plugin" | "files" | "lexical";
-  results: { path: string; score: number }[];
+  results: { path: string; score: number; preview?: string }[];
   encoder: string;
   dim: number;
   poolSize: number;
   tookMs: number;
 };
 
-// ---- encodage local de requête (xenova) ----
-let _pipePromise: Promise<any> | null = null;
-
-function canEncodeQueryLocally(): boolean {
-  return (
-    process.env.ENABLE_QUERY_EMBEDDING === "true" &&
-    (process.env.QUERY_EMBEDDER ?? "xenova").toLowerCase() === "xenova"
-  );
-}
-
-async function getXenovaPipe() {
-  if (_pipePromise) return _pipePromise;
-  _pipePromise = (async () => {
-    const t: any = await import("@xenova/transformers");
-    const pipe = await t.pipeline(
-      "feature-extraction",
-      "TaylorAI/bge-micro-v2",
-    );
-    return pipe;
-  })();
-  return _pipePromise;
-}
-
-async function encodeQuery384(q: string): Promise<number[]> {
-  const pipe = await getXenovaPipe();
-  const out = await pipe(q, { pooling: "mean", normalize: true });
-  const vec = Array.from(out?.data ?? out ?? []) as number[];
-  if (!Array.isArray(vec) || vec.length < 384)
-    throw new Error("Bad encoder output");
-  return vec.slice(0, 384);
-}
-
-// ---- fallback lexical (TF‑IDF) ----
-type Doc = { path: string; text: string };
-
-function tokenize(s: string): string[] {
-  return (s || "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-function rankDocumentsTFIDF(
+async function lexicalRestSearch(
   query: string,
-  docs: Doc[],
-): { path: string; score: number }[] {
-  if (!query?.trim() || !docs?.length) return [];
-  const qTokens = Array.from(new Set(tokenize(query)));
-  const N = docs.length;
-  const tokenized = docs.map((d) => tokenize(d.text));
-  const tfMaps = tokenized.map((toks) => {
-    const m = new Map<string, number>();
-    for (const t of toks) m.set(t, (m.get(t) ?? 0) + 1);
-    return m;
-  });
-  const docSets = tokenized.map((toks) => new Set(toks));
-  const df = new Map<string, number>();
-  for (const term of qTokens) {
-    let c = 0;
-    for (const s of docSets) if (s.has(term)) c++;
-    df.set(term, c);
-  }
-  const ranked = docs.map((d, i) => {
-    let score = 0;
-    for (const term of qTokens) {
-      const tf = tfMaps[i].get(term) ?? 0;
-      const denom = df.get(term) ?? 0;
-      if (denom === 0) continue;
-      const idf = Math.log(N / denom);
-      score += tf * idf;
-    }
-    return { path: d.path, score };
-  });
-  return ranked.filter((r) => r.score > 0).sort((a, b) => b.score - a.score);
-}
-
-async function fetchVaultDocs(): Promise<Doc[]> {
+  limit: number,
+): Promise<SmartSearchOutput> {
+  const start = Date.now();
   const base = process.env.OBSIDIAN_BASE_URL;
   const key = process.env.OBSIDIAN_API_KEY;
-  if (!base || !key || typeof fetch !== "function") return [];
+  if (!base || !key || typeof fetch !== "function" || !query.trim()) {
+    return {
+      method: "lexical",
+      results: [],
+      encoder: "none",
+      dim: 0,
+      poolSize: 0,
+      tookMs: Date.now() - start,
+    };
+  }
   try {
-    const fetchFn: typeof fetch = fetch;
-    const res = await fetchFn(joinUrl(base, "/vault"), {
+    const url =
+      `${base.replace(/\/+$/, "")}/search/simple/?query=${encodeURIComponent(
+        query,
+      )}&contextLength=0`;
+    const res = await fetch(url, {
+      method: "POST",
       headers: { Authorization: `Bearer ${key}` },
     });
-    if (!res.ok) return [];
-    const body = await res.json().catch(() => ({}));
-    const files: string[] = Array.isArray(body?.files)
-      ? body.files.map((f: any) => String(f.path ?? "")).filter(Boolean)
-      : [];
-    const md = files.filter((p) => /\.md$/i.test(p));
-    const out: Doc[] = [];
-    for (const p of md.slice(0, 500)) {
-      const enc = encodeURIComponent(p);
-      try {
-        const r = await fetchFn(joinUrl(base, `/vault/${enc}`), {
-          headers: { Authorization: `Bearer ${key}` },
-        });
-        if (!r.ok) continue;
-        const text = await r.text();
-        out.push({ path: toPosix(p), text });
-      } catch {
-        /* ignore */
-      }
+    const tookMs = Date.now() - start;
+    if (!res.ok) {
+      return {
+        method: "lexical",
+        results: [],
+        encoder: "none",
+        dim: 0,
+        poolSize: 0,
+        tookMs,
+      };
     }
-    return out;
+    const body = await res.json().catch(() => []);
+    const results = Array.isArray(body)
+      ? body
+          .slice(0, limit)
+          .map((r: any) => ({
+            path: toPosix(typeof r?.filename === "string" ? r.filename : ""),
+            score: typeof r?.score === "number" ? r.score : 0,
+          }))
+          .filter((r) => r.path)
+      : [];
+    return {
+      method: "lexical",
+      results,
+      encoder: "none",
+      dim: 0,
+      poolSize: 0,
+      tookMs,
+    };
   } catch {
-    return [];
+    return {
+      method: "lexical",
+      results: [],
+      encoder: "none",
+      dim: 0,
+      poolSize: 0,
+      tookMs: Date.now() - start,
+    };
   }
-}
-
-function joinUrl(base: string, p: string) {
-  return `${base.replace(/\/+$/, "")}${p}`;
 }
 
 export async function smartSearch(
   input: SmartSearchInput,
 ): Promise<SmartSearchOutput> {
   const startAll = Date.now();
-  const query = (input.query ?? "").trim();
+  const query = input.query?.trim() || "";
   const fromPath = input.fromPath?.trim();
-  const limit = Math.max(1, Math.min(100, input.limit ?? 10));
+  const limit = Math.max(1, Math.min(50, Math.floor(input.limit ?? 10)));
   const mode = (process.env.SMART_SEARCH_MODE ?? "auto").toLowerCase();
 
-  // 1) plugin
-  if (["plugin", "auto"].includes(mode)) {
-    try {
-      const via = await obsidianPluginSmart({
-        query: query || undefined,
-        fromPath: fromPath || undefined,
-        limit,
-      });
-      if (via?.results?.length) return via;
-    } catch {
-      /* ignore */
-    }
-  }
-
-  // 2) fichiers (.smart-env)
-  if (mode !== "lexical") {
+  if (fromPath) {
     try {
       const envRoot = resolveSmartEnvDir();
       if (envRoot) {
         const vecs = await loadSmartEnvVectors();
         if (vecs.length) {
-          if (fromPath) {
+          const target = toPosix(fromPath).split("#")[0];
+          const anchorEntry =
+            vecs.find((v) => samePathEnd(v.path, target)) ||
+            vecs.find((v) => v.path === target);
+          const anchor = anchorEntry?.vec;
+          if (anchor) {
+            const pool = vecs.filter((v: NoteVec) => v !== anchorEntry);
             const t = Date.now();
-            const target = toPosix(fromPath);
-            const anchorEntry =
-              vecs.find((v) => samePathEnd(v.path, target)) ??
-              vecs.find((v) => v.path === target);
-            const anchor = anchorEntry?.vec;
-            if (anchor) {
-              const pool = vecs.filter((v: NoteVec) => v !== anchorEntry);
-              const results = cosineTopK(anchor, pool, limit);
-              return {
-                method: "files",
-                results,
-                encoder: ".smart-env",
-                dim: anchor.length,
-                poolSize: pool.length,
-                tookMs: Date.now() - t,
-              };
-            }
-          }
-          if (query && canEncodeQueryLocally()) {
-            const t = Date.now();
-            const qVec = await encodeQuery384(query);
-            const results = cosineTopK(qVec, vecs, limit);
+            const results = cosineTopK(anchor, pool, limit);
             return {
               method: "files",
               results,
-              encoder: "xenova",
-              dim: qVec.length,
-              poolSize: vecs.length,
+              encoder: ".smart-env",
+              dim: anchor.length,
+              poolSize: pool.length,
               tookMs: Date.now() - t,
             };
           }
@@ -208,38 +121,42 @@ export async function smartSearch(
     } catch {
       /* ignore */
     }
+    return {
+      method: "files",
+      results: [],
+      encoder: ".smart-env",
+      dim: 0,
+      poolSize: 0,
+      tookMs: Date.now() - startAll,
+    };
   }
 
-  // 3) fallback lexical TF‑IDF
-  try {
-    if (query || fromPath) {
-      const t = Date.now();
-      const docs = await fetchVaultDocs();
-      let lexicalQuery = query;
-      if (!lexicalQuery && fromPath) {
-        lexicalQuery =
-          docs.find((d) => samePathEnd(d.path, fromPath))?.text || fromPath;
+  if (query) {
+    if (mode === "plugin" || mode === "auto") {
+      try {
+        const t = Date.now();
+        const via = await pluginSmartSearch(query, limit);
+        if (via?.results?.length) {
+          return {
+            method: "plugin",
+            results: via.results,
+            encoder: "none",
+            dim: 0,
+            poolSize: 0,
+            tookMs: Date.now() - t,
+          };
+        }
+      } catch {
+        /* ignore */
       }
-      const results = rankDocumentsTFIDF(lexicalQuery, docs)
-        .filter((r) => !samePathEnd(r.path, fromPath || ""))
-        .slice(0, limit);
-      return {
-        method: "lexical",
-        results,
-        encoder: "tfidf",
-        dim: 0,
-        poolSize: docs.length,
-        tookMs: Date.now() - t,
-      };
     }
-  } catch {
-    /* ignore */
+    return await lexicalRestSearch(query, limit);
   }
 
   return {
     method: "lexical",
     results: [],
-    encoder: "tfidf",
+    encoder: "none",
     dim: 0,
     poolSize: 0,
     tookMs: Date.now() - startAll,
