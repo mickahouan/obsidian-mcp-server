@@ -18,4 +18,3 @@ export function samePathEnd(a: string, b: string): boolean {
   const bb = toPosix(b);
   return aa === bb || aa.endsWith("/" + bb);
 }
-

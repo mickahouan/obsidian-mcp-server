@@ -148,7 +148,11 @@ async function createMcpServerInstance(
       vaultCacheService,
     );
 
-    await registerSemanticSearchTool(server, obsidianService, vaultCacheService);
+    await registerSemanticSearchTool(
+      server,
+      obsidianService,
+      vaultCacheService,
+    );
 
     await registerExecuteTemplateTool(server, obsidianService);
     await registerCreateBaseTool(server, obsidianService);

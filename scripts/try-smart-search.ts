@@ -16,4 +16,3 @@ if (!(query || fromPath)) {
 }
 const res = await smartSearch({ query, fromPath, limit });
 console.log(JSON.stringify(res, null, 2));
-

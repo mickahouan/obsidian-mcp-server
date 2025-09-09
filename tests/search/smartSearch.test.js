@@ -24,14 +24,17 @@ test("fromPath suffix matches and excludes anchor", async () => {
     "../../dist/search/providers/smartEnvFiles.js",
     () => ({
       loadSmartEnvVectors: async () => {
-        const a = Array(64).fill(0); a[0] = 1;
-        const b = Array(64).fill(0); b[1] = 1;
+        const a = Array(64).fill(0);
+        a[0] = 1;
+        const b = Array(64).fill(0);
+        b[1] = 1;
         return [
           { path: "dir/sub/A.md", vec: a },
           { path: "dir/B.md", vec: b },
         ];
       },
-      cosineTopK: (anchor, pool) => pool.map((d) => ({ path: d.path, score: 1 })),
+      cosineTopK: (anchor, pool) =>
+        pool.map((d) => ({ path: d.path, score: 1 })),
     }),
   );
   const { smartSearch } = await import("../../dist/search/smartSearch.js");
@@ -58,4 +61,3 @@ test("lexical fallback never throws", async () => {
     results: [],
   });
 });
-

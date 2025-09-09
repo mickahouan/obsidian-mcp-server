@@ -7,4 +7,3 @@ if (vecs.length)
     "sample =",
     vecs.slice(0, 3).map((v) => ({ path: v.path, dim: v.vec.length })),
   );
-

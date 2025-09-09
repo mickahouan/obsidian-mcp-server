@@ -102,16 +102,25 @@ describe("semanticSearchTool", () => {
     process.env.SMART_SEARCH_MODE = "files";
     const dir = await fs.mkdtemp(path.join(process.cwd(), "smartenv-"));
     await fs.mkdir(path.join(dir, "multi"));
-      const aVec = Array(64).fill(0); aVec[0] = 1;
-      const bVec = Array(64).fill(0); bVec[0] = 0.9; bVec[1] = 0.1;
-      await fs.writeFile(
-        path.join(dir, "multi", "A_md.ajson"),
-        JSON.stringify({ embeddings: { m: { vec: aVec } }, source: { path: "A.md" } }),
-      );
-      await fs.writeFile(
-        path.join(dir, "multi", "B_md.ajson"),
-        JSON.stringify({ embeddings: { m: { vec: bVec } }, source: { path: "B.md" } }),
-      );
+    const aVec = Array(64).fill(0);
+    aVec[0] = 1;
+    const bVec = Array(64).fill(0);
+    bVec[0] = 0.9;
+    bVec[1] = 0.1;
+    await fs.writeFile(
+      path.join(dir, "multi", "A_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: aVec } },
+        source: { path: "A.md" },
+      }),
+    );
+    await fs.writeFile(
+      path.join(dir, "multi", "B_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: bVec } },
+        source: { path: "B.md" },
+      }),
+    );
     process.env.SMART_ENV_DIR = dir;
 
     const server = new MockServer();
@@ -134,16 +143,25 @@ describe("semanticSearchTool", () => {
       path.join(process.cwd(), "smartenv-"),
     );
     await fs.mkdir(path.join(process.env.SMART_ENV_DIR, "multi"));
-      const qaVec = Array(384).fill(0); qaVec[0] = 1; qaVec[1] = 1;
-      const qbVec = Array(384).fill(0); qbVec[0] = 1;
-      await fs.writeFile(
-        path.join(process.env.SMART_ENV_DIR, "multi", "A_md.ajson"),
-        JSON.stringify({ embeddings: { m: { vec: qaVec } }, source: { path: "A.md" } }),
-      );
-      await fs.writeFile(
-        path.join(process.env.SMART_ENV_DIR, "multi", "B_md.ajson"),
-        JSON.stringify({ embeddings: { m: { vec: qbVec } }, source: { path: "B.md" } }),
-      );
+    const qaVec = Array(384).fill(0);
+    qaVec[0] = 1;
+    qaVec[1] = 1;
+    const qbVec = Array(384).fill(0);
+    qbVec[0] = 1;
+    await fs.writeFile(
+      path.join(process.env.SMART_ENV_DIR, "multi", "A_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: qaVec } },
+        source: { path: "A.md" },
+      }),
+    );
+    await fs.writeFile(
+      path.join(process.env.SMART_ENV_DIR, "multi", "B_md.ajson"),
+      JSON.stringify({
+        embeddings: { m: { vec: qbVec } },
+        source: { path: "B.md" },
+      }),
+    );
     process.env.ENABLE_QUERY_EMBEDDING = "true";
     process.env.QUERY_EMBEDDER = "xenova";
 

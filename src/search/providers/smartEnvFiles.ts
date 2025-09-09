@@ -5,7 +5,10 @@ import { resolveSmartEnvDir, toPosix } from "../../utils/resolveSmartEnvDir.js";
 export type NoteVec = { path: string; vec: number[] };
 
 // --- Walker FS minimal ---
-function listFilesRecursive(root: string, accept: (p: string) => boolean): string[] {
+function listFilesRecursive(
+  root: string,
+  accept: (p: string) => boolean,
+): string[] {
   const out: string[] = [];
   if (!fs.existsSync(root)) return out;
   const stack = [root];
@@ -68,7 +71,8 @@ function extractFromObject(
   if (!notePath) notePath = guessNotePathFromFilename(fallbackFile);
 
   // embeddings déclaratifs
-  const embRoot = j?.embeddings ?? j?.data?.embeddings ?? j?.SmartSource?.embeddings;
+  const embRoot =
+    j?.embeddings ?? j?.data?.embeddings ?? j?.SmartSource?.embeddings;
   if (embRoot && typeof embRoot === "object") {
     for (const k of Object.keys(embRoot)) {
       const rec = (embRoot as any)[k];
@@ -90,7 +94,10 @@ function extractFromObject(
     seen.add(cur);
     for (const [k, v] of Object.entries(cur)) {
       if (typeof v === "object") q.push(v as any);
-      if (!vec && (k === "vec" || k === "vector" || k.toLowerCase() === "embedding")) {
+      if (
+        !vec &&
+        (k === "vec" || k === "vector" || k.toLowerCase() === "embedding")
+      ) {
         if (isNumArray(v)) vec = v as number[];
       }
       if (
@@ -163,4 +170,3 @@ export function cosineTopK(anchor: number[], pool: NoteVec[], k: number) {
     .sort((x, y) => y.score - x.score)
     .slice(0, Math.max(1, Math.min(100, k)));
 }
-
