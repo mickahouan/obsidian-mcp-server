@@ -1,4 +1,4 @@
-import { cosineSimilarity } from "./cosineSimilarity";
+import { cosineSimilarity } from "./cosineSimilarity.js";
 
 export interface EmbeddedDocument {
   id: string;

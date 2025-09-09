@@ -15,13 +15,13 @@ import {
   RequestContext,
   requestContextService,
 } from "../../utils/index.js"; // Added requestContextService
-import * as activeFileMethods from "./methods/activeFileMethods";
-import * as commandMethods from "./methods/commandMethods";
-import * as openMethods from "./methods/openMethods";
-import * as patchMethods from "./methods/patchMethods";
-import * as periodicNoteMethods from "./methods/periodicNoteMethods";
-import * as searchMethods from "./methods/searchMethods";
-import * as vaultMethods from "./methods/vaultMethods";
+import * as activeFileMethods from "./methods/activeFileMethods.js";
+import * as commandMethods from "./methods/commandMethods.js";
+import * as openMethods from "./methods/openMethods.js";
+import * as patchMethods from "./methods/patchMethods.js";
+import * as periodicNoteMethods from "./methods/periodicNoteMethods.js";
+import * as searchMethods from "./methods/searchMethods.js";
+import * as vaultMethods from "./methods/vaultMethods.js";
 import {
   ApiStatusResponse, // Import PatchOptions type
   ComplexSearchResult,
@@ -33,7 +33,7 @@ import {
   SimpleSearchResult,
   SmartSearchArgs,
   SmartSearchResponse,
-} from "./types"; // Import types from the new file
+} from "./types.js"; // Import types from the new file
 
 export class ObsidianRestApiService {
   private axiosInstance: AxiosInstance;

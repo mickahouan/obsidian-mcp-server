@@ -18,11 +18,11 @@ import {
 import type {
   ObsidianGlobalSearchInput,
   ObsidianGlobalSearchResponse,
-} from "./logic"; // Ensure '.js' extension
+} from "./logic.js"; // Ensure '.js' extension
 import {
   ObsidianGlobalSearchInputSchemaShape,
   processObsidianGlobalSearch,
-} from "./logic"; // Ensure '.js' extension
+} from "./logic.js"; // Ensure '.js' extension
 
 /**
  * Registers the 'obsidian_global_search' tool with the MCP server instance.

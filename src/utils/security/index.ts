@@ -1,3 +1,3 @@
-export * from "./sanitization";
-export * from "./rateLimiter";
-export * from "./idGenerator";
+export * from "./sanitization.js";
+export * from "./rateLimiter.js";
+export * from "./idGenerator.js";

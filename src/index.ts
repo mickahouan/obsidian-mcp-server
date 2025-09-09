@@ -3,13 +3,13 @@
 // Imports MUST be at the top level
 import { ServerType } from "@hono/node-server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { config, environment } from "./config/index"; // This loads .env via dotenv.config()
-import { initializeAndStartServer } from "./mcp-server/server";
-import { requestContextService, retryWithDelay } from "./utils/index";
-import { logger, McpLogLevel } from "./utils/internal/logger"; // Import logger instance early
+import { config, environment } from "./config/index.js"; // This loads .env via dotenv.config()
+import { initializeAndStartServer } from "./mcp-server/server.js";
+import { requestContextService, retryWithDelay } from "./utils/index.js";
+import { logger, McpLogLevel } from "./utils/internal/logger.js"; // Import logger instance early
 // Import Services
-import { ObsidianRestApiService } from "./services/obsidianRestAPI/index";
-import { VaultCacheService } from "./services/obsidianRestAPI/vaultCache/index"; // Import VaultCacheService
+import { ObsidianRestApiService } from "./services/obsidianRestAPI/index.js";
+import { VaultCacheService } from "./services/obsidianRestAPI/vaultCache/index.js"; // Import VaultCacheService
 
 /**
  * The main MCP server instance (only stored globally for stdio shutdown).

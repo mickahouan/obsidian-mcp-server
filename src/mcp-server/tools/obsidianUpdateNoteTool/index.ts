@@ -9,4 +9,4 @@
  * Consumers (like the main server setup) should import the registration function
  * from this file to integrate the tool into the MCP server instance.
  */
-export { registerObsidianUpdateNoteTool } from "./registration";
+export { registerObsidianUpdateNoteTool } from "./registration.js";

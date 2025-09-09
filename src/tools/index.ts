@@ -1,4 +1,4 @@
-export { registerSemanticSearchTool } from "./semanticSearchTool";
-export { registerExecuteTemplateTool } from "./executeTemplateTool";
-export { registerCreateBaseTool } from "./createBaseTool";
-export { registerCreateCanvasTool } from "./createCanvasTool";
+export { registerSemanticSearchTool } from "./semanticSearchTool.js";
+export { registerExecuteTemplateTool } from "./executeTemplateTool.js";
+export { registerCreateBaseTool } from "./createBaseTool.js";
+export { registerCreateCanvasTool } from "./createCanvasTool.js";

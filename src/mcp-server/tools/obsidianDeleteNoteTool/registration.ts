@@ -14,11 +14,11 @@ import {
 import type {
   ObsidianDeleteNoteInput,
   ObsidianDeleteNoteResponse,
-} from "./logic";
+} from "./logic.js";
 import {
   ObsidianDeleteNoteInputSchema,
   processObsidianDeleteNote,
-} from "./logic";
+} from "./logic.js";
 
 /**
  * Registers the 'obsidian_delete_note' tool with the MCP server.

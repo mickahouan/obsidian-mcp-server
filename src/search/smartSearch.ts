@@ -2,7 +2,7 @@ import {
   loadSmartEnvVectors,
   cosineTopK,
   NoteVec,
-} from "./providers/smartEnvFiles";
+} from "./providers/smartEnvFiles.js";
 import {
   resolveSmartEnvDir,
   toPosix,

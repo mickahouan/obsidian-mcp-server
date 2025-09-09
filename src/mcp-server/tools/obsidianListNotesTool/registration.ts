@@ -18,11 +18,11 @@ import {
 import type {
   ObsidianListNotesInput,
   ObsidianListNotesResponse,
-} from "./logic";
+} from "./logic.js";
 import {
   ObsidianListNotesInputSchema,
   processObsidianListNotes,
-} from "./logic";
+} from "./logic.js";
 
 /**
  * Registers the 'obsidian_list_notes' tool with the MCP server.

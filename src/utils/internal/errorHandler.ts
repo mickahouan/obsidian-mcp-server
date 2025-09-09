@@ -7,8 +7,8 @@
  */
 import { BaseErrorCode, McpError } from "../../types-global/errors.js";
 import { generateUUID, sanitizeInputForLogging } from "../index.js"; // Import from main barrel file
-import { logger } from "./logger";
-import { RequestContext } from "./requestContext"; // Import RequestContext
+import { logger } from "./logger.js";
+import { RequestContext } from "./requestContext.js"; // Import RequestContext
 
 /**
  * Defines a generic structure for providing context with errors.

@@ -6,7 +6,7 @@
 
 import { BaseErrorCode, McpError } from "../../../../types-global/errors.js";
 import { logger, requestContextService } from "../../../../utils/index.js";
-import { authContext } from "./authContext";
+import { authContext } from "./authContext.js";
 
 /**
  * Checks if the current authentication context contains all the specified scopes.

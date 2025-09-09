@@ -1,1 +1,1 @@
-export * from "./smartSearch";
+export * from "./smartSearch.js";

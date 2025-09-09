@@ -7,7 +7,7 @@
  */
 
 import { generateUUID } from "../index.js";
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 /**
  * Defines the core structure for context information associated with a request or operation.
