@@ -4,7 +4,11 @@ import { smartSearch } from "../search/smartSearch.js";
 export type Input = { query?: string; fromPath?: string; limit?: number };
 export type Output = {
   method: "plugin" | "files" | "lexical";
-  results: { path: string; score?: number; preview?: string }[];
+  results: { path: string; score: number }[];
+  encoder: string;
+  dim: number;
+  poolSize: number;
+  tookMs: number;
 };
 
 const tool = {
@@ -23,12 +27,26 @@ const tool = {
     const hasQuery = !!input?.query?.trim();
     const hasFrom = !!input?.fromPath?.trim();
     if (!hasQuery && !hasFrom) {
-      return { method: "lexical", results: [] };
+      return {
+        method: "lexical",
+        results: [],
+        encoder: "tfidf",
+        dim: 0,
+        poolSize: 0,
+        tookMs: 0,
+      };
     }
     try {
       return await smartSearch(input);
     } catch {
-      return { method: "lexical", results: [] };
+      return {
+        method: "lexical",
+        results: [],
+        encoder: "tfidf",
+        dim: 0,
+        poolSize: 0,
+        tookMs: 0,
+      };
     }
   },
 };

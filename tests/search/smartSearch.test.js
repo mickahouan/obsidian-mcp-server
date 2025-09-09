@@ -14,15 +14,20 @@ afterEach(() => {
 });
 
 test("empty input returns lexical empty", async () => {
-  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/search/smartSearch.js");
   const res = await smartSearch({});
-  expect(res).toEqual({ method: "lexical", results: [] });
+  expect(res.method).toBe("lexical");
+  expect(res.results).toEqual([]);
+  expect(res.encoder).toBe("tfidf");
+  expect(res.dim).toBe(0);
+  expect(res.poolSize).toBe(0);
+  expect(typeof res.tookMs).toBe("number");
 });
 
 test("fromPath suffix matches and excludes anchor", async () => {
   jest.resetModules();
   jest.unstable_mockModule(
-    "../../dist/src/search/providers/smartEnvFiles.js",
+    "../../dist/search/providers/smartEnvFiles.js",
     () => ({
       loadSmartEnvVectors: async () => {
         const a = Array(64).fill(0);
@@ -34,16 +39,19 @@ test("fromPath suffix matches and excludes anchor", async () => {
           { path: "dir/B.md", vec: b },
         ];
       },
-      cosineTopK: (anchor, pool) =>
+      cosineTopK: (_anchor, pool) =>
         pool.map((d) => ({ path: d.path, score: 1 })),
     }),
   );
-  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
+  const { smartSearch } = await import("../../dist/search/smartSearch.js");
   process.env.SMART_ENV_DIR = "/tmp";
   const res = await smartSearch({ fromPath: "A.md", limit: 5 });
   expect(res.method).toBe("files");
   expect(res.results.some((r) => r.path.endsWith("A.md"))).toBe(false);
   expect(res.results[0].path).toBe("dir/B.md");
+  expect(res.encoder).toBe(".smart-env");
+  expect(res.poolSize).toBe(1);
+  expect(typeof res.tookMs).toBe("number");
 });
 
 test("lexical fallback never throws", async () => {
@@ -56,11 +64,13 @@ test("lexical fallback never throws", async () => {
     }
     return { ok: false };
   });
-  const { smartSearch } = await import("../../dist/src/search/smartSearch.js");
-  await expect(smartSearch({ query: "foo" })).resolves.toEqual({
-    method: "lexical",
-    results: [],
-  });
+  const { smartSearch } = await import("../../dist/search/smartSearch.js");
+  const out = await smartSearch({ query: "foo" });
+  expect(out.method).toBe("lexical");
+  expect(out.results).toEqual([]);
+  expect(out.encoder).toBe("tfidf");
+  expect(out.poolSize).toBe(0);
+  expect(typeof out.tookMs).toBe("number");
 });
 
 test("plugin success returns plugin results", async () => {
@@ -79,10 +89,8 @@ test("plugin success returns plugin results", async () => {
   });
   const { smartSearch } = await import("../../dist/search/smartSearch.js");
   const res = await smartSearch({ query: "hello" });
-  expect(res).toEqual({
-    method: "plugin",
-    results: [{ path: "Note.md", score: 0.5 }],
-  });
+  expect(res.method).toBe("plugin");
+  expect(res.results).toEqual([{ path: "Note.md", score: 0.5 }]);
   expect(global.fetch).toHaveBeenCalledTimes(1);
 });
 

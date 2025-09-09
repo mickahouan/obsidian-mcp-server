@@ -50,11 +50,11 @@ describe("semanticSearchTool", () => {
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ query: "hello", limit: 1 }, {});
-    expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
-    const result = res.results
-      ? res.results[0]
-      : res.content[0].json.results[0];
-    expect(result.path).toBe("A.md");
+    const out = res.results ? res : res.content[0].json;
+    expect(out.method).toBe("lexical");
+    expect(out.encoder).toBe("tfidf");
+    expect(out.results[0].path).toBe("A.md");
+    expect(typeof out.tookMs).toBe("number");
   });
 
   test("falls back to tfidf when only fromPath is provided", async () => {
@@ -91,11 +91,11 @@ describe("semanticSearchTool", () => {
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
-    expect(res.method || res.content?.[0]?.json?.method).toBe("lexical");
-    const result = res.results
-      ? res.results[0]
-      : res.content[0].json.results[0];
-    expect(result.path).toBe("B.md");
+    const out = res.results ? res : res.content[0].json;
+    expect(out.method).toBe("lexical");
+    expect(out.encoder).toBe("tfidf");
+    expect(out.results[0].path).toBe("B.md");
+    expect(typeof out.tookMs).toBe("number");
   });
 
   test("returns neighbors from .smart-env when fromPath provided", async () => {
@@ -129,11 +129,11 @@ describe("semanticSearchTool", () => {
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
-    expect(res.method || res.content?.[0]?.json?.method).toBe("files");
-    const result = res.results
-      ? res.results[0]
-      : res.content[0].json.results[0];
-    expect(result.path).toBe("B.md");
+    const out = res.results ? res : res.content[0].json;
+    expect(out.method).toBe("files");
+    expect(out.encoder).toBe(".smart-env");
+    expect(out.results[0].path).toBe("B.md");
+    expect(typeof out.tookMs).toBe("number");
   });
 
   test("encodes query with xenova when enabled", async () => {
@@ -178,10 +178,10 @@ describe("semanticSearchTool", () => {
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ query: "foo", limit: 1 }, {});
-    expect(res.method || res.content?.[0]?.json?.method).toBe("files");
-    const result = res.results
-      ? res.results[0]
-      : res.content[0].json.results[0];
-    expect(result.path).toBe("A.md");
+    const out = res.results ? res : res.content[0].json;
+    expect(out.method).toBe("files");
+    expect(out.encoder).toBe("xenova");
+    expect(out.results[0].path).toBe("A.md");
+    expect(typeof out.tookMs).toBe("number");
   });
 });
