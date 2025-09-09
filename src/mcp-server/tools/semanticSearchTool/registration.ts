@@ -9,6 +9,20 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ObsidianRestApiService } from "../../../services/obsidianRestAPI/index.js";
 import type { VaultCacheService } from "../../../services/obsidianRestAPI/vaultCache/index.js";
+import { z } from "zod";
+import { BaseErrorCode, McpError } from "../../../types-global/errors.js";
+import {
+  ErrorHandler,
+  logger,
+  RequestContext,
+  requestContextService,
+} from "../../../utils/index.js";
+
+const SmartSearchInputSchema = z.object({
+  query: z.string().describe("Natural language query to search for"),
+});
+
+type SmartSearchInput = z.infer<typeof SmartSearchInputSchema>;
 
 /**
  * Registers the semantic search tool with the given server instance.
@@ -23,8 +37,77 @@ export const registerSemanticSearchTool = async (
   obsidianService: ObsidianRestApiService,
   vaultCacheService: VaultCacheService | undefined,
 ): Promise<void> => {
-  // TODO: Wire up semantic search tool registration logic
-  void server; // temporary no-op to satisfy eslint for unused vars
-  void obsidianService;
-  void vaultCacheService;
+  const toolName = "smart_search";
+  const toolDescription =
+    "Searches the Obsidian vault using semantic embeddings (placeholder implementation).";
+
+  const registrationContext: RequestContext =
+    requestContextService.createRequestContext({
+      operation: "RegisterSemanticSearchTool",
+      toolName,
+      module: "SemanticSearchRegistration",
+    });
+
+  logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
+
+  await ErrorHandler.tryCatch(
+    async () => {
+      server.tool(
+        toolName,
+        toolDescription,
+        SmartSearchInputSchema.shape,
+        async (params: SmartSearchInput) => {
+          const handlerContext: RequestContext =
+            requestContextService.createRequestContext({
+              parentContext: registrationContext,
+              operation: "HandleSemanticSearchRequest",
+              toolName,
+              params,
+            });
+          logger.debug(`Handling '${toolName}' request`, handlerContext);
+
+          // TODO: replace placeholder with real semantic search logic
+          void obsidianService;
+          void vaultCacheService;
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    query: params.query,
+                    results: [],
+                    note: "Semantic search not implemented yet",
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: false,
+          };
+        },
+      );
+
+      logger.info(
+        `Tool registered successfully: ${toolName}`,
+        registrationContext,
+      );
+    },
+    {
+      operation: `registering tool ${toolName}`,
+      context: registrationContext,
+      errorCode: BaseErrorCode.INTERNAL_ERROR,
+      errorMapper: (error: unknown) =>
+        new McpError(
+          error instanceof McpError ? error.code : BaseErrorCode.INTERNAL_ERROR,
+          `Failed to register tool '${toolName}': ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+          { ...registrationContext },
+        ),
+      critical: true,
+    },
+  );
 };
