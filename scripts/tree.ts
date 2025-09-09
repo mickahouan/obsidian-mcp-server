@@ -30,7 +30,7 @@ let maxDepthArg = Infinity;
 
 const args = process.argv.slice(2);
 if (args.includes("--help")) {
-  console.log(`
+  console.error(`
 Generate Tree - Project directory structure visualization tool
 
 Usage:
@@ -205,10 +205,10 @@ const writeTreeToFile = async (): Promise<void> => {
       process.exit(1);
     }
 
-    console.log(`Generating directory tree for project: ${projectName}`);
-    console.log(`Output will be saved to: ${resolvedOutputFile}`);
+    console.error(`Generating directory tree for project: ${projectName}`);
+    console.error(`Output will be saved to: ${resolvedOutputFile}`);
     if (maxDepthArg !== Infinity) {
-      console.log(`Maximum depth set to: ${maxDepthArg}`);
+      console.error(`Maximum depth set to: ${maxDepthArg}`);
     }
 
     const treeContent = await generateTree(projectRoot, ignoreHandler, "", 0); // Pass the Ignore instance
@@ -216,7 +216,7 @@ const writeTreeToFile = async (): Promise<void> => {
     try {
       await fs.access(resolvedOutputDir);
     } catch {
-      console.log(`Output directory not found. Creating: ${resolvedOutputDir}`);
+      console.error(`Output directory not found. Creating: ${resolvedOutputDir}`);
       await fs.mkdir(resolvedOutputDir, { recursive: true });
     }
 
@@ -234,7 +234,7 @@ const writeTreeToFile = async (): Promise<void> => {
     const finalContent = fileHeader + depthInfo + treeBlock + fileFooter;
 
     await fs.writeFile(resolvedOutputFile, finalContent);
-    console.log(
+    console.error(
       `Successfully generated tree structure in: ${resolvedOutputFile}`,
     );
   } catch (error) {

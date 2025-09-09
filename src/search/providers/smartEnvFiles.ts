@@ -56,11 +56,9 @@ function extractFromObject(
     j?.note?.path,
     j?.meta?.path,
     j?.path,
-    j?.file?.path,
     j?.filePath,
     j?.relativePath,
     j?.SmartSource?.path,
-    j?.SmartSource?.source?.path,
   ].filter(Boolean);
   for (const p of pathCandidates) {
     if (typeof p === "string" && /\.md$/i.test(p)) {
@@ -74,13 +72,18 @@ function extractFromObject(
   const embRoot =
     j?.embeddings ?? j?.data?.embeddings ?? j?.SmartSource?.embeddings;
   if (embRoot && typeof embRoot === "object") {
-    for (const k of Object.keys(embRoot)) {
-      const rec = (embRoot as any)[k];
-      const v = rec?.vec ?? rec?.vector ?? rec?.embedding ?? rec?.values;
-      if (isNumArray(v)) {
-        vec = v;
-        break;
+    for (const rec of Object.values(embRoot)) {
+      if (!rec || typeof rec !== "object") continue;
+      for (const [k, v] of Object.entries(rec)) {
+        const key = k.toLowerCase();
+        if (key === "vec" || key === "vector" || key === "embedding") {
+          if (isNumArray(v)) {
+            vec = v;
+            break;
+          }
+        }
       }
+      if (vec) break;
     }
   }
   if (vec && notePath) return { vec, notePath };
@@ -94,17 +97,14 @@ function extractFromObject(
     seen.add(cur);
     for (const [k, v] of Object.entries(cur)) {
       if (typeof v === "object") q.push(v as any);
-      if (
-        !vec &&
-        (k === "vec" || k === "vector" || k.toLowerCase() === "embedding")
-      ) {
+      if (!vec && ["vec", "vector", "embedding"].includes(k.toLowerCase())) {
         if (isNumArray(v)) vec = v as number[];
       }
       if (
         !notePath &&
         k.toLowerCase().includes("path") &&
         typeof v === "string" &&
-        v.endsWith(".md")
+        v.toLowerCase().endsWith(".md")
       ) {
         notePath = toPosix(v);
       }
@@ -118,7 +118,12 @@ function extractFromObject(
 }
 
 // --- Cache TTL ---
-type CacheShape = { expiresAt: number; items: NoteVec[] };
+type CacheShape = {
+  expiresAt: number;
+  items: NoteVec[];
+  dir: string;
+  dim: number;
+};
 let CACHE: CacheShape | null = null;
 
 function ttlMs(): number {
@@ -132,13 +137,24 @@ function maxItems(): number {
 
 export async function loadSmartEnvVectors(): Promise<NoteVec[]> {
   const now = Date.now();
-  if (CACHE && CACHE.expiresAt > now) return CACHE.items;
+  if (CACHE && CACHE.expiresAt > now) {
+    console.error(
+      `[smart-env] loaded vectors: ${CACHE.items.length}, dim: ${CACHE.dim}, dir: ${CACHE.dir}`,
+    );
+    return CACHE.items;
+  }
 
   const root = resolveSmartEnvDir();
-  if (!root) return [];
+  if (!root) {
+    console.error(`[smart-env] loaded vectors: 0, dim: 0, dir: -`);
+    return [];
+  }
 
-  const multi = path.join(root, "multi");
-  const files = listFilesRecursive(multi, (p) => /\.ajson$/i.test(p));
+  let dir = root;
+  const maybeMulti = path.join(root, "multi");
+  if (fs.existsSync(maybeMulti)) dir = maybeMulti;
+
+  const files = listFilesRecursive(dir, (p) => /\.ajson$/i.test(p));
   const out: NoteVec[] = [];
 
   for (const f of files) {
@@ -153,7 +169,11 @@ export async function loadSmartEnvVectors(): Promise<NoteVec[]> {
   }
 
   const limited = maxItems() > 0 ? out.slice(0, maxItems()) : out;
-  CACHE = { expiresAt: now + ttlMs(), items: limited };
+  const dim = limited[0]?.vec.length ?? 0;
+  CACHE = { expiresAt: now + ttlMs(), items: limited, dir, dim };
+  console.error(
+    `[smart-env] loaded vectors: ${limited.length}, dim: ${dim}, dir: ${dir}`,
+  );
   return limited;
 }
 

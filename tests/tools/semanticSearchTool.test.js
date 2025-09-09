@@ -46,7 +46,7 @@ describe("semanticSearchTool", () => {
 
     const server = new MockServer();
     const { registerSemanticSearchTool } = await import(
-      "../../dist/tools/semanticSearchTool.js"
+      "../../dist/src/tools/semanticSearchTool.js"
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ query: "hello", limit: 1 }, {});
@@ -87,7 +87,7 @@ describe("semanticSearchTool", () => {
 
     const server = new MockServer();
     const { registerSemanticSearchTool } = await import(
-      "../../dist/tools/semanticSearchTool.js"
+      "../../dist/src/tools/semanticSearchTool.js"
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
@@ -125,7 +125,7 @@ describe("semanticSearchTool", () => {
 
     const server = new MockServer();
     const { registerSemanticSearchTool } = await import(
-      "../../dist/tools/semanticSearchTool.js"
+      "../../dist/src/tools/semanticSearchTool.js"
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ fromPath: "A.md", limit: 1 }, {});
@@ -174,7 +174,7 @@ describe("semanticSearchTool", () => {
 
     const server = new MockServer();
     const { registerSemanticSearchTool } = await import(
-      "../../dist/tools/semanticSearchTool.js"
+      "../../dist/src/tools/semanticSearchTool.js"
     );
     await registerSemanticSearchTool(server, {}, {});
     const res = await server.handler({ query: "foo", limit: 1 }, {});

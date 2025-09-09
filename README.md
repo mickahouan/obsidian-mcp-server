@@ -12,6 +12,8 @@ Serveur MCP unifié pour Obsidian permettant aux agents IA d'interagir avec votr
 
 ## Installation
 
+**Prérequis : Node.js 22.**
+
 ```bash
 npm install -g obsidian-mcp-optimike
 ```
@@ -23,6 +25,13 @@ npx -y obsidian-mcp-optimike --stdio
 ```
 
 Binaire disponible pour Windows, macOS et Linux.
+
+Pour exécuter depuis les sources, compilez puis lancez le fichier généré dans `dist/` :
+
+```bash
+npm run build
+node dist/index.js --stdio
+```
 
 ## Usage
 
@@ -48,24 +57,38 @@ obsidian-mcp-optimike --port 27123
 - `create-base --file Tasks.base --filters '["tag=task"]' --order '["note.status"]'`
 - `create-canvas --name Graph --nodes '[{"type":"file","file":"A.md"},{"type":"file","file":"B.md"}]' --edges '[{"fromNode":"A","toNode":"B"}]'`
 
+#### Exemples d'appels
+
+```bash
+smart-search {"query":"mcp","limit":10}
+smart-search {"fromPath":"/mnt/f/.../Note.md","limit":10}
+```
+
 ## Configuration
 
-- **Clé API REST Obsidian** : exporter la variable `OBSIDIAN_API_KEY` issue du plugin Local REST API.
-- **Chemin du vault** : détecté automatiquement, peut être surchargé via les paramètres du serveur.
-  - **SMART_SEARCH_MODE** : `auto` (défaut, plugin ➜ files ➜ lexical), `plugin`, `files` ou `lexical`.
-  - **SMART_CONNECTIONS_API** : URL du service Smart Connections si disponible.
-  - **SMART_ENV_DIR** : chemin vers le dossier `.smart-env` (ex. `F:\\OBSIDIAN\\ÉLYSIA\\.smart-env` sous Windows ou `/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env` sous WSL).
-    En mode `files`, seule la recherche de notes similaires via `fromPath` est possible.
-  - **ENABLE_QUERY_EMBEDDING** : `true` pour encoder localement les requêtes (modèle `TaylorAI/bge-micro-v2` via `@xenova/transformers`).
-    Sans cette variable, la recherche textuelle utilise le fallback lexical TF‑IDF.
-  - **QUERY_EMBEDDER** : `xenova` (valeur par défaut, inutile de la modifier pour l'instant).
-  - **SMART_ENV_CACHE_TTL_MS** : durée de vie en cache des vecteurs `.ajson` (ms, défaut 60000).
-  - **SMART_ENV_CACHE_MAX** : limite maximale d'items chargés (0 = illimité).
-  - **TRANSFORMERS_CACHE** : chemin optionnel où seront mis en cache les modèles téléchargés lors de la première exécution.
-- L'outil `create-base` produit un YAML minimal centré sur `views:` et peut définir `properties` (objets de configuration comme `displayName`) et `formulas`.
-  Pour les détails complets de la syntaxe Bases, voir la documentation officielle :
-  [views](https://help.obsidian.md/bases/views), [functions](https://help.obsidian.md/bases/functions), [syntax](https://help.obsidian.md/bases/syntax).
+### Variables d'environnement
 
+#### Plugin
+- `OBSIDIAN_BASE_URL` : URL de l'API REST locale (défaut `http://127.0.0.1:27123`).
+- `OBSIDIAN_API_KEY` : clé issue du plugin Local REST API.
+- `PLUGIN_TIMEOUT_MS` : délai maximal d'attente des appels au plugin (ms).
+- `PLUGIN_RETRIES` : nombre de tentatives en cas d'échec.
+
+#### Embeddings
+- `SMART_SEARCH_MODE` : `auto` (défaut, plugin ➜ files ➜ lexical), `plugin`, `files` ou `lexical`.
+- `SMART_ENV_DIR` : chemin vers le dossier `.smart-env` de votre vault (ex. `/chemin/vers/vault/.smart-env`). En mode `files`, seule la recherche de notes similaires via `fromPath` est possible.
+- `SMART_ENV_CACHE_TTL_MS` : durée de vie en cache des vecteurs `.ajson` (ms, défaut 60000).
+- `SMART_ENV_CACHE_MAX` : limite maximale d'items chargés (0 = illimité).
+- `SMART_CONNECTIONS_API` : URL du service Smart Connections si disponible.
+
+#### Xenova
+- `ENABLE_QUERY_EMBEDDING` : `true` pour encoder localement les requêtes.
+- `QUERY_EMBEDDER` : `xenova` (valeur par défaut).
+- `TRANSFORMERS_CACHE` : chemin optionnel du cache des modèles.
+- `EMBED_MAX_CONCURRENCY` : nombre maximal d'encodages simultanés.
+- `EMBED_TIMEOUT_MS` : délai maximal pour chaque encodage (ms).
+
+L'outil `create-base` produit un YAML minimal centré sur `views:` et peut définir `properties` (objets de configuration comme `displayName`) et `formulas`.
 ## Sécurité & Confidentialité
 
 Toutes les opérations se font en local. Aucune donnée n'est envoyée vers l'extérieur. La clé API n'est jamais journalisée.

@@ -50,13 +50,13 @@ const makeExecutable = async (): Promise<void> => {
         : ["dist/index.js"];
 
     if (!isUnix) {
-      console.log(
+      console.error(
         "Skipping chmod operation: Script is running on Windows (not applicable).",
       );
       return;
     }
 
-    console.log(
+    console.error(
       `Attempting to make files executable: ${targetFiles.join(", ")}`,
     );
 
@@ -101,7 +101,7 @@ const makeExecutable = async (): Promise<void> => {
       if (result.status === "fulfilled") {
         const { file, status, reason } = result.value;
         if (status === "success") {
-          console.log(`Successfully made executable: ${file}`);
+          console.error(`Successfully made executable: ${file}`);
         } else if (status === "error") {
           console.error(`Error for ${file}: ${reason}`);
           hasErrors = true;
@@ -123,7 +123,7 @@ const makeExecutable = async (): Promise<void> => {
       );
       // process.exit(1); // Uncomment to exit with error if any file fails
     } else {
-      console.log("All targeted files processed successfully.");
+      console.error("All targeted files processed successfully.");
     }
   } catch (error) {
     console.error(

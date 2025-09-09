@@ -148,7 +148,7 @@ class JsonParser {
  * const context: RequestContext = requestContextService.createRequestContext({ operation: 'MyOperation' });
  * try {
  *   const data = jsonParser.parse('<think>Thinking...</think>{"key": "value", "arr": [1,', Allow.ALL, context);
- *   console.log(data); // Output: { key: "value", arr: [ 1 ] }
+ *   console.error(data); // Output: { key: "value", arr: [ 1 ] }
  * } catch (e) {
  *   console.error("Parsing failed:", e);
  * }

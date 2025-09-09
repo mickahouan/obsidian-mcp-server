@@ -14,7 +14,12 @@ export function toPosix(p: string): string {
 }
 
 export function samePathEnd(a: string, b: string): boolean {
-  const aa = toPosix(a);
-  const bb = toPosix(b);
+  const norm = (p: string) =>
+    toPosix(p)
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase();
+  const aa = norm(a);
+  const bb = norm(b);
   return aa === bb || aa.endsWith("/" + bb);
 }

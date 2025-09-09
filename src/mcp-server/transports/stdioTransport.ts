@@ -68,7 +68,7 @@ export async function connectStdioTransport(
       operationContext,
     );
     if (process.stdout.isTTY) {
-      console.log(
+      console.error(
         `\n🚀 MCP Server running in STDIO mode.\n   (MCP Spec: 2025-03-26 Stdio Transport)\n`,
       );
     }

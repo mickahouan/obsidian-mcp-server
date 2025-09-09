@@ -17,7 +17,7 @@ describe("createCanvasTool", () => {
     };
     const server = new MockServer();
     const { registerCreateCanvasTool } = await import(
-      "../../dist/tools/createCanvasTool.js"
+      "../../dist/src/tools/createCanvasTool.js"
     );
     await registerCreateCanvasTool(server, obsidian);
     await server.handler(

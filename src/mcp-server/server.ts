@@ -42,6 +42,7 @@ import {
 // Import transport setup functions.
 import { startHttpTransport } from "./transports/httpTransport.js";
 import { connectStdioTransport } from "./transports/stdioTransport.js";
+import { xenovaEnabled, warmup } from "../search/embedders/xenovaEmbedder.js";
 
 /**
  * Creates and configures a new instance of the `McpServer`.
@@ -292,6 +293,15 @@ export async function initializeAndStartServer(
       "Using provided shared services (ObsidianRestApiService, VaultCacheService).",
       context,
     );
+
+    if (xenovaEnabled) {
+      warmup().catch((err) =>
+        logger.error("Erreur lors du warmup de l'embedder Xenova", {
+          ...context,
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
 
     // Initiate the transport setup based on configuration, passing shared services.
     const result = await startTransport(obsidianService, vaultCacheService);
