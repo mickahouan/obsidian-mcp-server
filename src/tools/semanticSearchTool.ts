@@ -20,6 +20,11 @@ const tool = {
     },
   },
   async execute(input: Input): Promise<Output> {
+    const hasQuery = !!input?.query?.trim();
+    const hasFrom = !!input?.fromPath?.trim();
+    if (!hasQuery && !hasFrom) {
+      return { method: "lexical", results: [] };
+    }
     try {
       return await smartSearch(input);
     } catch {

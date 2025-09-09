@@ -1,14 +1,13 @@
 import {
-  loadSmartEnvVectorsCached,
-  cosineTopKWithNorm,
-  NoteVecN,
+  loadSmartEnvVectors,
+  cosineTopK,
+  NoteVec,
 } from "./providers/smartEnvFiles.js";
 import {
   resolveSmartEnvDir,
   toPosix,
   samePathEnd,
 } from "../utils/resolveSmartEnvDir.js";
-import { fetch as undiciFetch } from "undici";
 
 export type SmartSearchInput = {
   query?: string;
@@ -107,9 +106,9 @@ function rankDocumentsTFIDF(
 async function fetchVaultDocs(): Promise<Doc[]> {
   const base = process.env.OBSIDIAN_BASE_URL;
   const key = process.env.OBSIDIAN_API_KEY;
-  if (!base || !key) return [];
+  if (!base || !key || typeof fetch !== "function") return [];
   try {
-    const fetchFn: typeof fetch = (globalThis.fetch ?? undiciFetch) as any;
+    const fetchFn: typeof fetch = fetch;
     const res = await fetchFn(joinUrl(base, "/vault"), {
       headers: { Authorization: `Bearer ${key}` },
     });
@@ -143,12 +142,6 @@ function joinUrl(base: string, p: string) {
   return `${base.replace(/\/+$/, "")}${p}`;
 }
 
-function findAnchor(pool: NoteVecN[], fromPath: string): NoteVecN | null {
-  const target = toPosix(fromPath);
-  const found = pool.find((v) => samePathEnd(v.path, target));
-  return found ?? null;
-}
-
 export async function smartSearch(
   input: SmartSearchInput,
 ): Promise<SmartSearchOutput> {
@@ -180,25 +173,23 @@ export async function smartSearch(
   try {
     const envRoot = resolveSmartEnvDir();
     if (envRoot) {
-      const vecs = await loadSmartEnvVectorsCached();
+      const vecs = await loadSmartEnvVectors();
       if (vecs.length) {
         if (wantNeighbors) {
-          const anchor = findAnchor(vecs, fromPath!);
+          const target = toPosix(fromPath!);
+          const anchorEntry =
+            vecs.find((v) => samePathEnd(v.path, target)) ??
+            vecs.find((v) => v.path === target);
+          const anchor = anchorEntry?.vec;
           if (anchor) {
-            const pool = vecs.filter((v) => v !== anchor);
-            const results = cosineTopKWithNorm(
-              anchor.vec,
-              anchor.norm,
-              pool,
-              limit,
-            );
+            const pool = vecs.filter((v: NoteVec) => v !== anchorEntry);
+            const results = cosineTopK(anchor, pool, limit);
             return { method: "files", results };
           }
         }
         if (wantQuery && canEncodeQueryLocally()) {
           const qVec = await encodeQuery384(query);
-          const qNorm = Math.hypot(...qVec) || 1;
-          const results = cosineTopKWithNorm(qVec, qNorm, vecs, limit);
+          const results = cosineTopK(qVec, vecs, limit);
           return { method: "files", results };
         }
       }

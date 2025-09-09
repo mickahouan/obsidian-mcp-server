@@ -148,18 +148,11 @@ async function createMcpServerInstance(
       vaultCacheService,
     );
 
-    if (vaultCacheService) {
-      await registerSemanticSearchTool(
-        server,
-        obsidianService,
-        vaultCacheService,
-      );
-    } else {
-      logger.warning(
-        "Skipping registration of 'smart-search' because the Vault Cache Service is disabled.",
-        context,
-      );
-    }
+    await registerSemanticSearchTool(
+      server,
+      obsidianService,
+      vaultCacheService,
+    );
 
     await registerExecuteTemplateTool(server, obsidianService);
     await registerCreateBaseTool(server, obsidianService);

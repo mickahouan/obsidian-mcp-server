@@ -29,6 +29,7 @@ Thumbs.db
 *.d.ts.map
 *.d.ts
 !*.d.ts.template
+!src/types/*.d.ts
 .pnp.js
 .pnp.cjs
 .pnp.mjs
