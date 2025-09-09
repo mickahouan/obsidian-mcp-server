@@ -79,9 +79,8 @@ smart-search {"fromPath":"/mnt/f/.../Note.md","limit":10}
 
 - `SMART_SEARCH_MODE` : `auto` (défaut, plugin ➜ files ➜ lexical), `plugin`, `files` ou `lexical`.
 - `SMART_ENV_DIR` : chemin vers le dossier `.smart-env` de votre vault (ex. `/chemin/vers/vault/.smart-env`). En mode `files`, seule la recherche de notes similaires via `fromPath` est possible.
-- `SMART_ENV_CACHE_TTL_MS` : durée de vie en cache des vecteurs `.ajson` (ms, défaut 60000).
-- `SMART_ENV_CACHE_MAX` : limite maximale d'items chargés (0 = illimité).
-- `SMART_CONNECTIONS_API` : URL du service Smart Connections si disponible.
+- `SMART_ENV_CACHE_TTL_MS` : durée de vie en cache des vecteurs `.ajson` (ms, défaut 60000). 
+- `SMART_ENV_CACHE_MAX` : limite maximale d'items chargés (0 = illimité). 
 
 #### Xenova
 
@@ -89,9 +88,27 @@ smart-search {"fromPath":"/mnt/f/.../Note.md","limit":10}
 - `QUERY_EMBEDDER` : `xenova` (valeur par défaut).
 - `TRANSFORMERS_CACHE` : chemin optionnel du cache des modèles.
 - `EMBED_MAX_CONCURRENCY` : nombre maximal d'encodages simultanés.
-- `EMBED_TIMEOUT_MS` : délai maximal pour chaque encodage (ms).
+- `EMBED_TIMEOUT_MS` : délai maximal pour chaque encodage (ms). 
 
 L'outil `create-base` produit un YAML minimal centré sur `views:` et peut définir `properties` (objets de configuration comme `displayName`) et `formulas`.
+
+```toml
+# Plugin Smart Connections via Local REST API
+OBSIDIAN_BASE_URL = "http://localhost:27123"
+OBSIDIAN_API_KEY  = "votre_cle"
+
+SMART_SEARCH_MODE = "plugin"
+PLUGIN_TIMEOUT_MS = "15000"
+PLUGIN_RETRIES    = "2"
+
+# Voisinage local (fromPath seulement)
+SMART_ENV_DIR = "/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env/multi"
+SMART_ENV_CACHE_TTL_MS = "60000"
+SMART_ENV_CACHE_MAX    = "20000"
+
+# (Xenova coupé pour l’instant)
+ENABLE_QUERY_EMBEDDING = "false"
+```
 
 ## Sécurité & Confidentialité
 

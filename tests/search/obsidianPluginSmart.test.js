@@ -25,8 +25,8 @@ test("success", async () => {
       results: [{ path: "A.md", score: 0.9, preview: "foo" }],
     }),
   }));
-  const { obsidianPluginSmart } = await import(modPath);
-  const res = await obsidianPluginSmart({ query: "q" });
+  const { pluginSmartSearch } = await import(modPath);
+  const res = await pluginSmartSearch("q", 5);
   expect(res).toEqual({
     results: [{ path: "A.md", score: 0.9, preview: "foo" }],
   });
@@ -35,16 +35,16 @@ test("success", async () => {
 
 test.each([401, 403, 404])("%s returns null", async (status) => {
   global.fetch = jest.fn(async () => ({ status }));
-  const { obsidianPluginSmart } = await import(modPath);
-  const res = await obsidianPluginSmart({ query: "q" });
+  const { pluginSmartSearch } = await import(modPath);
+  const res = await pluginSmartSearch("q", 5);
   expect(res).toBeNull();
   expect(global.fetch).toHaveBeenCalledTimes(1);
 });
 
 test("5xx retries then fails", async () => {
   global.fetch = jest.fn(async () => ({ status: 500 }));
-  const { obsidianPluginSmart } = await import(modPath);
-  await expect(obsidianPluginSmart({ query: "q" })).rejects.toThrow();
+  const { pluginSmartSearch } = await import(modPath);
+  await expect(pluginSmartSearch("q", 5)).rejects.toThrow();
   expect(global.fetch).toHaveBeenCalledTimes(3);
 });
 
@@ -61,8 +61,8 @@ test("timeout triggers abort", async () => {
         });
       }),
   );
-  const { obsidianPluginSmart } = await import(modPath);
-  const p = obsidianPluginSmart({ query: "q" });
+  const { pluginSmartSearch } = await import(modPath);
+  const p = pluginSmartSearch("q", 5);
   jest.advanceTimersByTime(15000);
   await Promise.resolve();
   jest.advanceTimersByTime(15000);

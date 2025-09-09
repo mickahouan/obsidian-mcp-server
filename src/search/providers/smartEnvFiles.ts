@@ -151,8 +151,12 @@ export async function loadSmartEnvVectors(): Promise<NoteVec[]> {
   }
 
   let dir = root;
-  const maybeMulti = path.join(root, "multi");
-  if (fs.existsSync(maybeMulti)) dir = maybeMulti;
+  if (
+    !/multi$/i.test(path.basename(root)) &&
+    fs.existsSync(path.join(root, "multi"))
+  ) {
+    dir = path.join(root, "multi");
+  }
 
   const files = listFilesRecursive(dir, (p) => /\.ajson$/i.test(p));
   const out: NoteVec[] = [];
