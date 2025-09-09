@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 
-const modPath = "../../dist/search/providers/obsidianPluginSmart.js";
+const modPath = "../../dist/src/search/providers/obsidianPluginSmart.js";
 
 beforeEach(() => {
   process.env.OBSIDIAN_BASE_URL = "http://x";

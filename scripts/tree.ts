@@ -216,7 +216,9 @@ const writeTreeToFile = async (): Promise<void> => {
     try {
       await fs.access(resolvedOutputDir);
     } catch {
-      console.error(`Output directory not found. Creating: ${resolvedOutputDir}`);
+      console.error(
+        `Output directory not found. Creating: ${resolvedOutputDir}`,
+      );
       await fs.mkdir(resolvedOutputDir, { recursive: true });
     }
 

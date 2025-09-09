@@ -212,7 +212,9 @@ async function fetchAndProcessSpec(): Promise<void> {
     await fs.access(outputDirAbsolute);
   } catch (error: any) {
     if (error.code === "ENOENT") {
-      console.error(`Output directory not found. Creating: ${outputDirAbsolute}`);
+      console.error(
+        `Output directory not found. Creating: ${outputDirAbsolute}`,
+      );
       await fs.mkdir(outputDirAbsolute, { recursive: true });
     } else {
       console.error(

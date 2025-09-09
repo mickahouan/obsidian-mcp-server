@@ -69,4 +69,3 @@ export async function warmup(): Promise<void> {
     // Ignorer les erreurs de warmup
   }
 }
-
