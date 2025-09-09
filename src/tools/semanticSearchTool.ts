@@ -7,8 +7,8 @@ export type Output = {
   results: { path: string; score: number }[];
 };
 
-const tool = {
-  name: "smart-search",
+  const tool = {
+    name: "smart-search",
   description:
     "Recherche sémantique locale : utilise Smart Connections (.smart-env) si disponible, sinon fallback TF-IDF. Accepte `query` (texte) ou `fromPath` (voisins d’une note).",
   inputSchema: {
@@ -19,14 +19,19 @@ const tool = {
       limit: { type: "number" },
     },
   },
-  async execute(input: Input): Promise<Output> {
-    try {
-      return await smartSearch(input);
-    } catch {
-      return { method: "lexical", results: [] };
-    }
-  },
-};
+    async execute(input: Input): Promise<Output> {
+      const hasQuery = !!input?.query?.trim();
+      const hasFrom = !!input?.fromPath?.trim();
+      if (!hasQuery && !hasFrom) {
+        return { method: "lexical", results: [] };
+      }
+      try {
+        return await smartSearch(input);
+      } catch {
+        return { method: "lexical", results: [] };
+      }
+    },
+  };
 
 export default tool;
 

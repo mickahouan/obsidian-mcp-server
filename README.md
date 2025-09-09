@@ -52,14 +52,16 @@ obsidian-mcp-optimike --port 27123
 
 - **Clé API REST Obsidian** : exporter la variable `OBSIDIAN_API_KEY` issue du plugin Local REST API.
 - **Chemin du vault** : détecté automatiquement, peut être surchargé via les paramètres du serveur.
-- **SMART_SEARCH_MODE** : `auto` (défaut, plugin ➜ files ➜ lexical), `plugin`, `files` ou `lexical`.
-- **SMART_CONNECTIONS_API** : URL du service Smart Connections si disponible.
-- **SMART_ENV_DIR** : chemin vers le dossier `.smart-env` (ex. `F:\\OBSIDIAN\\ÉLYSIA\\.smart-env` sous Windows ou `/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env` sous WSL).
-  En mode `files`, seule la recherche de notes similaires via `fromPath` est possible.
-- **ENABLE_QUERY_EMBEDDING** : `true` pour encoder localement les requêtes (modèle `TaylorAI/bge-micro-v2` via `@xenova/transformers`).
-  Sans cette variable, la recherche textuelle utilise le fallback lexical TF‑IDF.
-- **QUERY_EMBEDDER** : `xenova` (valeur par défaut, inutile de la modifier pour l'instant).
-- **TRANSFORMERS_CACHE** : chemin optionnel où seront mis en cache les modèles téléchargés lors de la première exécution.
+  - **SMART_SEARCH_MODE** : `auto` (défaut, plugin ➜ files ➜ lexical), `plugin`, `files` ou `lexical`.
+  - **SMART_CONNECTIONS_API** : URL du service Smart Connections si disponible.
+  - **SMART_ENV_DIR** : chemin vers le dossier `.smart-env` (ex. `F:\\OBSIDIAN\\ÉLYSIA\\.smart-env` sous Windows ou `/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env` sous WSL).
+    En mode `files`, seule la recherche de notes similaires via `fromPath` est possible.
+  - **ENABLE_QUERY_EMBEDDING** : `true` pour encoder localement les requêtes (modèle `TaylorAI/bge-micro-v2` via `@xenova/transformers`).
+    Sans cette variable, la recherche textuelle utilise le fallback lexical TF‑IDF.
+  - **QUERY_EMBEDDER** : `xenova` (valeur par défaut, inutile de la modifier pour l'instant).
+  - **SMART_ENV_CACHE_TTL_MS** : durée de vie en cache des vecteurs `.ajson` (ms, défaut 60000).
+  - **SMART_ENV_CACHE_MAX** : limite maximale d'items chargés (0 = illimité).
+  - **TRANSFORMERS_CACHE** : chemin optionnel où seront mis en cache les modèles téléchargés lors de la première exécution.
 - L'outil `create-base` produit un YAML minimal centré sur `views:` et peut définir `properties` (objets de configuration comme `displayName`) et `formulas`.
   Pour les détails complets de la syntaxe Bases, voir la documentation officielle :
   [views](https://help.obsidian.md/bases/views), [functions](https://help.obsidian.md/bases/functions), [syntax](https://help.obsidian.md/bases/syntax).
@@ -76,6 +78,31 @@ npm run build
 ```
 
 Les contributions sont les bienvenues (licence MIT).
+
+### Harness de test
+
+```bash
+# ENV requis dans le shell :
+export SMART_ENV_DIR=/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env
+export SMART_SEARCH_MODE=files
+export OBSIDIAN_BASE_URL=http://localhost:27123
+export OBSIDIAN_API_KEY=<clé>
+
+# 1) Vecteurs AJSON visibles ?
+node --loader ts-node/esm scripts/print-smart-env.ts
+
+# 2) Voisins (sémantique locale, pas d’encodeur)
+node --loader ts-node/esm scripts/try-smart-search.ts --fromPath "Chemin/Note.md" --limit 10
+
+# 3) Query (encodeur OFF -> lexical)
+node --loader ts-node/esm scripts/try-smart-search.ts --query "diagnostic mcp obsidian" --limit 10
+
+# 4) Activer encodeur 384‑d (xenova)
+npm i -S @xenova/transformers onnxruntime-node
+export ENABLE_QUERY_EMBEDDING=true
+export QUERY_EMBEDDER=xenova
+node --loader ts-node/esm scripts/try-smart-search.ts --query "diagnostic mcp obsidian" --limit 10
+```
 
 ## Feuille de route
 

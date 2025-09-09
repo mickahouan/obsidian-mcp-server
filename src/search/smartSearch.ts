@@ -1,7 +1,7 @@
 import {
-  loadSmartEnvVectorsCached,
-  cosineTopKWithNorm,
-  NoteVecN,
+  loadSmartEnvVectors,
+  cosineTopK,
+  NoteVec,
 } from "./providers/smartEnvFiles.js";
 import {
   resolveSmartEnvDir,
@@ -143,15 +143,9 @@ function joinUrl(base: string, p: string) {
   return `${base.replace(/\/+$/, "")}${p}`;
 }
 
-function findAnchor(pool: NoteVecN[], fromPath: string): NoteVecN | null {
-  const target = toPosix(fromPath);
-  const found = pool.find((v) => samePathEnd(v.path, target));
-  return found ?? null;
-}
-
-export async function smartSearch(
-  input: SmartSearchInput,
-): Promise<SmartSearchOutput> {
+  export async function smartSearch(
+    input: SmartSearchInput,
+  ): Promise<SmartSearchOutput> {
   const query = (input.query ?? "").trim();
   const fromPath = input.fromPath?.trim();
   const limit = Math.max(1, Math.min(100, input.limit ?? 10));
@@ -176,36 +170,34 @@ export async function smartSearch(
     // on avale l’erreur
   }
 
-  // 2) fichiers (.smart-env)
-  try {
-    const envRoot = resolveSmartEnvDir();
-    if (envRoot) {
-      const vecs = await loadSmartEnvVectorsCached();
-      if (vecs.length) {
-        if (wantNeighbors) {
-          const anchor = findAnchor(vecs, fromPath!);
-          if (anchor) {
-            const pool = vecs.filter((v) => v !== anchor);
-            const results = cosineTopKWithNorm(
-              anchor.vec,
-              anchor.norm,
-              pool,
-              limit,
-            );
+    // 2) fichiers (.smart-env)
+    try {
+      const envRoot = resolveSmartEnvDir();
+      if (envRoot) {
+        const vecs = await loadSmartEnvVectors();
+        if (vecs.length) {
+          if (wantNeighbors) {
+            const target = toPosix(fromPath!);
+            const anchorEntry =
+              vecs.find((v) => samePathEnd(v.path, target)) ??
+              vecs.find((v) => v.path === target);
+            const anchor = anchorEntry?.vec;
+            if (anchor) {
+              const pool = vecs.filter((v: NoteVec) => v !== anchorEntry);
+              const results = cosineTopK(anchor, pool, limit);
+              return { method: "files", results };
+            }
+          }
+          if (wantQuery && canEncodeQueryLocally()) {
+            const qVec = await encodeQuery384(query);
+            const results = cosineTopK(qVec, vecs, limit);
             return { method: "files", results };
           }
         }
-        if (wantQuery && canEncodeQueryLocally()) {
-          const qVec = await encodeQuery384(query);
-          const qNorm = Math.hypot(...qVec) || 1;
-          const results = cosineTopKWithNorm(qVec, qNorm, vecs, limit);
-          return { method: "files", results };
-        }
       }
+    } catch {
+      // on avale l’erreur
     }
-  } catch {
-    // on avale l’erreur
-  }
 
   // 3) fallback lexical TF‑IDF
   if (wantQuery || wantNeighbors) {
