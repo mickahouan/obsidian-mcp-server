@@ -3,6 +3,7 @@ import {
   cosineTopK,
   NoteVec,
 } from "./providers/smartEnvFiles.js";
+import { obsidianPluginSmart } from "./providers/obsidianPluginSmart.js";
 import {
   resolveSmartEnvDir,
   toPosix,
@@ -16,15 +17,8 @@ export type SmartSearchInput = {
 };
 export type SmartSearchOutput = {
   method: "plugin" | "files" | "lexical";
-  results: { path: string; score: number }[];
+  results: { path: string; score?: number; preview?: string }[];
 };
-
-// ---- passerelle plugin optionnelle (aucune API officielle pour l’instant) ----
-async function viaPlugin(
-  _input: SmartSearchInput,
-): Promise<SmartSearchOutput | null> {
-  return null;
-}
 
 // ---- encodage local de requête (xenova) ----
 let _pipePromise: Promise<any> | null = null;
@@ -151,13 +145,13 @@ export async function smartSearch(
   const wantQuery = !!query;
   const wantNeighbors = !!fromPath;
 
-  // 1) mode plugin (noop)
+  // 1) mode plugin (optional bridge)
   try {
     if (
       process.env.SMART_SEARCH_MODE === "plugin" &&
       process.env.SMART_CONNECTIONS_API
     ) {
-      const via = await viaPlugin({
+      const via = await obsidianPluginSmart({
         query,
         fromPath: fromPath || undefined,
         limit,
