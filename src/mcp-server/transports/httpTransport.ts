@@ -114,7 +114,7 @@ function startHttpServerWithRetry(
               address: serverAddress,
             });
             if (process.stdout.isTTY) {
-              console.log(`\n🚀 MCP Server running at: ${serverAddress}\n`);
+              console.error(`\n🚀 MCP Server running at: ${serverAddress}\n`);
             }
           },
         );

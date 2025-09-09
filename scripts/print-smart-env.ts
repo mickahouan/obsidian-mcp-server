@@ -1,9 +1,9 @@
 import { loadSmartEnvVectors } from "../src/search/providers/smartEnvFiles.ts";
 
 const vecs = await loadSmartEnvVectors();
-console.log("vecCount =", vecs.length);
+console.error("vecCount =", vecs.length);
 if (vecs.length)
-  console.log(
+  console.error(
     "sample =",
     vecs.slice(0, 3).map((v) => ({ path: v.path, dim: v.vec.length })),
   );

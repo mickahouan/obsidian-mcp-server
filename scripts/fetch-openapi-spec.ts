@@ -29,7 +29,7 @@ const urlArg = args[0];
 const outputBaseArg = args[1];
 
 if (helpFlag || !urlArg || !outputBaseArg) {
-  console.log(`
+  console.error(`
 Fetch OpenAPI Specification Script
 
 Usage:
@@ -73,13 +73,13 @@ async function tryFetch(
   url: string,
 ): Promise<{ data: string; contentType: string | null } | null> {
   try {
-    console.log(`Attempting to fetch from: ${url}`);
+    console.error(`Attempting to fetch from: ${url}`);
     const response = await axios.get(url, {
       responseType: "text",
       validateStatus: (status) => status >= 200 && status < 300,
     });
     const contentType = response.headers["content-type"] || null;
-    console.log(
+    console.error(
       `Successfully fetched (Status: ${response.status}, Content-Type: ${contentType || "N/A"})`,
     );
     return { data: response.data, contentType };
@@ -109,28 +109,28 @@ function parseSpec(data: string, contentType: string | null): object | null {
       lowerContentType?.includes("yaml") ||
       lowerContentType?.includes("yml")
     ) {
-      console.log("Parsing content as YAML based on Content-Type...");
+      console.error("Parsing content as YAML based on Content-Type...");
       return yaml.load(data) as object;
     } else if (lowerContentType?.includes("json")) {
-      console.log("Parsing content as JSON based on Content-Type...");
+      console.error("Parsing content as JSON based on Content-Type...");
       return JSON.parse(data);
     } else {
-      console.log(
+      console.error(
         "Content-Type is ambiguous or missing. Attempting to parse as YAML first...",
       );
       try {
         const parsedYaml = yaml.load(data) as object;
         // Basic validation: check if it's a non-null object.
         if (parsedYaml && typeof parsedYaml === "object") {
-          console.log("Successfully parsed as YAML.");
+          console.error("Successfully parsed as YAML.");
           return parsedYaml;
         }
       } catch (yamlError) {
-        console.log("YAML parsing failed. Attempting to parse as JSON...");
+        console.error("YAML parsing failed. Attempting to parse as JSON...");
         try {
           const parsedJson = JSON.parse(data);
           if (parsedJson && typeof parsedJson === "object") {
-            console.log("Successfully parsed as JSON.");
+            console.error("Successfully parsed as JSON.");
             return parsedJson;
           }
         } catch (jsonError) {
@@ -147,7 +147,7 @@ function parseSpec(data: string, contentType: string | null): object | null {
       try {
         const parsedJson = JSON.parse(data);
         if (parsedJson && typeof parsedJson === "object") {
-          console.log(
+          console.error(
             "Successfully parsed as JSON on second attempt for non-object YAML.",
           );
           return parsedJson;
@@ -212,7 +212,7 @@ async function fetchAndProcessSpec(): Promise<void> {
     await fs.access(outputDirAbsolute);
   } catch (error: any) {
     if (error.code === "ENOENT") {
-      console.log(`Output directory not found. Creating: ${outputDirAbsolute}`);
+      console.error(`Output directory not found. Creating: ${outputDirAbsolute}`);
       await fs.mkdir(outputDirAbsolute, { recursive: true });
     } else {
       console.error(
@@ -223,9 +223,9 @@ async function fetchAndProcessSpec(): Promise<void> {
   }
 
   try {
-    console.log(`Saving YAML specification to: ${yamlOutputPath}`);
+    console.error(`Saving YAML specification to: ${yamlOutputPath}`);
     await fs.writeFile(yamlOutputPath, yaml.dump(openapiSpec), "utf8");
-    console.log(`Successfully saved YAML specification.`);
+    console.error(`Successfully saved YAML specification.`);
   } catch (error) {
     console.error(
       `Error saving YAML to ${yamlOutputPath}: ${error instanceof Error ? error.message : String(error)}. Aborting.`,
@@ -234,13 +234,13 @@ async function fetchAndProcessSpec(): Promise<void> {
   }
 
   try {
-    console.log(`Saving JSON specification to: ${jsonOutputPath}`);
+    console.error(`Saving JSON specification to: ${jsonOutputPath}`);
     await fs.writeFile(
       jsonOutputPath,
       JSON.stringify(openapiSpec, null, 2),
       "utf8",
     );
-    console.log(`Successfully saved JSON specification.`);
+    console.error(`Successfully saved JSON specification.`);
   } catch (error) {
     console.error(
       `Error saving JSON to ${jsonOutputPath}: ${error instanceof Error ? error.message : String(error)}. Aborting.`,
@@ -248,7 +248,7 @@ async function fetchAndProcessSpec(): Promise<void> {
     process.exit(1);
   }
 
-  console.log("OpenAPI specification processed and saved successfully.");
+  console.error("OpenAPI specification processed and saved successfully.");
 }
 
 fetchAndProcessSpec();
