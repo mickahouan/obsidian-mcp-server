@@ -121,6 +121,53 @@ const getSmartEnvCache = (): SmartEnvCache => {
 
 let cachedEmbedder: { key: string; loader: Promise<EmbedFunction> } | null = null;
 
+const SUPPORTED_VECTOR_DIMENSIONS = new Set([384, 768, 1024]);
+
+const ensureConsistentVectorDimensions = (entries: SmartVec[]): number => {
+  const dimensions = new Set<number>();
+
+  for (const entry of entries) {
+    const length = entry.vec.length;
+
+    if (length <= 0) {
+      throw new McpError(
+        BaseErrorCode.INTERNAL_ERROR,
+        `Invalid embedding data for '${entry.notePath}': vector is empty`,
+      );
+    }
+
+    dimensions.add(length);
+  }
+
+  if (dimensions.size === 0) {
+    throw new McpError(
+      BaseErrorCode.INTERNAL_ERROR,
+      "No embeddings available to determine vector dimension.",
+    );
+  }
+
+  if (dimensions.size > 1) {
+    throw new McpError(
+      BaseErrorCode.CONFIGURATION_ERROR,
+      `Smart Connections embeddings contain mixed vector dimensions (${[...
+        dimensions
+      ].join(", ")}). All embeddings must be regenerated using a single model.`,
+    );
+  }
+
+  const [dimension] = [...dimensions];
+
+  if (!SUPPORTED_VECTOR_DIMENSIONS.has(dimension)) {
+    throw new McpError(
+      BaseErrorCode.CONFIGURATION_ERROR,
+      `Embedding dimension ${dimension} is not supported by the configured query embedder. ` +
+        "Regenerate embeddings with a supported Xenova model (384, 768, or 1024).",
+    );
+  }
+
+  return dimension;
+};
+
 const getQueryEmbedder = (dimension?: number): Promise<EmbedFunction> => {
   const embedderKind = (config.queryEmbedder ?? "xenova").toLowerCase();
 
@@ -217,10 +264,17 @@ const performSmartSearch = async (
   const includeSnippets = params.with_snippets ?? true;
   const vaultRoot = includeSnippets ? getVaultRoot() : null;
 
-  const dimension = entries[0]?.vec.length;
+  const dimension = ensureConsistentVectorDimensions(entries);
   const model = entries[0]?.model;
   const embed = await getQueryEmbedder(dimension);
   const queryVector = await embed(params.query);
+
+  if (queryVector.length !== dimension) {
+    throw new McpError(
+      BaseErrorCode.INTERNAL_ERROR,
+      `Query embedder returned ${queryVector.length}-dimensional vectors but Smart Connections data uses ${dimension}.`,
+    );
+  }
 
   const filtered = entries.filter(
     (entry) =>
