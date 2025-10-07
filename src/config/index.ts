@@ -104,6 +104,24 @@ const EnvSchema = z.object({
     .int()
     .positive()
     .default(30000),
+  // --- Smart Connections Semantic Search ---
+  SMART_SEARCH_MODE: z
+    .enum(["plugin", "smartenv", "files"])
+    .default("plugin"),
+  SMART_ENV_DIR: z.string().optional(),
+  ENABLE_QUERY_EMBEDDING: z
+    .string()
+    .transform((val) => val.toLowerCase() === "true")
+    .default("true"),
+  QUERY_EMBEDDER: z.string().default("xenova"),
+  QUERY_EMBEDDER_MODEL_HINT: z.string().optional(),
+  SMART_ENV_CACHE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(60000),
+  OBSIDIAN_VAULT: z.string().optional(),
+  TRANSFORMERS_CACHE: z.string().optional(),
 });
 
 const parsedEnv = EnvSchema.safeParse(process.env);
@@ -214,6 +232,14 @@ export const config = {
   obsidianCacheRefreshIntervalMin: env.OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN,
   obsidianEnableCache: env.OBSIDIAN_ENABLE_CACHE,
   obsidianApiSearchTimeoutMs: env.OBSIDIAN_API_SEARCH_TIMEOUT_MS,
+  smartSearchMode: env.SMART_SEARCH_MODE,
+  smartEnvDir: env.SMART_ENV_DIR,
+  enableQueryEmbedding: env.ENABLE_QUERY_EMBEDDING,
+  queryEmbedder: env.QUERY_EMBEDDER,
+  queryEmbedderModelHint: env.QUERY_EMBEDDER_MODEL_HINT,
+  smartEnvCacheTtlMs: env.SMART_ENV_CACHE_TTL_MS,
+  obsidianVaultPath: env.OBSIDIAN_VAULT,
+  transformersCache: env.TRANSFORMERS_CACHE,
 };
 
 /**
