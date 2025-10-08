@@ -123,6 +123,184 @@ export interface ApiError {
 }
 
 /**
+ * Summary information for a Base definition discovered in the vault.
+ */
+export interface BaseSummary {
+  id: string;
+  name: string;
+  path: string;
+}
+
+/**
+ * Response returned by the bridge when listing bases.
+ */
+export interface BasesListResponse {
+  bases: BaseSummary[];
+}
+
+/**
+ * Property description inside a base schema.
+ */
+export interface BaseSchemaProperty {
+  key: string;
+  kind: "note" | "file" | "formula" | "unknown";
+  displayName?: string;
+  valueType?: string;
+}
+
+/**
+ * View description exposed by a base schema.
+ */
+export interface BaseSchemaView {
+  name: string;
+  type: string;
+  limit?: number;
+  order?: string[];
+  filters?: Record<string, unknown> | string[] | undefined;
+  description?: string;
+}
+
+/**
+ * Detailed schema information for a given base.
+ */
+export interface BaseSchemaResponse {
+  id: string;
+  path: string;
+  name?: string;
+  properties: BaseSchemaProperty[];
+  formulas?: Record<string, unknown>;
+  views: BaseSchemaView[];
+  filters?: Record<string, unknown>;
+}
+
+/**
+ * Request payload accepted by the query endpoint.
+ */
+export interface BaseQueryRequest {
+  view?: string;
+  filter?: Record<string, unknown>;
+  sort?: Array<{
+    prop: string;
+    dir?: "asc" | "desc";
+  }>;
+  limit?: number;
+  page?: number;
+  evaluate?: boolean;
+}
+
+/**
+ * Structure of a row returned by the query endpoint.
+ */
+export interface BaseQueryRow {
+  file: {
+    path: string;
+    name: string;
+  };
+  props: Record<string, unknown>;
+  computed?: Record<string, unknown>;
+}
+
+/**
+ * Response payload emitted by the query endpoint.
+ */
+export interface BaseQueryResponse {
+  total: number;
+  page: number;
+  rows: BaseQueryRow[];
+  evaluate?: boolean;
+  source?: "engine" | "fallback";
+}
+
+/**
+ * Operation accepted by the upsert endpoint.
+ */
+export interface BaseUpsertOperation {
+  file: string;
+  set?: Record<string, unknown>;
+  unset?: string[];
+  expected_mtime?: number;
+}
+
+/**
+ * Request payload accepted by the upsert endpoint.
+ */
+export interface BaseUpsertRequest {
+  operations: BaseUpsertOperation[];
+  continueOnError?: boolean;
+}
+
+/**
+ * Result for a single upsert operation.
+ */
+export interface BaseUpsertResult {
+  file: string;
+  mtime: number;
+  changed?: {
+    keys: string[];
+    unset?: string[];
+  };
+  warnings?: string[];
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
+/**
+ * Response payload emitted by the upsert endpoint.
+ */
+export interface BaseUpsertResponse {
+  ok: boolean;
+  results: BaseUpsertResult[];
+}
+
+/**
+ * Request payload used to create a new base file.
+ */
+export interface BaseCreateRequest {
+  path: string;
+  spec: Record<string, unknown>;
+  overwrite?: boolean;
+  validateOnly?: boolean;
+}
+
+/**
+ * Response payload when creating a new base.
+ */
+export interface BaseCreateResponse {
+  ok: boolean;
+  id: string;
+  warnings?: string[];
+}
+
+/**
+ * Response when fetching a base configuration as YAML/JSON.
+ */
+export interface BaseConfigResponse {
+  id: string;
+  yaml: string;
+  json?: Record<string, unknown>;
+}
+
+/**
+ * Request payload for updating/replacing a base configuration.
+ */
+export interface BaseConfigUpsertRequest {
+  yaml?: string;
+  json?: Record<string, unknown>;
+  validateOnly?: boolean;
+}
+
+/**
+ * Response payload from updating/replacing a base configuration.
+ */
+export interface BaseConfigUpsertResponse {
+  ok: boolean;
+  id: string;
+  warnings?: string[];
+}
+
+/**
  * Options for PATCH operations.
  */
 export interface PatchOptions {

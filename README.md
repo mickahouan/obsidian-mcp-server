@@ -172,6 +172,71 @@ MCP_LOG_LEVEL = "info"
 
 > Consultez `src/mcp-server/tools/**/logic.ts` pour les schémas Zod détaillés et toutes les options (dates relatives, filtres avancés, etc.).
 
+### 6.3 Bases Bridge (REST + MCP)
+
+> **Nouveau !** Intégration complète du plugin `obsidian-bases-bridge` (inclus dans ce dépôt, dossier `plugins/obsidian-bases-bridge`). Il étend le plugin **Obsidian Local REST API** avec des routes dédiées aux fichiers `.base` (Bases, plugin noyau) et expose six tools MCP prêts pour Codex.
+
+#### Installation plugin
+
+1. Copier le dossier `plugins/obsidian-bases-bridge` dans `.obsidian/plugins/` de votre coffre.
+2. Activer **Obsidian Local REST API** (≥ 2.5) puis **Bases Bridge**.
+3. Dans la base ciblée, activer la vue headless « Bridge (Headless) » pour bénéficier des valeurs évaluées par l’engine (`entry.getValue(...)`). Sans cela, le bridge bascule automatiquement sur le fallback disque (scan metadataCache + filtres `eq/in/regex`).
+
+#### Endpoints REST (extension Local REST API)
+
+| Méthode | Route | Rôle |
+| --- | --- | --- |
+| `GET /bases` | Liste tous les fichiers `.base` du coffre. |
+| `GET /bases/:id/schema` | Renvoie propriétés, vues, formules et filtres d’une base. |
+| `POST /bases/:id/query` | Exécute une requête (engine ou fallback) avec filtres/tri/pagination. |
+| `POST /bases/:id/upsert` | Upsert frontmatter avec verrou `expected_mtime` et normalisation (interdit `formula.*`/`file.*`). |
+| `POST /bases` | Crée un fichier `.base` (génération YAML conforme). |
+| `GET/PUT /bases/:id/config` | Lecture/écriture YAML ou JSON canonique. |
+
+Exemples rapides :
+
+```bash
+# Lister les bases
+curl -s -H "Authorization: Bearer $OBSIDIAN_API_KEY" \
+  "$OBSIDIAN_BASE_URL/bases"
+
+# Interroger une vue (mode evaluate)
+curl -s -H "Authorization: Bearer $OBSIDIAN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"view":"Backlog","limit":5,"page":1,"evaluate":true}' \
+  "$OBSIDIAN_BASE_URL/bases/Content/plan.base/query"
+
+# Upsert frontmatter (verrou mtime)
+curl -s -H "Authorization: Bearer $OBSIDIAN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"operations":[{"file":"SEO/Pages/13-Aix.md","set":{"QC2_status":"pass"},"expected_mtime":1728400000000}]}' \
+  "$OBSIDIAN_BASE_URL/bases/Content/plan.base/upsert"
+
+# Création/validation d'une base
+curl -s -H "Authorization: Bearer $OBSIDIAN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"path":"Content/plan.base","spec":{"views":[{"type":"table","name":"Backlog","order":["file.name"]}]}}' \
+  "$OBSIDIAN_BASE_URL/bases"
+```
+
+> Sécurité : les routes réutilisent l’authentification Bearer + TLS local du plugin REST. Le bridge borne les CORS à `localhost` et applique un verrou optimiste via `FileStats.mtime`.
+
+#### Tools MCP `bases_*`
+
+| Tool | Description | Entrée (exemple) | Sortie |
+| --- | --- | --- | --- |
+| `bases_list` | Liste tous les fichiers `.base` disponibles. | `{}` | `{"bases":[{"id":"Content/plan.base","name":"plan"}]}` |
+| `bases_get_schema` | Récupère propriétés, formules et vues. | `{"base_id":"Content/plan.base"}` | `{"id":"...","properties":[...],"views":[...]}` |
+| `bases_query` | Requête avec filtres/tri/pagination, engine si dispo. | `{"base_id":"Content/plan.base","view":"Backlog","filter":{"eq":{"ready":true}},"limit":50}` | `{"total":137,"rows":[...]}` |
+| `bases_upsert_rows` | Upsert frontmatter (set/unset + `expected_mtime`). | `{"base_id":"Content/plan.base","operations":[{"file":"SEO/Pages/13-Aix.md","set":{"QC2_status":"pass"}}]}` | `{"ok":true,"results":[{"file":"...","mtime":17284...}]}` |
+| `bases_create` | Crée ou valide un `.base` via JSON→YAML. | `{"path":"Content/plan.base","spec":{"views":[{"type":"table","name":"Backlog","order":["file.name"]}]}}` | `{"ok":true,"id":"Content/plan.base"}` |
+| `bases_upsert_config` | Remplace/valide la config YAML/JSON. | `{"base_id":"Content/plan.base","yaml":"filters:\n  and:\n    - 'file.ext == \"md\"'\n"}` | `{"ok":true,"warnings":[]}` |
+
+> Tous les schémas sont « Codex-friendly » (`type:"object"`, pas d’union), timeout 15 s côté client recommandé. Les erreurs `409` remontent les conflits de verrou (`expected_mtime`).
+
 ## 7) Démarrage avec MCP Inspector (debug)
 
 ```bash

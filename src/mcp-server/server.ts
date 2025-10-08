@@ -34,6 +34,12 @@ import { registerObsidianUpdateNoteTool } from "./tools/obsidianUpdateNoteTool/i
 import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFrontmatterTool/index.js";
 import { registerObsidianManageTagsTool } from "./tools/obsidianManageTagsTool/index.js";
 import { registerSemanticSearchTool } from "./tools/semanticSearchTool/index.js";
+import { registerBasesListTool } from "./tools/basesListTool/index.js";
+import { registerBasesGetSchemaTool } from "./tools/basesGetSchemaTool/index.js";
+import { registerBasesQueryTool } from "./tools/basesQueryTool/index.js";
+import { registerBasesUpsertRowsTool } from "./tools/basesUpsertRowsTool/index.js";
+import { registerBasesCreateTool } from "./tools/basesCreateTool/index.js";
+import { registerBasesUpsertConfigTool } from "./tools/basesUpsertConfigTool/index.js";
 // Import transport setup functions.
 import { startHttpTransport } from "./transports/httpTransport.js";
 import { connectStdioTransport } from "./transports/stdioTransport.js";
@@ -147,6 +153,12 @@ async function createMcpServerInstance(
       obsidianService,
       vaultCacheService,
     );
+    await registerBasesListTool(server, obsidianService);
+    await registerBasesGetSchemaTool(server, obsidianService);
+    await registerBasesQueryTool(server, obsidianService);
+    await registerBasesUpsertRowsTool(server, obsidianService);
+    await registerBasesCreateTool(server, obsidianService);
+    await registerBasesUpsertConfigTool(server, obsidianService);
 
     logger.info("Resources and tools registered successfully", context);
 
