@@ -22,7 +22,7 @@ Dans MCP Inspector → **New STDIO session**
 - Command : `node`
 - Args : `dist/index.js`
 - Env requis : `SMART_ENV_DIR=/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env`, `ENABLE_QUERY_EMBEDDING=true`, `QUERY_EMBEDDER=xenova`, `QUERY_EMBEDDER_MODEL_HINT=bge-384`, `TRANSFORMERS_CACHE=/home/<user>/.cache/transformers`
-- (Optionnel REST) `OBSIDIAN_BASE_URL=http://127.0.0.1:27123`, `OBSIDIAN_API_KEY=...`, `OBSIDIAN_VERIFY_SSL=false`
+- REST (plugin requis) : `OBSIDIAN_BASE_URL=http://127.0.0.1:27123`, `OBSIDIAN_API_KEY=<clé>`, `OBSIDIAN_VERIFY_SSL=false`
 
 > 🔐 **Note SSL** : le plugin Obsidian REST utilise un certificat auto-signé. Pour éviter les erreurs locales, définissez `OBSIDIAN_VERIFY_SSL=false`. En production, configurez un certificat de confiance et repassez à `true`.
 
@@ -96,7 +96,7 @@ TRANSFORMERS_CACHE = "/home/<user>/.cache/transformers"
 MCP_LOG_LEVEL = "info"
 ```
 
-> Pour activer aussi les outils REST Obsidian, ajoutez `OBSIDIAN_BASE_URL` et `OBSIDIAN_API_KEY`.
+> Pour activer aussi les outils REST Obsidian, ajoutez `OBSIDIAN_BASE_URL` et `OBSIDIAN_API_KEY` (clé obligatoire, le serveur refusera de démarrer si elle est absente).
 
 ## 6) Outils MCP exposés
 
@@ -180,7 +180,7 @@ npm run inspect
 
 1. UI → **Connections → New STDIO session**.
 2. Command : `node`, Args : `dist/index.js`.
-3. Env : `SMART_ENV_DIR=...`, `OBSIDIAN_VAULT=...`, `ENABLE_QUERY_EMBEDDING=true`, `QUERY_EMBEDDER=xenova`, `QUERY_EMBEDDER_MODEL_HINT=bge-384`, `TRANSFORMERS_CACHE=...`, `OBSIDIAN_BASE_URL=...`, `OBSIDIAN_API_KEY=...` (si REST activé).
+3. Env : `SMART_ENV_DIR=...`, `OBSIDIAN_VAULT=...`, `ENABLE_QUERY_EMBEDDING=true`, `QUERY_EMBEDDER=xenova`, `QUERY_EMBEDDER_MODEL_HINT=bge-384`, `TRANSFORMERS_CACHE=...`, `OBSIDIAN_BASE_URL=...`, `OBSIDIAN_API_KEY=<clé obligatoire>` (si REST activé).
 4. **Tools → List tools** puis tester `smart_semantic_search`.
 
 > Astuce : certains clients gèrent mal `--env` en CLI. Préférez la saisie des variables directement dans l’UI Inspector.
@@ -227,7 +227,7 @@ npm run inspect
 | `QUERY_EMBEDDER_MODEL_HINT` | Recommandé | `bge-384` | Alignement avec la dimension des vecteurs Smart Connections. |
 | `TRANSFORMERS_CACHE` | Recommandé | `/home/<user>/.cache/transformers` | Cache des modèles Xenova (offline-friendly). |
 | `OBSIDIAN_BASE_URL` | Optionnel | `http://127.0.0.1:27123` | Point de terminaison du plugin REST (requis pour les outils REST). |
-| `OBSIDIAN_API_KEY` | Optionnel | `sk-...` | Clé API du plugin REST. |
+| `OBSIDIAN_API_KEY` | Oui (si plugin REST) | `sk-...` | Clé API du plugin REST (obligatoire pour que le serveur démarre). |
 | `OBSIDIAN_VERIFY_SSL` | Optionnel | `false` | Désactiver la vérification SSL pour les certificats auto-signés. |
 | `OBSIDIAN_ENABLE_CACHE` | Optionnel | `true` | Active le cache en mémoire du coffre. |
 | `SMART_ENV_CACHE_TTL_MS` | Optionnel | `60000` | TTL du cache embeddings en millisecondes. |
