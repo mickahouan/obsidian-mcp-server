@@ -4,292 +4,253 @@
 [![Model Context Protocol](https://img.shields.io/badge/MCP%20SDK-^1.13.0-green.svg)](https://modelcontextprotocol.io/)
 [![Version](https://img.shields.io/badge/Version-2.0.7-blue.svg)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Status](https://img.shields.io/badge/Status-Production-brightgreen.svg)](https://github.com/cyanheads/obsidian-mcp-server/issues)
 [![GitHub](https://img.shields.io/github/stars/cyanheads/obsidian-mcp-server?style=social)](https://github.com/cyanheads/obsidian-mcp-server)
 
-**Empower your AI agents and development tools with seamless Obsidian integration!**
+> Compatibilité : Codex ≥ 0.45 • MCP Inspector • Claude Desktop
 
-An MCP (Model Context Protocol) server providing comprehensive access to your Obsidian vault. Enables LLMs and AI agents to read, write, search, and manage your notes and files through the [Obsidian Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api).
-
-Built on the [`cyanheads/mcp-ts-template`](https://github.com/cyanheads/mcp-ts-template), this server follows a modular architecture with robust error handling, logging, and security features.
-
-## 🚀 Core Capabilities: Obsidian Tools 🛠️
-
-This server equips your AI with specialized tools to interact with your Obsidian vault:
-
-| Tool Name                                                                              | Description                                                     | Key Features                                                                                                                                           |
-| :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`obsidian_read_note`](./src/mcp-server/tools/obsidianReadNoteTool/)                   | Retrieves the content and metadata of a specified note.         | - Read in `markdown` or `json` format.<br/>- Case-insensitive path fallback.<br/>- Includes file stats (creation/modification time).                   |
-| [`obsidian_update_note`](./src/mcp-server/tools/obsidianUpdateNoteTool/)               | Modifies notes using whole-file operations.                     | - `append`, `prepend`, or `overwrite` content.<br/>- Can create files if they don't exist.<br/>- Targets files by path, active note, or periodic note. |
-| [`obsidian_search_replace`](./src/mcp-server/tools/obsidianSearchReplaceTool/)         | Performs search-and-replace operations within a target note.    | - Supports string or regex search.<br/>- Options for case sensitivity, whole word, and replacing all occurrences.                                      |
-| [`obsidian_global_search`](./src/mcp-server/tools/obsidianGlobalSearchTool/)           | Performs a search across the entire vault.                      | - Text or regex search.<br/>- Filter by path and modification date.<br/>- Paginated results.                                                           |
-| [`obsidian_list_notes`](./src/mcp-server/tools/obsidianListNotesTool/)                 | Lists notes and subdirectories within a specified vault folder. | - Filter by file extension or name regex.<br/>- Provides a formatted tree view of the directory.                                                       |
-| [`obsidian_manage_frontmatter`](./src/mcp-server/tools/obsidianManageFrontmatterTool/) | Atomically manages a note's YAML frontmatter.                   | - `get`, `set`, or `delete` frontmatter keys.<br/>- Avoids rewriting the entire file for metadata changes.                                             |
-| [`obsidian_manage_tags`](./src/mcp-server/tools/obsidianManageTagsTool/)               | Adds, removes, or lists tags for a note.                        | - Manages tags in both YAML frontmatter and inline content.                                                                                            |
-| [`obsidian_delete_note`](./src/mcp-server/tools/obsidianDeleteNoteTool/)               | Permanently deletes a specified note from the vault.            | - Case-insensitive path fallback for safety.                                                                                                           |
-
----
-
-## Table of Contents
-
-| [Overview](#overview) | [Features](#features) | [Configuration](#configuration) |
-| [Project Structure](#project-structure) | [Vault Cache Service](#vault-cache-service) |
-| [Tools](#tools) | [Resources](#resources) | [Development](#development) | [License](#license) |
-
-## Overview
-
-The Obsidian MCP Server acts as a bridge, allowing applications (MCP Clients) that understand the Model Context Protocol (MCP) – like advanced AI assistants (LLMs), IDE extensions, or custom scripts – to interact directly and safely with your Obsidian vault.
-
-Instead of complex scripting or manual interaction, your tools can leverage this server to:
-
-- **Automate vault management**: Read notes, update content, manage frontmatter and tags, search across files, list directories, and delete files programmatically.
-- **Integrate Obsidian into AI workflows**: Enable LLMs to access and modify your knowledge base as part of their research, writing, or coding tasks.
-- **Build custom Obsidian tools**: Create external applications that interact with your vault data in novel ways.
-
-Built on the robust `mcp-ts-template`, this server provides a standardized, secure, and efficient way to expose Obsidian functionality via the MCP standard. It achieves this by communicating with the powerful [Obsidian Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) running inside your vault.
-
-> **Developer Note**: This repository includes a [.clinerules](.clinerules) file that serves as a developer cheat sheet for your LLM coding agent with quick reference for the codebase patterns, file locations, and code snippets.
-
-## Features
-
-### Core Utilities
-
-Leverages the robust utilities provided by `cyanheads/mcp-ts-template`:
-
-- **Logging**: Structured, configurable logging (file rotation, console, MCP notifications) with sensitive data redaction.
-- **Error Handling**: Centralized error processing, standardized error types (`McpError`), and automatic logging.
-- **Configuration**: Environment variable loading (`dotenv`) with comprehensive validation.
-- **Input Validation/Sanitization**: Uses `zod` for schema validation and custom sanitization logic.
-- **Request Context**: Tracking and correlation of operations via unique request IDs.
-- **Type Safety**: Strong typing enforced by TypeScript and Zod schemas.
-- **HTTP Transport Option**: Built-in Hono server with SSE, session management, CORS support, and pluggable authentication strategies (JWT and OAuth 2.1).
-
-### Obsidian Integration
-
-- **Obsidian Local REST API Integration**: Communicates directly with the Obsidian Local REST API plugin via HTTP requests managed by the `ObsidianRestApiService`.
-- **Comprehensive Command Coverage**: Exposes key vault operations as MCP tools (see [Tools](#tools) section).
-- **Vault Interaction**: Supports reading, updating (append, prepend, overwrite), searching (global text/regex, search/replace), listing, deleting, and managing frontmatter and tags.
-- **Targeting Flexibility**: Tools can target files by path, the currently active file in Obsidian, or periodic notes (daily, weekly, etc.).
-- **Vault Cache Service**: An intelligent in-memory cache that improves performance and resilience. It caches vault content, provides a fallback for the global search tool if the live API fails, and periodically refreshes to stay in sync.
-- **Safety Features**: Case-insensitive path fallbacks for file operations, clear distinction between modification types (append, overwrite, etc.).
-
-## Installation
-
-### Prerequisites
-
-1.  **Obsidian**: You need Obsidian installed.
-2.  **Obsidian Local REST API Plugin**: Install and enable the [Obsidian Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) within your Obsidian vault.
-3.  **API Key**: Configure an API key within the Local REST API plugin settings in Obsidian. You will need this key to configure the server.
-4.  **Node.js & npm**: Ensure you have Node.js (v18 or later recommended) and npm installed.
-
-## Configuration
-
-### MCP Client Settings
-
-Add the following to your MCP client's configuration file (e.g., `cline_mcp_settings.json`). This configuration uses `npx` to run the server, which will automatically download & install the package if not already present:
-
-```json
-{
-  "mcpServers": {
-    "obsidian-mcp-server": {
-      "command": "npx",
-      "args": ["obsidian-mcp-server"],
-      "env": {
-        "OBSIDIAN_API_KEY": "YOUR_API_KEY_FROM_OBSIDIAN_PLUGIN",
-        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
-        "OBSIDIAN_VERIFY_SSL": "false",
-        "OBSIDIAN_ENABLE_CACHE": "true"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
-
-**Note**: Verify SSL is set to false here because the Obsidian Local REST API plugin uses a self-signed certificate by default. If you are deploying this in a production environment, consider using the encrypted HTTPS endpoint and set `OBSIDIAN_VERIFY_SSL` to `true` after configuring your server to trust the self-signed certificate.
-
-If you installed from source, change `command` and `args` to point to your local build:
-
-```json
-{
-  "mcpServers": {
-    "obsidian-mcp-server": {
-      "command": "node",
-      "args": ["/path/to/your/obsidian-mcp-server/dist/index.js"],
-      "env": {
-        "OBSIDIAN_API_KEY": "YOUR_OBSIDIAN_API_KEY",
-        "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123",
-        "OBSIDIAN_VERIFY_SSL": "false",
-        "OBSIDIAN_ENABLE_CACHE": "true"
-      }
-    }
-  }
-}
-```
-
-### Environment Variables
-
-Configure the server using environment variables. These environmental variables are set within your MCP client config/settings (e.g. `cline_mcp_settings.json` for Cline, `claude_desktop_config.json` for Claude Desktop).
-
-| Variable                              | Description                                                              | Required             | Default                  |
-| :------------------------------------ | :----------------------------------------------------------------------- | :------------------- | :----------------------- |
-| **`OBSIDIAN_API_KEY`**                | API Key from the Obsidian Local REST API plugin.                         | **Yes**              | `undefined`              |
-| **`OBSIDIAN_BASE_URL`**               | Base URL of your Obsidian Local REST API.                                | **Yes**              | `http://127.0.0.1:27123` |
-| `MCP_TRANSPORT_TYPE`                  | Server transport: `stdio` or `http`.                                     | No                   | `stdio`                  |
-| `MCP_HTTP_PORT`                       | Port for the HTTP server.                                                | No                   | `3010`                   |
-| `MCP_HTTP_HOST`                       | Host for the HTTP server.                                                | No                   | `127.0.0.1`              |
-| `MCP_ALLOWED_ORIGINS`                 | Comma-separated origins for CORS. **Set for production.**                | No                   | (none)                   |
-| `MCP_AUTH_MODE`                       | Authentication strategy: `jwt` or `oauth`.                               | No                   | (none)                   |
-| **`MCP_AUTH_SECRET_KEY`**             | 32+ char secret for JWT. **Required for `jwt` mode.**                    | **Yes (if `jwt`)**   | `undefined`              |
-| `OAUTH_ISSUER_URL`                    | URL of the OAuth 2.1 issuer.                                             | **Yes (if `oauth`)** | `undefined`              |
-| `OAUTH_AUDIENCE`                      | Audience claim for OAuth tokens.                                         | **Yes (if `oauth`)** | `undefined`              |
-| `OAUTH_JWKS_URI`                      | URI for the JSON Web Key Set (optional, derived from issuer if omitted). | No                   | (derived)                |
-| `MCP_LOG_LEVEL`                       | Logging level (`debug`, `info`, `error`, etc.).                          | No                   | `info`                   |
-| `OBSIDIAN_VERIFY_SSL`                 | Set to `false` to disable SSL verification.                              | No                   | `true`                   |
-| `OBSIDIAN_ENABLE_CACHE`               | Set to `true` to enable the in-memory vault cache.                       | No                   | `true`                   |
-| `OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN` | Refresh interval for the vault cache in minutes.                         | No                   | `10`                     |
-
-### Connecting to the Obsidian API
-
-To connect the MCP server to your Obsidian vault, you need to configure the base URL (`OBSIDIAN_BASE_URL`) and API key (`OBSIDIAN_API_KEY`). The Obsidian Local REST API plugin offers two ways to connect:
-
-1.  **Encrypted (HTTPS) - Default**:
-
-    - The plugin provides a secure `https://` endpoint (e.g., `https://127.0.0.1:27124`).
-    - This uses a self-signed certificate, which will cause connection errors by default.
-    - **To fix this**, you must set the `OBSIDIAN_VERIFY_SSL` environment variable to `"false"`. This tells the server to trust the self-signed certificate.
-
-2.  **Non-encrypted (HTTP) - Recommended for Simplicity**:
-    - In the plugin's settings within Obsidian, you can enable the "Non-encrypted (HTTP) Server".
-    - This provides a simpler `http://` endpoint (e.g., `http://127.0.0.1:27123`).
-    - When using this URL, you do not need to worry about SSL verification.
-
-**Example `env` configuration for your MCP client:**
-
-_Using the non-encrypted HTTP URL (recommended):_
-
-```json
-"env": {
-  "OBSIDIAN_API_KEY": "YOUR_API_KEY_FROM_OBSIDIAN_PLUGIN",
-  "OBSIDIAN_BASE_URL": "http://127.0.0.1:27123"
-}
-```
-
-_Using the encrypted HTTPS URL:_
-
-```json
-"env": {
-  "OBSIDIAN_API_KEY": "YOUR_API_KEY_FROM_OBSIDIAN_PLUGIN",
-  "OBSIDIAN_BASE_URL": "https://127.0.0.1:27124",
-  "OBSIDIAN_VERIFY_SSL": "false"
-}
-```
-
-## Project Structure
-
-The codebase follows a modular structure within the `src/` directory:
-
-```
-src/
-├── index.ts           # Entry point: Initializes and starts the server
-├── config/            # Configuration loading (env vars, package info)
-│   └── index.ts
-├── mcp-server/        # Core MCP server logic and capability registration
-│   ├── server.ts      # Server setup, transport handling, tool/resource registration
-│   ├── resources/     # MCP Resource implementations (currently none)
-│   ├── tools/         # MCP Tool implementations (subdirs per tool)
-│   └── transports/    # Stdio and HTTP transport logic
-│       └── auth/      # Authentication strategies (JWT, OAuth)
-├── services/          # Abstractions for external APIs or internal caching
-│   └── obsidianRestAPI/ # Typed client for Obsidian Local REST API
-├── types-global/      # Shared TypeScript type definitions (errors, etc.)
-└── utils/             # Common utility functions (logger, error handler, security, etc.)
-```
-
-For a detailed file tree, run `npm run tree` or see [docs/tree.md](docs/tree.md).
-
-## Vault Cache Service
-
-This server includes an intelligent **in-memory cache** designed to enhance performance and resilience when interacting with your vault.
-
-### Purpose and Benefits
-
-- **Performance**: By caching file content and metadata, the server can perform search operations much faster, especially in large vaults. This reduces the number of direct requests to the Obsidian Local REST API, resulting in a snappier experience.
-- **Resilience**: The cache acts as a fallback for the `obsidian_global_search` tool. If the live API search fails or times out, the server seamlessly uses the cache to provide results, ensuring that search functionality remains available even if the Obsidian API is temporarily unresponsive.
-- **Efficiency**: The cache is designed to be efficient. It performs an initial build on startup and then periodically refreshes in the background by checking for file modifications, ensuring it stays reasonably up-to-date without constant, heavy API polling.
-
-### How It Works
-
-1.  **Initialization**: When enabled, the `VaultCacheService` builds an in-memory map of all `.md` files in your vault, storing their content and modification times.
-2.  **Periodic Refresh**: The cache automatically refreshes at a configurable interval (defaulting to 10 minutes). During a refresh, it only fetches content for files that are new or have been modified since the last check.
-3.  **Proactive Updates**: After a file is modified through a tool like `obsidian_update_file`, the service proactively updates the cache for that specific file, ensuring immediate consistency.
-4.  **Search Fallback**: The `obsidian_global_search` tool first attempts a live API search. If this fails, it automatically falls back to searching the in-memory cache.
-
-### Configuration
-
-The cache is enabled by default but can be configured via environment variables:
-
-- **`OBSIDIAN_ENABLE_CACHE`**: Set to `true` (default) or `false` to enable or disable the cache service.
-- **`OBSIDIAN_CACHE_REFRESH_INTERVAL_MIN`**: Defines the interval in minutes for the periodic background refresh. Defaults to `10`.
-
-## Tools
-
-The Obsidian MCP Server provides a suite of tools for interacting with your vault, callable via the Model Context Protocol.
-
-| Tool Name                     | Description                                               | Key Arguments                                                 |
-| :---------------------------- | :-------------------------------------------------------- | :------------------------------------------------------------ |
-| `obsidian_read_note`          | Retrieves the content and metadata of a note.             | `filePath`, `format?`, `includeStat?`                         |
-| `obsidian_update_note`        | Modifies a file by appending, prepending, or overwriting. | `targetType`, `content`, `targetIdentifier?`, `wholeFileMode` |
-| `obsidian_search_replace`     | Performs search-and-replace operations in a note.         | `targetType`, `replacements`, `useRegex?`, `replaceAll?`      |
-| `obsidian_global_search`      | Searches the entire vault for content.                    | `query`, `searchInPath?`, `useRegex?`, `page?`, `pageSize?`   |
-| `obsidian_list_notes`         | Lists notes and subdirectories in a folder.               | `dirPath`, `fileExtensionFilter?`, `nameRegexFilter?`         |
-| `obsidian_manage_frontmatter` | Gets, sets, or deletes keys in a note's frontmatter.      | `filePath`, `operation`, `key`, `value?`                      |
-| `obsidian_manage_tags`        | Adds, removes, or lists tags in a note.                   | `filePath`, `operation`, `tags`                               |
-| `obsidian_delete_note`        | Permanently deletes a note from the vault.                | `filePath`                                                    |
-
-_Note: All tools support comprehensive error handling and return structured JSON responses._
-
-## Resources
-
-**MCP Resources are not implemented in this version.**
-
-This server currently focuses on providing interactive tools for vault manipulation. Future development may introduce resource capabilities (e.g., exposing notes or search results as readable resources).
-
-## Development
-
-### Build and Test
-
-To get started with development, clone the repository, install dependencies, and use the following scripts:
+## ⚡ TL;DR — Quickstart (60s)
 
 ```bash
-# Install dependencies
-npm install
-
-# Build the project (compile TS to JS in dist/ and make executable)
-npm run rebuild
-
-# Start the server locally using stdio transport
-npm start:stdio
-
-# Start the server using http transport
-npm run start:http
-
-# Format code using Prettier
-npm run format
-
-# Inspect the server's capabilities using the MCP Inspector tool
-npm run inspect:stdio
-# or for the http transport:
-npm run inspect:http
+git clone https://github.com/cyanheads/obsidian-mcp-server.git
+cd obsidian-mcp-server
+npm i && npm run build
+npm run inspect   # ouvre MCP Inspector
 ```
 
-## License
+Dans MCP Inspector → **New STDIO session**
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+- Command : `node`
+- Args : `dist/index.js`
+- Env requis : `SMART_ENV_DIR=/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env`, `ENABLE_QUERY_EMBEDDING=true`, `QUERY_EMBEDDER=xenova`, `QUERY_EMBEDDER_MODEL_HINT=bge-384`, `TRANSFORMERS_CACHE=/home/<user>/.cache/transformers`
+- (Optionnel REST) `OBSIDIAN_BASE_URL=http://127.0.0.1:27123`, `OBSIDIAN_API_KEY=...`, `OBSIDIAN_VERIFY_SSL=false`
+
+> 🔐 **Note SSL** : le plugin Obsidian REST utilise un certificat auto-signé. Pour éviter les erreurs locales, définissez `OBSIDIAN_VERIFY_SSL=false`. En production, configurez un certificat de confiance et repassez à `true`.
+
+## 1) Pitch & scope
+
+**Obsidian MCP Server** est un serveur [Model Context Protocol](https://modelcontextprotocol.io/) qui connecte vos agents IA et outils compatibles MCP à votre coffre Obsidian. Il combine les outils historiques (lecture, écriture, frontmatter, tags, recherche globale…) avec une **recherche sémantique locale** basée sur les embeddings Smart Connections, le tout utilisable depuis Codex, les IDE ou l'[MCP Inspector](https://github.com/modelcontextprotocol/inspector).
+
+### Points forts
+
+- Pilotage complet du coffre : lecture/écriture de notes, frontmatter, tags, suppression, recherche globale et canvas via l’API REST Obsidian.
+- **Recherche sémantique** sur les embeddings `.smart-env` du plugin Smart Connections, avec encodage des requêtes par **Xenova/BGE-small (384d)** et snippets optionnels.
+- Résolution automatique des chemins Windows → WSL pour garantir la lecture des snippets lorsque le coffre est sur un disque Windows.
+- Transport STDIO prêt pour Codex ≥ 0.45, avec scripts d’inspection pour le débogage via MCP Inspector.
+
+## 2) Prérequis
+
+- **Node.js 18+** (recommandé : 20+).
+- **Obsidian** avec le plugin **Smart Connections** (menu **Build index** pour générer les embeddings `.smart-env`).
+- (Optionnel) Plugin **Obsidian Local REST API** pour activer les outils REST (lecture/écriture via HTTP).
+- (Optionnel) **WSL** si le coffre est stocké sur un disque Windows (F:\, E:\, …).
+
+## 3) Installation
+
+```bash
+git clone https://github.com/cyanheads/obsidian-mcp-server.git
+cd obsidian-mcp-server
+npm install
+```
+
+## 4) Build & scripts NPM
+
+```json
+{
+  "scripts": {
+    "build": "tsc && node --loader ts-node/esm scripts/make-executable.ts dist/index.js",
+    "start:stdio": "node dist/index.js",
+    "inspect": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector --open",
+    "prewarm:xenova": "node -e \"import('@xenova/transformers').then(async({pipeline})=>{const e=await pipeline('feature-extraction','Xenova/bge-small-en-v1.5');await e('warmup');console.log('embedder ok')})\""
+  }
+}
+```
+
+- `npm run build` : compile `src/` → `dist/` et rend l’entrypoint exécutable.
+- `npm run start:stdio` : lance le serveur MCP en STDIO.
+- `npm run prewarm:xenova` : télécharge et initialise le modèle d’embedding (utile hors-ligne / pour réduire le cold start).
+- `npm run inspect` : ouvre MCP Inspector en mode développement.
+
+## 5) Configuration Codex (TOML)
+
+Ajoutez ceci à `~/.codex/config.toml` (adaptez les chemins absolus).
+
+```toml
+[mcp_servers.obsidian-mcp-server-stdio]
+type = "stdio"
+command = "node"
+args = ["/ABSOLUTE/PATH/obsidian-mcp-server/dist/index.js"]
+tool_timeout_sec = 900
+
+[mcp_servers.obsidian-mcp-server-stdio.env]
+# === Smart Connections (.smart-env) ===
+SMART_ENV_DIR = "/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env"   # racine (sans /multi)
+OBSIDIAN_VAULT = "/mnt/f/OBSIDIAN/ÉLYSIA"             # pour lire les snippets en WSL
+
+# === Encodage requête (BGE small 384d - Xenova) ===
+ENABLE_QUERY_EMBEDDING = "true"
+QUERY_EMBEDDER = "xenova"
+QUERY_EMBEDDER_MODEL_HINT = "bge-384"
+TRANSFORMERS_CACHE = "/home/<user>/.cache/transformers"
+
+# === Logs (optionnel) ===
+MCP_LOG_LEVEL = "info"
+```
+
+> Pour activer aussi les outils REST Obsidian, ajoutez `OBSIDIAN_BASE_URL` et `OBSIDIAN_API_KEY`.
+
+## 6) Outils MCP exposés
+
+### 6.1 Recherche sémantique (Smart Connections)
+
+- **Nom canonique** : `smart_semantic_search`
+- **Alias** : `smart_search`, `smart-search`
+- **Description** : recherche sémantique locale utilisant les embeddings Smart Connections. Encode la requête via Xenova/BGE-small (384d), applique une similarité cosinus, filtre par dossiers/tags, et renvoie les meilleures notes avec snippets optionnels.
+
+#### Entrée (JSON Schema “Codex-friendly”)
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "minLength": 2 },
+    "top_k": { "type": "number", "minimum": 1, "maximum": 100, "default": 20 },
+    "folders": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "with_snippets": { "type": "boolean", "default": true }
+  },
+  "required": ["query"]
+}
+```
+
+#### Sortie
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "model": { "type": "string" },
+    "dim": { "type": "number" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "score": { "type": "number" },
+          "title": { "type": "string" },
+          "snippet": { "type": "string" }
+        },
+        "required": ["path", "score"]
+      }
+    }
+  },
+  "required": ["results"]
+}
+```
+
+#### Exemples d’appels (Codex – chat)
+
+- Top-k rapide : `{"query":"mcp","top_k":5,"with_snippets":false}`
+- Requête filtrée : `{"query":"canvas","top_k":10,"folders":["Notes/PKM","Nexus/"],"with_snippets":false}`
+
+> Implémentation : chargement tolérant des fichiers `.ajson/.json/.jsonl/.ndjson`, cache mémoire avec TTL, résolveur de chemins Windows→WSL, encodeur Xenova sélectionné automatiquement selon `QUERY_EMBEDDER_MODEL_HINT` ou la dimension détectée (`384`, `768`, `1024`, etc.).
+
+### 6.2 Autres outils REST Obsidian
+
+> **Requiert `OBSIDIAN_BASE_URL` + `OBSIDIAN_API_KEY` actifs**.
+
+| Outil | Description | Entrée (JSON) | Sortie |
+| --- | --- | --- | --- |
+| `obsidian_read_note` | Lit le contenu d’une note (markdown ou JSON) avec fallback insensible à la casse et stats optionnelles. | `{"filePath":"Note.md","format":"markdown","includeStat":false}` (`format`: `markdown` \| `json`). | `{"content":"...","stats":{...}}` ou `{"content":{...NoteJson...}}`. |
+| `obsidian_update_note` | Opérations whole-file (`append`,`prepend`,`overwrite`) sur une note ciblée par chemin, note active ou note périodique. Création conditionnelle, retour de contenu possible. | `{"targetType":"filePath","targetIdentifier":"Notes/Log.md","modificationType":"wholeFile","wholeFileMode":"append","content":"...","createIfNeeded":true,"returnContent":false}` | `{"status":"success","message":"...","finalContent":"..."?}` |
+| `obsidian_search_replace` | Recherche/remplacement dans une note avec options regex, casse, whole word et aperçu du diff. | `{"filePath":"Notes/Idea.md","searchPattern":"TODO","replaceWith":"✅","useRegex":false,"replaceAll":true}` | `{"replacements":3,"contentPreview":"..."}` |
+| `obsidian_global_search` | Recherche texte ou regex sur tout le coffre, filtrable par chemin/date, avec pagination et fallback cache. | `{"query":"#project","useRegex":false,"maxResults":50,"pathFilter":"Projects/","modifiedAfter":"2024-01-01"}` | `{"results":[{"path":"...","matches":[...]},...]}` |
+| `obsidian_list_notes` | Liste un dossier du coffre avec filtres d’extension/regex et représentation arborescente. | `{"root":"Notes","depth":2,"includeFiles":true,"includeDirectories":false,"extensionFilter":[".md"],"nameRegex":".*"}` | `{"tree":"- Notes\n  - Projects\n    - Idea.md"}` |
+| `obsidian_manage_frontmatter` | Lecture/écriture/suppression de clés YAML sans réécrire tout le fichier. | `{"filePath":"Notes/Card.md","operation":"set","data":{"status":"draft"}}` (`operation`: `get` \| `set` \| `delete`). | Selon l’opération : frontmatter actuel, confirmation de mise à jour, ou clés supprimées. |
+| `obsidian_manage_tags` | Ajout/suppression/lecture des tags (frontmatter et inline). | `{"filePath":"Notes/Idea.md","operation":"add","tags":["idea","mcp"]}` (`operation`: `add` \| `remove` \| `list`). | Liste mise à jour ou confirmation. |
+| `obsidian_delete_note` | Supprime une note avec fallback insensible à la casse et confirmation explicite. | `{"filePath":"Archive/Old.md","requireConfirmation":true}` | `{"deleted":true,"path":"Archive/Old.md"}` |
+
+> Consultez `src/mcp-server/tools/**/logic.ts` pour les schémas Zod détaillés et toutes les options (dates relatives, filtres avancés, etc.).
+
+## 7) Démarrage avec MCP Inspector (debug)
+
+```bash
+npm run inspect
+```
+
+1. UI → **Connections → New STDIO session**.
+2. Command : `node`, Args : `dist/index.js`.
+3. Env : `SMART_ENV_DIR=...`, `OBSIDIAN_VAULT=...`, `ENABLE_QUERY_EMBEDDING=true`, `QUERY_EMBEDDER=xenova`, `QUERY_EMBEDDER_MODEL_HINT=bge-384`, `TRANSFORMERS_CACHE=...`, `OBSIDIAN_BASE_URL=...`, `OBSIDIAN_API_KEY=...` (si REST activé).
+4. **Tools → List tools** puis tester `smart_semantic_search`.
+
+> Astuce : certains clients gèrent mal `--env` en CLI. Préférez la saisie des variables directement dans l’UI Inspector.
+
+## 8) Bonnes pratiques Codex (0.45)
+
+- Transport recommandé : **STDIO** (`type = "stdio"`).
+- Dans le chat, invoquez les outils sous la forme `obsidian-mcp-server-stdio/<tool_name>`.
+- Préférez des schémas JSON simples (pas d’`integer`, pas d’unions `oneOf`). Racine toujours `type:"object"`.
+- Augmentez `tool_timeout_sec` (ex. `900`) pour les opérations lourdes et exécutez `npm run prewarm:xenova` pour réduire la latence du premier appel.
+
+## 9) Résolution de problèmes (FAQ)
+
+| Problème | Diagnostic | Solution |
+| --- | --- | --- |
+| `tool not found` | Mauvais chemin ou build absent. | Recompiler (`npm run build`) et vérifier l’entrypoint `dist/index.js`. |
+| `No embeddings found` | `SMART_ENV_DIR` mal renseigné ou index vide. | Pointer sur la racine `.smart-env` (sans `/multi`), relancer la génération Smart Connections. |
+| Snippets en erreur | Coffre sur disque Windows sans mapping. | Définir `OBSIDIAN_VAULT`, laisser le resolver convertir `F:\` → `/mnt/f/...`, ou passer `with_snippets:false`.
+| Démarrage lent | Téléchargement du modèle à la volée. | Précharger via `npm run prewarm:xenova` et définir `TRANSFORMERS_CACHE`. |
+| Formats `.ajson` exotiques | JSON5/NDJSON non standard. | Le loader “anti-fragile” gère la plupart des variantes ; ouvrez un ticket si nécessaire avec un extrait. |
+
+## 10) Roadmap
+
+- Index ANN (HNSW) si > 50k vecteurs (intégration `hnswlib-node`).
+- Auto-détection du modèle selon `model/dim` présents dans `.smart-env`.
+- Fallback TF-IDF lorsque l’embedder est indisponible.
+- Chaînes d’outils prêtes à l’emploi (ex : `semantic_search → read_note → backlinks → update_note`).
+
+## 11) Licence & contributions
+
+- Licence : [Apache 2.0](./LICENSE).
+- Contributions bienvenues ! Respectez les conventions TypeScript/JSON Schema, ajoutez des tests via MCP Inspector, et documentez vos outils.
 
 ---
 
-<div align="center">
-Built with the <a href="https://modelcontextprotocol.io/">Model Context Protocol</a>
-</div>
+## Annexe – Tableau des variables d’environnement
+
+| Variable | Obligatoire | Exemple | Rôle |
+| --- | --- | --- | --- |
+| `SMART_ENV_DIR` | Oui (si recherche sémantique) | `/mnt/f/OBSIDIAN/ÉLYSIA/.smart-env` | Racine des embeddings Smart Connections (sans `/multi`). |
+| `OBSIDIAN_VAULT` | Recommandé | `/mnt/f/OBSIDIAN/ÉLYSIA` | Résolution absolue pour lire les snippets. |
+| `ENABLE_QUERY_EMBEDDING` | Oui | `true` | Active l’encodage de la requête sémantique. |
+| `QUERY_EMBEDDER` | Oui | `xenova` | Choix de l’embedder local. |
+| `QUERY_EMBEDDER_MODEL_HINT` | Recommandé | `bge-384` | Alignement avec la dimension des vecteurs Smart Connections. |
+| `TRANSFORMERS_CACHE` | Recommandé | `/home/<user>/.cache/transformers` | Cache des modèles Xenova (offline-friendly). |
+| `OBSIDIAN_BASE_URL` | Optionnel | `http://127.0.0.1:27123` | Point de terminaison du plugin REST (requis pour les outils REST). |
+| `OBSIDIAN_API_KEY` | Optionnel | `sk-...` | Clé API du plugin REST. |
+| `OBSIDIAN_VERIFY_SSL` | Optionnel | `false` | Désactiver la vérification SSL pour les certificats auto-signés. |
+| `OBSIDIAN_ENABLE_CACHE` | Optionnel | `true` | Active le cache en mémoire du coffre. |
+| `SMART_ENV_CACHE_TTL_MS` | Optionnel | `60000` | TTL du cache embeddings en millisecondes. |
+| `MCP_LOG_LEVEL` | Optionnel | `info` | Niveau de logs MCP. |
+| `MCP_TRANSPORT_TYPE` | Optionnel | `stdio` | Transport MCP (`stdio` ou `http`). |
+
+---
+
+## Bloc “How-to” pour Codex
+
+> **Exécuter une recherche et proposer des backlinks**
+> 
+> 1. Call `obsidian-mcp-server-stdio/smart_semantic_search` with: `{"query":"mcp","top_k":8,"with_snippets":false}`
+> 2. For the **top 3 paths**, call the note-reading tool (see `tools/list` for exact name).
+> 3. Propose **2 backlinks** per note (distinct targets in the vault) with **1 sentence of context**.
+> 4. Return strict JSON:
+> 
+> ```json
+> { "query":"mcp", "dim":384, "results":[ 
+>   {"path":"...", "backlinks":[ 
+>     {"target":"...", "anchor":"...", "context":"..."}, 
+>     {"target":"...", "anchor":"...", "context":"..."} 
+>   ]} 
+> ] }
+> ```
+
