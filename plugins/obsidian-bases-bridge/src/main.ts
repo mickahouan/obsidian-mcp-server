@@ -543,7 +543,7 @@ export default class BasesBridgePlugin extends Plugin {
     }
 
     // Fallback: read metadata and frontmatter
-    const rows = await this.evaluateFallback(baseId);
+    const rows = await this.evaluateFallback(baseId, payload);
     const filtered = applyFilter(rows, payload.filter);
     const sorted = applySort(filtered, payload.sort ?? []);
     const paginated = paginateRows(sorted, payload.limit ?? 50, payload.page ?? 1);
@@ -658,8 +658,8 @@ export default class BasesBridgePlugin extends Plugin {
     return file;
   }
 
-  private async evaluateFallback(baseId: string): Promise<BridgeRow[]> {
-    const definition = await this.loadBaseConfig(baseId);
+  private async evaluateFallback(baseId: string, payload: QueryPayload): Promise<BridgeRow[]> {
+    const { config } = await this.loadBaseConfig(baseId);
     const rows: BridgeRow[] = [];
 
     for (const file of this.app.vault.getFiles()) {
@@ -687,7 +687,22 @@ export default class BasesBridgePlugin extends Plugin {
       });
     }
 
-    return rows;
+    let filteredRows = rows;
+
+    const baseFilter = normalizeBaseFilter(config.filters);
+    if (baseFilter) {
+      filteredRows = applyFilter(filteredRows, baseFilter);
+    }
+
+    if (payload.view && Array.isArray(config.views)) {
+      const viewConfig = config.views.find((view: any) => view?.name === payload.view);
+      const viewFilter = viewConfig ? normalizeBaseFilter(viewConfig.filters) : undefined;
+      if (viewFilter) {
+        filteredRows = applyFilter(filteredRows, viewFilter);
+      }
+    }
+
+    return filteredRows;
   }
 
   private async applyFrontmatterOperation(operation: UpsertOperation): Promise<Record<string, unknown>> {
@@ -759,6 +774,252 @@ async function readBody(req: IncomingMessage): Promise<string> {
     req.on("end", () => resolve(data));
     req.on("error", (error) => reject(error));
   });
+}
+
+function normalizeBaseFilter(filter: unknown): AdditionalFilter | undefined {
+  if (filter === null || filter === undefined) {
+    return undefined;
+  }
+
+  if (typeof filter === "string") {
+    return parseFilterExpression(filter);
+  }
+
+  if (Array.isArray(filter)) {
+    const normalized = filter.map((entry) => normalizeBaseFilter(entry)).filter(Boolean) as AdditionalFilter[];
+    if (normalized.length === 0) {
+      return undefined;
+    }
+    if (normalized.length === 1) {
+      return normalized[0];
+    }
+    return { and: normalized };
+  }
+
+  if (typeof filter === "object") {
+    const record = filter as Record<string, unknown>;
+    const normalized: AdditionalFilter = {};
+
+    if (record.eq && typeof record.eq === "object" && !Array.isArray(record.eq)) {
+      const eq = normalizeComparisonRecord(record.eq as Record<string, unknown>);
+      if (Object.keys(eq).length > 0) {
+        normalized.eq = eq;
+      }
+    }
+
+    if (record.in && typeof record.in === "object" && !Array.isArray(record.in)) {
+      const listEntries: Record<string, unknown[]> = {};
+      for (const [key, value] of Object.entries(record.in as Record<string, unknown>)) {
+        const list = Array.isArray(value)
+          ? value.map((item) => coerceFilterScalar(item))
+          : typeof value === "string"
+            ? parseFilterList(value)
+            : [];
+        if (list.length > 0) {
+          listEntries[key] = list;
+        }
+      }
+      if (Object.keys(listEntries).length > 0) {
+        normalized.in = listEntries;
+      }
+    }
+
+    if (record.regex && typeof record.regex === "object" && !Array.isArray(record.regex)) {
+      const regexEntries: Record<string, string> = {};
+      for (const [key, value] of Object.entries(record.regex as Record<string, unknown>)) {
+        if (typeof value === "string" && value.length > 0) {
+          regexEntries[key] = stripQuotes(value);
+        }
+      }
+      if (Object.keys(regexEntries).length > 0) {
+        normalized.regex = regexEntries;
+      }
+    }
+
+    if (record.and !== undefined) {
+      const andFilters = normalizeFilterList(record.and);
+      if (andFilters.length > 0) {
+        normalized.and = andFilters;
+      }
+    }
+
+    if (record.or !== undefined) {
+      const orFilters = normalizeFilterList(record.or);
+      if (orFilters.length > 0) {
+        normalized.or = orFilters;
+      }
+    }
+
+    if (record.not !== undefined) {
+      const notFilter = normalizeBaseFilter(record.not);
+      if (notFilter) {
+        normalized.not = notFilter;
+      }
+    }
+
+    return hasFilterContent(normalized) ? normalized : undefined;
+  }
+
+  return undefined;
+}
+
+function normalizeFilterList(value: unknown): AdditionalFilter[] {
+  const entries = Array.isArray(value) ? value : [value];
+  return entries
+    .map((entry) => normalizeBaseFilter(entry))
+    .filter((entry): entry is AdditionalFilter => Boolean(entry));
+}
+
+function normalizeComparisonRecord(value: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (Array.isArray(raw)) {
+      result[key] = raw.map((item) => coerceFilterScalar(item));
+    } else {
+      result[key] = coerceFilterScalar(raw);
+    }
+  }
+  return result;
+}
+
+function coerceFilterScalar(value: unknown): unknown {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "true") return true;
+    if (trimmed === "false") return false;
+    if (trimmed === "null") return null;
+    if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+      return trimmed.slice(1, -1);
+    }
+    const numeric = Number(trimmed);
+    if (!Number.isNaN(numeric)) {
+      return numeric;
+    }
+    return trimmed;
+  }
+  return value;
+}
+
+function parseFilterExpression(expression: string): AdditionalFilter | undefined {
+  const trimmed = expression.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const notInMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\s+not\s+in\s+(.+)$/i);
+  if (notInMatch) {
+    const [, key, rawList] = notInMatch;
+    const list = parseFilterList(rawList);
+    if (list.length === 0) return undefined;
+    return { not: { in: { [key]: list } } };
+  }
+
+  const inMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\s+in\s+(.+)$/i);
+  if (inMatch) {
+    const [, key, rawList] = inMatch;
+    const list = parseFilterList(rawList);
+    if (list.length === 0) return undefined;
+    return { in: { [key]: list } };
+  }
+
+  const notMatchesMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\s+not\s+matches\s+(.+)$/i);
+  if (notMatchesMatch) {
+    const [, key, pattern] = notMatchesMatch;
+    const regex = stripQuotes(pattern.trim());
+    if (!regex) return undefined;
+    return { not: { regex: { [key]: regex } } };
+  }
+
+  const matchesMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\s+matches\s+(.+)$/i);
+  if (matchesMatch) {
+    const [, key, pattern] = matchesMatch;
+    const regex = stripQuotes(pattern.trim());
+    if (!regex) return undefined;
+    return { regex: { [key]: regex } };
+  }
+
+  const comparisonMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\s*(==|!=|=~|!~)\s*(.+)$/);
+  if (comparisonMatch) {
+    const [, key, operator, rawValue] = comparisonMatch;
+    if (operator === "==") {
+      return { eq: { [key]: coerceFilterScalar(rawValue) } };
+    }
+    if (operator === "!=") {
+      return { not: { eq: { [key]: coerceFilterScalar(rawValue) } } };
+    }
+    if (operator === "=~") {
+      const regex = stripQuotes(rawValue.trim());
+      if (!regex) return undefined;
+      return { regex: { [key]: regex } };
+    }
+    if (operator === "!~") {
+      const regex = stripQuotes(rawValue.trim());
+      if (!regex) return undefined;
+      return { not: { regex: { [key]: regex } } };
+    }
+  }
+
+  if (trimmed.startsWith("!")) {
+    const nested = parseFilterExpression(trimmed.slice(1));
+    return nested ? { not: nested } : undefined;
+  }
+
+  if (/^([A-Za-z0-9_.-]+)$/.test(trimmed)) {
+    const key = trimmed;
+    return { eq: { [key]: true } };
+  }
+
+  return undefined;
+}
+
+function parseFilterList(raw: string): unknown[] {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const normalized = trimmed.replace(/^\(|\)$/g, "");
+  const bracketed = normalized.startsWith("[") && normalized.endsWith("]");
+  const content = bracketed ? normalized.slice(1, -1) : normalized;
+
+  if (bracketed) {
+    const jsonCandidate = content.trim();
+    if (jsonCandidate) {
+      try {
+        const parsed = JSON.parse(`[${jsonCandidate.replace(/'/g, '"')}]`);
+        if (Array.isArray(parsed)) {
+          return parsed.map((entry) => coerceFilterScalar(entry));
+        }
+      } catch (error) {
+        // Fall through to manual parsing
+      }
+    }
+  }
+
+  return content
+    .split(/\s*,\s*/)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .map((item) => coerceFilterScalar(item));
+}
+
+function stripQuotes(value: string): string {
+  const trimmed = value.trim();
+  if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function hasFilterContent(filter: AdditionalFilter): boolean {
+  return Boolean(
+    (filter.eq && Object.keys(filter.eq).length > 0) ||
+      (filter.in && Object.keys(filter.in).length > 0) ||
+      (filter.regex && Object.keys(filter.regex).length > 0) ||
+      (filter.and && filter.and.length > 0) ||
+      (filter.or && filter.or.length > 0) ||
+      filter.not,
+  );
 }
 
 function normalizeEngineValue(value: unknown): unknown {
