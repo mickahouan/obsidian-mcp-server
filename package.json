@@ -23,15 +23,16 @@
   "homepage": "https://github.com/cyanheads/obsidian-mcp-server#readme",
   "scripts": {
     "build": "tsc && node --loader ts-node/esm scripts/make-executable.ts dist/index.js",
+    "start:stdio": "node dist/index.js",
+    "inspect": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector --open",
+    "prewarm:xenova": "node -e \"import('@xenova/transformers').then(async({pipeline})=>{const e=await pipeline('feature-extraction','Xenova/bge-small-en-v1.5');await e('warmup');console.log('embedder ok')})\"",
     "start": "node dist/index.js",
-    "start:stdio": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=stdio node dist/index.js",
     "start:http": "MCP_LOG_LEVEL=debug MCP_TRANSPORT_TYPE=http node dist/index.js",
     "rebuild": "npx ts-node --esm scripts/clean.ts && npm run build",
     "fetch:spec": "npx ts-node --esm scripts/fetch-openapi-spec.ts",
     "docs:generate": "typedoc --tsconfig ./tsconfig.typedoc.json",
     "tree": "npx ts-node --esm scripts/tree.ts",
     "format": "prettier --write \"**/*.{ts,js,json,md,html,css}\"",
-    "inspect": "mcp-inspector --config mcp.json",
     "inspect:stdio": "mcp-inspector --config mcp.json --server obsidian-mcp-server-stdio",
     "inspect:http": "mcp-inspector --config mcp.json --server obsidian-mcp-server-http"
   },
@@ -39,9 +40,9 @@
     "@hono/node-server": "^1.14.4",
     "@modelcontextprotocol/inspector": "^0.14.3",
     "@modelcontextprotocol/sdk": "^1.13.0",
-    "@xenova/transformers": "^2.8.0",
     "@types/sanitize-html": "^2.16.0",
     "@types/validator": "13.15.2",
+    "@xenova/transformers": "^2.8.0",
     "axios": "^1.10.0",
     "chrono-node": "2.8.0",
     "date-fns": "^4.1.0",
@@ -50,12 +51,11 @@
     "ignore": "^7.0.5",
     "jose": "^6.0.11",
     "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
     "openai": "^5.6.0",
     "partial-json": "^0.1.7",
     "sanitize-html": "^2.17.0",
     "tiktoken": "^1.0.21",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
     "validator": "13.15.15",
     "winston": "^3.17.0",
     "winston-transport": "^4.9.0",
@@ -85,8 +85,10 @@
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^24.0.3",
+    "@types/node": "^22.0.0",
     "prettier": "^3.5.3",
-    "typedoc": "^0.28.5"
+    "ts-node": "^10.9.2",
+    "typedoc": "^0.28.5",
+    "typescript": "^5.6.0"
   }
 }
