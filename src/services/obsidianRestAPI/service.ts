@@ -16,6 +16,7 @@ import {
   requestContextService,
 } from "../../utils/index.js"; // Added requestContextService
 import * as activeFileMethods from "./methods/activeFileMethods.js";
+import * as basesMethods from "./methods/basesMethods.js";
 import * as commandMethods from "./methods/commandMethods.js";
 import * as openMethods from "./methods/openMethods.js";
 import * as patchMethods from "./methods/patchMethods.js";
@@ -24,6 +25,17 @@ import * as searchMethods from "./methods/searchMethods.js";
 import * as vaultMethods from "./methods/vaultMethods.js";
 import {
   ApiStatusResponse, // Import PatchOptions type
+  BaseConfigResponse,
+  BaseConfigUpsertRequest,
+  BaseConfigUpsertResponse,
+  BaseCreateRequest,
+  BaseCreateResponse,
+  BaseQueryRequest,
+  BaseQueryResponse,
+  BaseSchemaResponse,
+  BasesListResponse,
+  BaseUpsertRequest,
+  BaseUpsertResponse,
   ComplexSearchResult,
   NoteJson,
   NoteStat,
@@ -351,6 +363,105 @@ export class ObsidianRestApiService {
       this._request.bind(this),
       query,
       contentType,
+      context,
+    );
+  }
+
+  // --- Bases Bridge Methods ---
+
+  /**
+   * Lists all `.base` files discovered by the Bases Bridge.
+   */
+  async listBases(context: RequestContext): Promise<BasesListResponse> {
+    return basesMethods.listBases(this._request.bind(this), context);
+  }
+
+  /**
+   * Retrieves schema information for a specific base.
+   */
+  async getBaseSchema(
+    baseId: string,
+    context: RequestContext,
+  ): Promise<BaseSchemaResponse> {
+    return basesMethods.getBaseSchema(
+      this._request.bind(this),
+      baseId,
+      context,
+    );
+  }
+
+  /**
+   * Executes a query against the Bases Bridge.
+   */
+  async queryBase(
+    baseId: string,
+    payload: BaseQueryRequest,
+    context: RequestContext,
+  ): Promise<BaseQueryResponse> {
+    return basesMethods.queryBase(
+      this._request.bind(this),
+      baseId,
+      payload,
+      context,
+    );
+  }
+
+  /**
+   * Performs a batch upsert against the Bases Bridge.
+   */
+  async upsertBaseRows(
+    baseId: string,
+    payload: BaseUpsertRequest,
+    context: RequestContext,
+  ): Promise<BaseUpsertResponse> {
+    return basesMethods.upsertBaseRows(
+      this._request.bind(this),
+      baseId,
+      payload,
+      context,
+    );
+  }
+
+  /**
+   * Creates a new `.base` file or validates the payload without writing.
+   */
+  async createBase(
+    payload: BaseCreateRequest,
+    context: RequestContext,
+  ): Promise<BaseCreateResponse> {
+    return basesMethods.createBase(
+      this._request.bind(this),
+      payload,
+      context,
+    );
+  }
+
+  /**
+   * Retrieves the YAML/JSON configuration for a `.base` file.
+   */
+  async getBaseConfig(
+    baseId: string,
+    context: RequestContext,
+  ): Promise<BaseConfigResponse> {
+    return basesMethods.getBaseConfig(
+      this._request.bind(this),
+      baseId,
+      context,
+    );
+  }
+
+  /**
+   * Updates or validates the configuration for a `.base` file.
+   */
+  async upsertBaseConfig(
+    baseId: string,
+    payload: BaseConfigUpsertRequest,
+    context: RequestContext,
+  ): Promise<BaseConfigUpsertResponse> {
+    return basesMethods.upsertBaseConfig(
+      this._request.bind(this),
+      baseId,
+      payload,
       context,
     );
   }
